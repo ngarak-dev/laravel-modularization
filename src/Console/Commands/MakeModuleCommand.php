@@ -769,11 +769,34 @@ class MakeModuleCommand extends Command
      */
     protected function createLivewireRoutes($name, $path, $namespace)
     {
-        $content = $this->getStub('livewire-routes', [
-            '{{namespace}}' => $namespace,
-            '{{moduleName}}' => $name,
-            '{{moduleNameLower}}' => strtolower($name),
-        ]);
+        $content = <<<EOT
+<?php
+
+use Illuminate\Support\Facades\Route;
+use {$namespace}\\{$name}\Livewire\\{$name}Table;
+use {$namespace}\\{$name}\Livewire\\{$name}Form;
+
+/*
+|--------------------------------------------------------------------------
+| Livewire Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register Livewire routes for your module.
+|
+*/
+
+Route::get('/".strtolower($name)."', {$name}Table::class)
+    ->name('".strtolower($name).".index');
+
+Route::get('/".strtolower($name)."/create', {$name}Form::class)
+    ->name('".strtolower($name).".create');
+
+Route::get('/".strtolower($name)."/{id}/edit', {$name}Form::class)
+    ->name('".strtolower($name).".edit');
+
+Route::get('/".strtolower($name)."/{id}', {$name}Form::class)
+    ->name('".strtolower($name).".show');
+EOT;
 
         $this->files->put($path . '/Routes/livewire.php', $content);
     }

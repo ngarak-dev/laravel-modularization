@@ -29,7 +29,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | These are the default directories that will be created within each module.
-    | 
+    |
     */
     'directories' => [
         'Http/Controllers',
