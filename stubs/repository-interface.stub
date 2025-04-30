@@ -1,0 +1,58 @@
+<?php
+
+namespace {{namespace}}\{{moduleName}}\Repositories\Interfaces;
+
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
+use {{namespace}}\{{moduleName}}\Models\{{moduleName}};
+
+interface {{moduleName}}RepositoryInterface
+{
+    /**
+     * Get all instances of the model.
+     *
+     * @return Collection
+     */
+    public function all(): Collection;
+
+    /**
+     * Get paginated instances of the model.
+     *
+     * @param int $perPage
+     * @return LengthAwarePaginator
+     */
+    public function paginate(int $perPage = 15): LengthAwarePaginator;
+
+    /**
+     * Create a new instance of the model.
+     *
+     * @param array $data
+     * @return {{moduleName}}
+     */
+    public function create(array $data): {{moduleName}};
+
+    /**
+     * Update an existing instance of the model.
+     *
+     * @param {{moduleName}} $model
+     * @param array $data
+     * @return {{moduleName}}
+     */
+    public function update({{moduleName}} $model, array $data): {{moduleName}};
+
+    /**
+     * Delete an instance of the model.
+     *
+     * @param {{moduleName}} $model
+     * @return bool
+     */
+    public function delete({{moduleName}} $model): bool;
+
+    /**
+     * Find an instance of the model by its primary key.
+     *
+     * @param int $id
+     * @return {{moduleName}}|null
+     */
+    public function find(int $id): ?{{moduleName}};
+} 

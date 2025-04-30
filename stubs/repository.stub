@@ -1,0 +1,93 @@
+<?php
+
+namespace {{namespace}}\{{moduleName}}\Repositories;
+
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
+use {{namespace}}\{{moduleName}}\Models\{{moduleName}};
+use {{namespace}}\{{moduleName}}\Repositories\Interfaces\{{moduleName}}RepositoryInterface;
+
+class {{moduleName}}Repository implements {{moduleName}}RepositoryInterface
+{
+    /**
+     * @var {{moduleName}}
+     */
+    protected $model;
+
+    /**
+     * {{moduleName}}Repository constructor.
+     *
+     * @param {{moduleName}} $model
+     */
+    public function __construct({{moduleName}} $model)
+    {
+        $this->model = $model;
+    }
+
+    /**
+     * Get all instances of the model.
+     *
+     * @return Collection
+     */
+    public function all(): Collection
+    {
+        return $this->model->all();
+    }
+
+    /**
+     * Get paginated instances of the model.
+     *
+     * @param int $perPage
+     * @return LengthAwarePaginator
+     */
+    public function paginate(int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->model->paginate($perPage);
+    }
+
+    /**
+     * Create a new instance of the model.
+     *
+     * @param array $data
+     * @return {{moduleName}}
+     */
+    public function create(array $data): {{moduleName}}
+    {
+        return $this->model->create($data);
+    }
+
+    /**
+     * Update an existing instance of the model.
+     *
+     * @param {{moduleName}} $model
+     * @param array $data
+     * @return {{moduleName}}
+     */
+    public function update({{moduleName}} $model, array $data): {{moduleName}}
+    {
+        $model->update($data);
+        return $model;
+    }
+
+    /**
+     * Delete an instance of the model.
+     *
+     * @param {{moduleName}} $model
+     * @return bool
+     */
+    public function delete({{moduleName}} $model): bool
+    {
+        return $model->delete();
+    }
+
+    /**
+     * Find an instance of the model by its primary key.
+     *
+     * @param int $id
+     * @return {{moduleName}}|null
+     */
+    public function find(int $id): ?{{moduleName}}
+    {
+        return $this->model->find($id);
+    }
+} 
