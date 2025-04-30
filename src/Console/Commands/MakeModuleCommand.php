@@ -148,7 +148,10 @@ class MakeModuleCommand extends Command
 
         // Create each directory
         foreach ($directories as $directory) {
-            $this->files->makeDirectory($path . '/' . $directory, 0755, true);
+            $directoryPath = $path . '/' . $directory;
+            if (!$this->files->isDirectory($directoryPath)) {
+                $this->files->makeDirectory($directoryPath, 0755, true);
+            }
         }
 
         $this->info('Module directories created successfully.');
@@ -440,7 +443,9 @@ class MakeModuleCommand extends Command
         $moduleViewsPath = $viewsPath . '/' . strtolower($name);
 
         // Create module views directory
-        $this->files->makeDirectory($moduleViewsPath, 0755, true);
+        if (!$this->files->isDirectory($moduleViewsPath)) {
+            $this->files->makeDirectory($moduleViewsPath, 0755, true);
+        }
 
         // Create index view
         $content = $this->getStub('view-index', [
@@ -475,7 +480,14 @@ class MakeModuleCommand extends Command
             '{{moduleName}}' => $name,
             '{{moduleNameLower}}' => strtolower($name),
         ]);
-        $this->files->put($viewsPath . '/layouts/module-layout.blade.php', $content);
+
+        // Create layouts directory if it doesn't exist
+        $layoutsPath = $viewsPath . '/layouts';
+        if (!$this->files->isDirectory($layoutsPath)) {
+            $this->files->makeDirectory($layoutsPath, 0755, true);
+        }
+
+        $this->files->put($layoutsPath . '/module-layout.blade.php', $content);
     }
 
     /**
@@ -487,8 +499,13 @@ class MakeModuleCommand extends Command
         $viewsPath = $path . '/Resources/views/livewire';
 
         // Create directories if they don't exist
-        $this->files->makeDirectory($livewirePath, 0755, true);
-        $this->files->makeDirectory($viewsPath, 0755, true);
+        if (!$this->files->isDirectory($livewirePath)) {
+            $this->files->makeDirectory($livewirePath, 0755, true);
+        }
+
+        if (!$this->files->isDirectory($viewsPath)) {
+            $this->files->makeDirectory($viewsPath, 0755, true);
+        }
 
         // Create Table component
         $content = $this->getStub('livewire-table', [
@@ -635,7 +652,9 @@ class MakeModuleCommand extends Command
         $resourceViewsPath = $viewsPath . '/' . strtolower($resourceName);
 
         // Create module views directory
-        $this->files->makeDirectory($resourceViewsPath, 0755, true);
+        if (!$this->files->isDirectory($resourceViewsPath)) {
+            $this->files->makeDirectory($resourceViewsPath, 0755, true);
+        }
 
         // Create index view
         $content = $this->getStub('view-index', [
