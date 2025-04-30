@@ -1,0 +1,46 @@
+<?php
+
+namespace {{namespace}}\{{moduleName}}\Services\Interfaces;
+
+interface {{moduleName}}ServiceInterface
+{
+    /**
+     * Get all records
+     * 
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getAll();
+
+    /**
+     * Find record by ID
+     * 
+     * @param int $id
+     * @return {{namespace}}\{{moduleName}}\Models\{{moduleName}}|null
+     */
+    public function findById($id);
+
+    /**
+     * Create a new record
+     * 
+     * @param array $data
+     * @return {{namespace}}\{{moduleName}}\Models\{{moduleName}}
+     */
+    public function create(array $data);
+
+    /**
+     * Update existing record
+     * 
+     * @param int $id
+     * @param array $data
+     * @return {{namespace}}\{{moduleName}}\Models\{{moduleName}}
+     */
+    public function update($id, array $data);
+
+    /**
+     * Delete record
+     * 
+     * @param int $id
+     * @return bool
+     */
+    public function delete($id);
+} 

@@ -1,0 +1,84 @@
+<?php
+
+namespace {{namespace}}\{{moduleName}}\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use {{namespace}}\{{moduleName}}\Services\Interfaces\{{moduleName}}ServiceInterface;
+use {{namespace}}\{{moduleName}}\Http\Requests\{{moduleName}}Request;
+
+class {{moduleName}}Controller extends Controller
+{
+    /**
+     * @var {{moduleName}}ServiceInterface
+     */
+    protected $service;
+
+    /**
+     * Constructor
+     */
+    public function __construct({{moduleName}}ServiceInterface $service)
+    {
+        $this->service = $service;
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function index()
+    {
+        $data = $this->service->getAll();
+        return response()->json(['data' => $data]);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \{{namespace}}\{{moduleName}}\Http\Requests\{{moduleName}}Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function store({{moduleName}}Request $request)
+    {
+        $data = $this->service->create($request->validated());
+        return response()->json(['data' => $data, 'message' => '{{moduleName}} created successfully'], 201);
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function show($id)
+    {
+        $data = $this->service->findById($id);
+        return response()->json(['data' => $data]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \{{namespace}}\{{moduleName}}\Http\Requests\{{moduleName}}Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function update({{moduleName}}Request $request, $id)
+    {
+        $data = $this->service->update($id, $request->validated());
+        return response()->json(['data' => $data, 'message' => '{{moduleName}} updated successfully']);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function destroy($id)
+    {
+        $this->service->delete($id);
+        return response()->json(['message' => '{{moduleName}} deleted successfully']);
+    }
+} 

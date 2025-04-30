@@ -1,0 +1,86 @@
+<?php
+
+namespace {{namespace}}\{{moduleName}}\Http\Controllers;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use {{namespace}}\{{moduleName}}\Services\Interfaces\{{moduleName}}ServiceInterface;
+use {{namespace}}\{{moduleName}}\Http\Requests\{{moduleName}}Request;
+
+class {{moduleName}}Controller extends Controller
+{
+    /**
+     * @var {{moduleName}}ServiceInterface
+     */
+    protected $service;
+
+    /**
+     * Constructor
+     */
+    public function __construct({{moduleName}}ServiceInterface $service)
+    {
+        $this->service = $service;
+    }
+
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        ${{moduleNameLower}}s = $this->service->getAll();
+        return view('{{moduleNameLower}}::{{moduleNameLower}}.index', compact('{{moduleNameLower}}s'));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        return view('{{moduleNameLower}}::{{moduleNameLower}}.create');
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store({{moduleName}}Request $request)
+    {
+        $this->service->create($request->validated());
+        return redirect()->route('{{moduleNameLower}}.index')->with('success', '{{moduleName}} created successfully');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        ${{moduleNameLower}} = $this->service->findById($id);
+        return view('{{moduleNameLower}}::{{moduleNameLower}}.show', compact('{{moduleNameLower}}'));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id)
+    {
+        ${{moduleNameLower}} = $this->service->findById($id);
+        return view('{{moduleNameLower}}::{{moduleNameLower}}.edit', compact('{{moduleNameLower}}'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update({{moduleName}}Request $request, string $id)
+    {
+        $this->service->update($id, $request->validated());
+        return redirect()->route('{{moduleNameLower}}.index')->with('success', '{{moduleName}} updated successfully');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        $this->service->delete($id);
+        return redirect()->route('{{moduleNameLower}}.index')->with('success', '{{moduleName}} deleted successfully');
+    }
+} 

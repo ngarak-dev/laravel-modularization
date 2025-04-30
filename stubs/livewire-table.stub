@@ -1,0 +1,62 @@
+<?php
+
+namespace {{namespace}}\{{moduleName}}\Livewire;
+
+use Livewire\Component;
+use Livewire\WithPagination;
+use {{namespace}}\{{moduleName}}\Services\Interfaces\{{moduleName}}ServiceInterface;
+
+class {{moduleName}}Table extends Component
+{
+    use WithPagination;
+    
+    public $search = '';
+    public $perPage = 10;
+    public $sortField = 'created_at';
+    public $sortDirection = 'desc';
+    
+    protected $listeners = [
+        'refreshTable' => '$refresh',
+        '{{moduleNameLower}}Created' => '$refresh',
+        '{{moduleNameLower}}Updated' => '$refresh',
+        '{{moduleNameLower}}Deleted' => '$refresh',
+    ];
+
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function sortBy($field)
+    {
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortDirection = 'asc';
+        }
+        
+        $this->sortField = $field;
+    }
+
+    public function delete($id)
+    {
+        if (!$id) {
+            return;
+        }
+
+        app({{moduleName}}ServiceInterface::class)->delete($id);
+        
+        $this->dispatch('{{moduleNameLower}}Deleted');
+        session()->flash('message', '{{moduleName}} deleted successfully');
+    }
+
+    public function render()
+    {
+        $service = app({{moduleName}}ServiceInterface::class);
+        ${{moduleNameLower}}s = $service->getAll();
+        
+        return view('{{moduleNameLower}}.livewire.{{moduleNameLower}}-table', [
+            '{{moduleNameLower}}s' => ${{moduleNameLower}}s,
+        ]);
+    }
+} 

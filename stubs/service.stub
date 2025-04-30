@@ -1,0 +1,80 @@
+<?php
+
+namespace {{namespace}}\{{moduleName}}\Services;
+
+use {{namespace}}\{{moduleName}}\Repositories\Interfaces\{{moduleName}}RepositoryInterface;
+use {{namespace}}\{{moduleName}}\Services\Interfaces\{{moduleName}}ServiceInterface;
+
+class {{moduleName}}Service implements {{moduleName}}ServiceInterface
+{
+    /**
+     * @var {{moduleName}}RepositoryInterface
+     */
+    protected $repository;
+
+    /**
+     * Constructor
+     */
+    public function __construct({{moduleName}}RepositoryInterface $repository)
+    {
+        $this->repository = $repository;
+    }
+
+    /**
+     * Get all records
+     * 
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getAll()
+    {
+        return $this->repository->getAll();
+    }
+
+    /**
+     * Find record by ID
+     * 
+     * @param int $id
+     * @return {{namespace}}\{{moduleName}}\Models\{{moduleName}}|null
+     */
+    public function findById($id)
+    {
+        return $this->repository->findById($id);
+    }
+
+    /**
+     * Create a new record
+     * 
+     * @param array $data
+     * @return {{namespace}}\{{moduleName}}\Models\{{moduleName}}
+     */
+    public function create(array $data)
+    {
+        // Add any business logic before creation
+        return $this->repository->create($data);
+    }
+
+    /**
+     * Update existing record
+     * 
+     * @param int $id
+     * @param array $data
+     * @return {{namespace}}\{{moduleName}}\Models\{{moduleName}}
+     */
+    public function update($id, array $data)
+    {
+        // Add any business logic before update
+        return $this->repository->update($id, $data);
+    }
+
+    /**
+     * Delete record
+     * 
+     * @param int $id
+     * @return bool
+     */
+    public function delete($id)
+    {
+        // Add any business logic before deletion
+        return $this->repository->delete($id);
+    }
+} 
