@@ -8,11 +8,35 @@
     <title>{{ config('app.name', 'Laravel') }} - {{moduleName}} Module</title>
 
     <!-- Fonts -->
-    <link rel="dns-prefetch" href="//fonts.gstatic.com">
-    <link href="https://fonts.bunny.net/css?family=Nunito" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                    },
+                },
+            },
+        }
+    </script>
     
     <!-- Module Styles -->
     @stack('module-styles')
@@ -20,8 +44,8 @@
     <!-- Livewire Styles -->
     @livewireStyles
 </head>
-<body class="font-sans antialiased">
-    <div class="min-h-screen bg-gray-100">
+<body class="font-sans antialiased bg-gray-50 text-gray-900">
+    <div class="min-h-screen flex flex-col">
         <!-- Navigation -->
         @include('{{moduleNameLower}}::layouts.navigation')
 
@@ -35,17 +59,23 @@
         @endif
 
         <!-- Page Content -->
-        <main class="py-4">
-            <div class="container">
-                @if (session('status'))
-                    <div class="alert alert-success mb-4" role="alert">
-                        {{ session('status') }}
+        <main class="flex-grow py-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                @if (session('success'))
+                    <div class="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+                        <span class="block sm:inline">{{ session('success') }}</span>
+                    </div>
+                @endif
+
+                @if (session('error'))
+                    <div class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                        <span class="block sm:inline">{{ session('error') }}</span>
                     </div>
                 @endif
 
                 @if ($errors->any())
-                    <div class="alert alert-danger mb-4">
-                        <ul>
+                    <div class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                        <ul class="list-disc list-inside">
                             @foreach ($errors->all() as $error)
                                 <li>{{ $error }}</li>
                             @endforeach
@@ -59,8 +89,8 @@
 
         <!-- Footer -->
         <footer class="bg-white shadow mt-auto py-4">
-            <div class="container">
-                <div class="text-center text-gray-500">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center text-gray-500 text-sm">
                     &copy; {{ date('Y') }} {{ config('app.name') }} - {{moduleName}} Module
                 </div>
             </div>
