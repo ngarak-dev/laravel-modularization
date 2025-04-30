@@ -527,8 +527,8 @@ class MakeModuleCommand extends Command
 
         // Create Table view
         $content = $this->getStub('livewire-table-view', [
-            'moduleName' => $name,
-            'moduleNameLower' => strtolower($name),
+            '{{moduleName}}' => $name,
+            '{{moduleNameLower}}' => strtolower($name),
         ]);
         $this->files->put($viewsPath . '/' . Str::kebab($name) . '-table.blade.php', $content);
 
@@ -542,8 +542,8 @@ class MakeModuleCommand extends Command
 
         // Create Form view
         $content = $this->getStub('livewire-form-view', [
-            'moduleName' => $name,
-            'moduleNameLower' => strtolower($name),
+            '{{moduleName}}' => $name,
+            '{{moduleNameLower}}' => strtolower($name),
         ]);
         $this->files->put($viewsPath . '/' . Str::kebab($name) . '-form.blade.php', $content);
     }
@@ -708,6 +708,7 @@ class MakeModuleCommand extends Command
     {
         $livewirePath = $path . '/Livewire';
         $viewsPath = $path . '/Resources/views/livewire';
+        $resourceNameLower = strtolower($resourceName);
 
         // Create directories if they don't exist
         $this->files->makeDirectory($livewirePath, 0755, true);
@@ -717,14 +718,14 @@ class MakeModuleCommand extends Command
         $content = $this->getStub('livewire-table', [
             '{{namespace}}' => $namespace,
             '{{moduleName}}' => $resourceName,
-            '{{moduleNameLower}}' => strtolower($resourceName),
+            '{{moduleNameLower}}' => $resourceNameLower,
         ]);
         $this->files->put($livewirePath . '/' . $resourceName . 'Table.php', $content);
 
         // Create Table view
         $content = $this->getStub('livewire-table-view', [
-            'moduleName' => $resourceName,
-            'moduleNameLower' => strtolower($resourceName),
+            '{{moduleName}}' => $resourceName,
+            '{{moduleNameLower}}' => $resourceNameLower,
         ]);
         $this->files->put($viewsPath . '/' . Str::kebab($resourceName) . '-table.blade.php', $content);
 
@@ -732,14 +733,14 @@ class MakeModuleCommand extends Command
         $content = $this->getStub('livewire-form', [
             '{{namespace}}' => $namespace,
             '{{moduleName}}' => $resourceName,
-            '{{moduleNameLower}}' => strtolower($resourceName),
+            '{{moduleNameLower}}' => $resourceNameLower,
         ]);
         $this->files->put($livewirePath . '/' . $resourceName . 'Form.php', $content);
 
         // Create Form view
         $content = $this->getStub('livewire-form-view', [
-            'moduleName' => $resourceName,
-            'moduleNameLower' => strtolower($resourceName),
+            '{{moduleName}}' => $resourceName,
+            '{{moduleNameLower}}' => $resourceNameLower,
         ]);
         $this->files->put($viewsPath . '/' . Str::kebab($resourceName) . '-form.blade.php', $content);
     }
@@ -776,6 +777,8 @@ class MakeModuleCommand extends Command
      */
     protected function createLivewireRoutes($name, $path, $namespace)
     {
+        $moduleNameLower = strtolower($name);
+
         $content = <<<EOT
 <?php
 
@@ -792,17 +795,17 @@ use {$namespace}\\{$name}\Livewire\\{$name}Form;
 |
 */
 
-Route::get('/".strtolower($name)."', {$name}Table::class)
-    ->name('".strtolower($name).".index');
+Route::get('/{$moduleNameLower}', {$name}Table::class)
+    ->name('{$moduleNameLower}.index');
 
-Route::get('/".strtolower($name)."/create', {$name}Form::class)
-    ->name('".strtolower($name).".create');
+Route::get('/{$moduleNameLower}/create', {$name}Form::class)
+    ->name('{$moduleNameLower}.create');
 
-Route::get('/".strtolower($name)."/{id}/edit', {$name}Form::class)
-    ->name('".strtolower($name).".edit');
+Route::get('/{$moduleNameLower}/{id}/edit', {$name}Form::class)
+    ->name('{$moduleNameLower}.edit');
 
-Route::get('/".strtolower($name)."/{id}', {$name}Form::class)
-    ->name('".strtolower($name).".show');
+Route::get('/{$moduleNameLower}/{id}', {$name}Form::class)
+    ->name('{$moduleNameLower}.show');
 EOT;
 
         $this->files->put($path . '/Routes/livewire.php', $content);
