@@ -491,6 +491,13 @@ class MakeModuleCommand extends Command
         }
 
         $this->files->put($layoutsPath . '/module-layout.blade.php', $content);
+
+        // Create navigation layout
+        $content = $this->getStub('navigation', [
+            '{{moduleName}}' => $name,
+            '{{moduleNameLower}}' => strtolower($name),
+        ]);
+        $this->files->put($layoutsPath . '/navigation.blade.php', $content);
     }
 
     /**
@@ -2287,7 +2294,33 @@ class {{moduleName}}Service implements {{moduleName}}ServiceInterface
         // Add any business logic before deletion
         return $this->repository->delete($id);
     }
-}'
+}',
+            'navigation' => '<div>
+    <nav class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 h-10 w-10">
+                        <!-- Add your logo here -->
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="ml-10 flex items-baseline space-x-4">
+                            <!-- Add your navigation links here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-4 flex items-center md:ml-6">
+                        <!-- Add your user profile and logout link here -->
+                    </div>
+                </div>
+                <div class="-mr-2 flex md:hidden">
+                    <!-- Add your mobile menu button here -->
+                </div>
+            </div>
+        </div>
+    </nav>
+</div>'
         ];
     }
 
