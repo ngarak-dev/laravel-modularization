@@ -16,6 +16,13 @@ interface {{moduleName}}RepositoryInterface
     public function all(): Collection;
 
     /**
+     * Get all records (alias for service layer compatibility).
+     *
+     * @return Collection
+     */
+    public function getAll();
+
+    /**
      * Get paginated instances of the model.
      *
      * @param int $perPage
@@ -55,4 +62,12 @@ interface {{moduleName}}RepositoryInterface
      * @return {{moduleName}}|null
      */
     public function find(int $id): ?{{moduleName}};
+
+    /**
+     * Find record by ID (alias for service layer compatibility).
+     *
+     * @param int $id
+     * @return {{moduleName}}|null
+     */
+    public function findById($id);
 } 

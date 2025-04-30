@@ -35,6 +35,27 @@ class {{moduleName}}Repository implements {{moduleName}}RepositoryInterface
     }
 
     /**
+     * Get all records for service layer compatibility.
+     *
+     * @return Collection
+     */
+    public function getAll()
+    {
+        return $this->all();
+    }
+
+    /**
+     * Find record by ID for service layer compatibility.
+     *
+     * @param int $id
+     * @return {{moduleName}}|null
+     */
+    public function findById($id)
+    {
+        return $this->find($id);
+    }
+
+    /**
      * Get paginated instances of the model.
      *
      * @param int $perPage
