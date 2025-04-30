@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('{{moduleNameLower}}::layouts.module-layout')
 
 @section('content')
 <div class="container">
