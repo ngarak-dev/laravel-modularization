@@ -12,4 +12,12 @@ use {{namespace}}\{{moduleName}}\Http\Controllers\{{moduleName}}Controller;
 |
 */
 
-Route::resource('{{moduleNameLower}}', {{moduleName}}Controller::class); 
+Route::resource('{{moduleNameLower}}', {{moduleName}}Controller::class)->names([
+    'index' => '{{moduleNameLower}}.index',
+    'create' => '{{moduleNameLower}}.create',
+    'store' => '{{moduleNameLower}}.store',
+    'show' => '{{moduleNameLower}}.show',
+    'edit' => '{{moduleNameLower}}.edit',
+    'update' => '{{moduleNameLower}}.update',
+    'destroy' => '{{moduleNameLower}}.destroy',
+]); 
