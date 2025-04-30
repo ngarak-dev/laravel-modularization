@@ -187,7 +187,6 @@ class ModularizationServiceProvider extends ServiceProvider
         $webRoutesPath = "$module/Routes/web.php";
         if (File::exists($webRoutesPath)) {
             Route::middleware('web')
-                ->name($moduleNameLower . '.')
                 ->namespace("{$namespace}\\{$moduleName}\\Http\\Controllers")
                 ->group($webRoutesPath);
         }
@@ -197,7 +196,7 @@ class ModularizationServiceProvider extends ServiceProvider
         if (File::exists($apiRoutesPath)) {
             Route::prefix('api')
                 ->middleware('api')
-                ->name('api.' . $moduleNameLower . '.')
+                ->name('api.')
                 ->namespace("{$namespace}\\{$moduleName}\\Http\\Controllers")
                 ->group($apiRoutesPath);
         }
@@ -206,7 +205,6 @@ class ModularizationServiceProvider extends ServiceProvider
         $livewireRoutesPath = "$module/Routes/livewire.php";
         if (File::exists($livewireRoutesPath)) {
             Route::middleware('web')
-                ->name($moduleNameLower . '.')
                 ->group($livewireRoutesPath);
         }
     }
