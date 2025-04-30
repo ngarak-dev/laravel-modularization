@@ -91,6 +91,9 @@ class MakeModuleCommand extends Command
             }
         }
 
+        // Ensure Modules namespace is in composer.json
+        $this->ensureModulesNamespaceInComposer($namespace, $modulesPath);
+
         // Create module directories
         $this->createModuleDirectories($path);
 
@@ -2280,14 +2283,17 @@ class {{moduleName}}Service implements {{moduleName}}ServiceInterface
         $this->newLine();
         $this->line('Next steps:');
         $this->newLine();
-        $this->line("1. Add the module to your service providers in 'config/app.php':");
+        $this->line("1. Run composer dump-autoload to update autoloader:");
+        $this->line("   composer dump-autoload");
+        $this->newLine();
+        $this->line("2. Add the module to your service providers in 'config/app.php':");
         $this->line("   App\Modules\\{$name}\Providers\\{$name}ServiceProvider::class,");
         $this->newLine();
-        $this->line("2. Access your module at:");
+        $this->line("3. Access your module at:");
         $this->line("   " . url($moduleNameLower));
         $this->newLine();
-        $this->line("3. Run migrations if needed:");
-        $this->line("   php artisan migrate");
+        $this->line("4. Run migrations if needed:");
+        // $this->line("   php artisan migrate");
         $this->newLine();
     }
 
@@ -2472,6 +2478,62 @@ EOT;
             ]);
 
             $this->files->put($repoPath, $content);
+        }
+    }
+
+    /**
+     * Ensure the Modules namespace is added to composer.json
+     * 
+     * @param string $namespace The namespace to add, typically 'Modules'
+     * @param string $path The base path for modules, typically 'modules'
+     * @return void
+     */
+    protected function ensureModulesNamespaceInComposer($namespace, $path)
+    {
+        $composerPath = base_path('composer.json');
+
+        if (!$this->files->exists($composerPath)) {
+            $this->warn('composer.json not found. Cannot add namespace automatically.');
+            return;
+        }
+
+        $composerJson = json_decode($this->files->get($composerPath), true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $this->warn('Unable to parse composer.json. Cannot add namespace automatically.');
+            return;
+        }
+
+        // Check if the namespace already exists in the PSR-4 autoload
+        $modulePathName = basename($path);
+        $namespaceExists = false;
+
+        if (isset($composerJson['autoload']['psr-4'])) {
+            foreach ($composerJson['autoload']['psr-4'] as $existingNamespace => $existingPath) {
+                if (trim($existingNamespace, '\\') === $namespace) {
+                    $namespaceExists = true;
+                    break;
+                }
+            }
+        } else {
+            // Create autoload section if it doesn't exist
+            if (!isset($composerJson['autoload'])) {
+                $composerJson['autoload'] = [];
+            }
+
+            $composerJson['autoload']['psr-4'] = [];
+        }
+
+        // Add the namespace if it doesn't exist
+        if (!$namespaceExists) {
+            $composerJson['autoload']['psr-4'][$namespace . '\\'] = $modulePathName . '/';
+
+            // Write back to composer.json with proper formatting
+            $jsonOptions = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES;
+            $this->files->put($composerPath, json_encode($composerJson, $jsonOptions));
+
+            $this->info("Added '{$namespace}\\' namespace to composer.json");
+            $this->line('Remember to run "composer dump-autoload" after creating modules.');
         }
     }
 }
