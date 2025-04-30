@@ -63,7 +63,8 @@ class {{moduleName}}Service implements {{moduleName}}ServiceInterface
     public function update($id, array $data)
     {
         // Add any business logic before update
-        return $this->repository->update($id, $data);
+        $model = $this->repository->findById($id);
+        return $this->repository->update($model, $data);
     }
 
     /**
@@ -75,6 +76,7 @@ class {{moduleName}}Service implements {{moduleName}}ServiceInterface
     public function delete($id)
     {
         // Add any business logic before deletion
-        return $this->repository->delete($id);
+        $model = $this->repository->findById($id);
+        return $this->repository->delete($model);
     }
 } 
