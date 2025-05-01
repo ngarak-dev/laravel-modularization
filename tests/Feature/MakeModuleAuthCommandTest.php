@@ -47,9 +47,6 @@ class MakeModuleAuthCommandTest extends TestCase
         $this->app->singleton('command.module.make-auth', function ($app) {
             return new MakeModuleAuthCommand($app['files']);
         });
-
-        // Create a test module first
-        $this->artisan('make:module', ['name' => $this->testModuleName])->run();
     }
 
     protected function tearDown(): void
@@ -67,9 +64,9 @@ class MakeModuleAuthCommandTest extends TestCase
     {
         // Execute the command
         $this->artisan('module:make-auth', [
-            'module' => $this->testModuleName
+            'name' => $this->testModuleName
         ])
-            ->expectsOutput("Authentication scaffolding created successfully for module [{$this->testModuleName}]")
+            ->expectsOutput("Authentication module [{$this->testModuleName}] created successfully")
             ->assertExitCode(0);
 
         // Check that controllers were created
@@ -99,6 +96,11 @@ class MakeModuleAuthCommandTest extends TestCase
         $this->assertTrue($this->files->isDirectory($layoutsPath));
         $this->assertTrue($this->files->exists($layoutsPath . '/auth-layout.blade.php'));
 
+        // Check for dashboard view
+        $dashboardPath = $this->modulesPath . '/' . $this->testModuleName . '/Resources/views/dashboard';
+        $this->assertTrue($this->files->isDirectory($dashboardPath));
+        $this->assertTrue($this->files->exists($dashboardPath . '/index.blade.php'));
+
         // Check that middleware was created
         $middlewarePath = $this->modulesPath . '/' . $this->testModuleName . '/Http/Middleware';
         $this->assertTrue($this->files->isDirectory($middlewarePath));
@@ -111,16 +113,38 @@ class MakeModuleAuthCommandTest extends TestCase
         $routesPath = $this->modulesPath . '/' . $this->testModuleName . '/Routes/auth.php';
         $this->assertTrue($this->files->exists($routesPath));
 
-        // Check that service provider was updated
+        // Check for dashboard route
+        $webRoutesPath = $this->modulesPath . '/' . $this->testModuleName . '/Routes/web.php';
+        $this->assertTrue($this->files->exists($webRoutesPath));
+
+        // Check that service provider was created
         $providerPath = $this->modulesPath . '/' . $this->testModuleName . '/Providers/' . $this->testModuleName . 'ServiceProvider.php';
+        $this->assertTrue($this->files->exists($providerPath));
         $providerContent = $this->files->get($providerPath);
 
         // Verify service provider contains auth route registration
         $this->assertStringContainsString('loadRoutesFrom(__DIR__ . \'/../Routes/auth.php\')', $providerContent);
 
         // Verify service provider contains middleware registration
-        $this->assertStringContainsString('module.auth', $providerContent);
-        $this->assertStringContainsString('module.guest', $providerContent);
+        $moduleNameLower = strtolower($this->testModuleName);
+        $this->assertStringContainsString("'{$moduleNameLower}.auth'", $providerContent);
+        $this->assertStringContainsString("'{$moduleNameLower}.guest'", $providerContent);
+    }
+
+    /** @test */
+    public function it_uses_default_name_when_no_name_provided()
+    {
+        // Execute the command without a name parameter
+        $this->artisan('module:make-auth')
+            ->expectsOutput("Authentication module [Auth] created successfully")
+            ->assertExitCode(0);
+
+        // Check that the default Auth module was created
+        $this->assertTrue($this->files->isDirectory($this->modulesPath . '/Auth'));
+        $this->assertTrue($this->files->exists($this->modulesPath . '/Auth/Providers/AuthServiceProvider.php'));
+
+        // Clean up default module
+        $this->files->deleteDirectory($this->modulesPath . '/Auth');
     }
 
     /** @test */
@@ -128,7 +152,7 @@ class MakeModuleAuthCommandTest extends TestCase
     {
         // First run to create files
         $this->artisan('module:make-auth', [
-            'module' => $this->testModuleName
+            'name' => $this->testModuleName
         ])->run();
 
         // Modify a file to check it's not overwritten
@@ -139,15 +163,17 @@ class MakeModuleAuthCommandTest extends TestCase
 
         // Run command again without force
         $this->artisan('module:make-auth', [
-            'module' => $this->testModuleName
-        ])->run();
+            'name' => $this->testModuleName
+        ])
+            ->expectsQuestion("Module [{$this->testModuleName}] already exists. Do you want to continue?", true)
+            ->run();
 
         // Check that file wasn't overwritten
         $this->assertEquals($modifiedContent, $this->files->get($loginControllerPath));
 
         // Run command with force option
         $this->artisan('module:make-auth', [
-            'module' => $this->testModuleName,
+            'name' => $this->testModuleName,
             '--force' => true
         ])->run();
 
@@ -156,13 +182,18 @@ class MakeModuleAuthCommandTest extends TestCase
     }
 
     /** @test */
-    public function it_fails_when_module_does_not_exist()
+    public function it_asks_for_confirmation_when_module_already_exists()
     {
-        // Execute the command with non-existent module
-        $this->artisan('module:make-auth', [
-            'module' => 'NonExistentModule'
-        ])
-            ->expectsOutput('Module [NonExistentModule] does not exist!')
+        // Create the module first
+        $this->files->makeDirectory($this->modulesPath . '/ExistingModule', 0755, true);
+
+        // Execute the command with existing module and answer "no" to confirmation
+        $this->artisan('module:make-auth', ['name' => 'ExistingModule'])
+            ->expectsQuestion("Module [ExistingModule] already exists. Do you want to continue?", false)
+            ->expectsOutput("Operation cancelled.")
             ->assertExitCode(1);
+
+        // Clean up
+        $this->files->deleteDirectory($this->modulesPath . '/ExistingModule');
     }
 }

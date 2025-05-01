@@ -692,11 +692,11 @@ php artisan module:export ModuleName
 ### Authentication Scaffolding
 
 ```bash
-# Generate authentication scaffolding for a module
-php artisan module:make-auth ModuleName [--force]
+# Generate a standalone authentication module
+php artisan module:make-auth [ModuleName] [--force]
 ```
 
-This command creates a complete Laravel authentication system within your module, including:
+This command creates a complete standalone authentication module for your Laravel application, including:
 
 - Login and registration controllers
 - Password reset functionality
@@ -704,13 +704,14 @@ This command creates a complete Laravel authentication system within your module
 - Authentication middleware
 - Blade templates with Tailwind CSS styling
 - Authentication routes
+- Dashboard page
 
-The generated authentication system uses pure Blade templates (no Livewire) and follows Laravel's best practices while maintaining a clean, modular structure.
+The generated authentication system uses pure Blade templates (no Livewire) and follows Laravel's best practices. By default, it will create a module named 'Auth' if no name is provided.
 
-When you run this command, it generates the following structure in your module:
+When you run this command, it generates the following structure:
 
 ```
-modules/YourModule/
+modules/Auth/
 ├── Http/
 │   ├── Controllers/
 │   │   └── Auth/                       # Authentication controllers
@@ -730,18 +731,23 @@ modules/YourModule/
 │       │   ├── forgot-password.blade.php
 │       │   ├── reset-password.blade.php
 │       │   └── verify-email.blade.php
+│       ├── dashboard/
+│       │   └── index.blade.php         # Dashboard view
 │       └── layouts/
 │           └── auth-layout.blade.php   # Authentication layout
+├── Providers/
+│   └── AuthServiceProvider.php         # Service provider with route and middleware registration
 └── Routes/
-    └── auth.php                        # Authentication routes
+    ├── auth.php                        # Authentication routes
+    └── web.php                         # Dashboard routes
 ```
 
 #### Sample Generated Code
 
-**LoginController.php:**
+**Controllers (LoginController.php):**
 
 ```php
-namespace Modules\YourModule\Http\Controllers\Auth;
+namespace Modules\Auth\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -751,7 +757,7 @@ class LoginController extends Controller
 {
     public function showLoginForm()
     {
-        return view('yourmodule::auth.login');
+        return view('auth::auth.login');
     }
 
     public function login(Request $request)
@@ -763,7 +769,7 @@ class LoginController extends Controller
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
-            return redirect()->intended(route('yourmodule.dashboard'));
+            return redirect()->intended(route('auth.dashboard'));
         }
 
         return back()->withErrors([
@@ -776,62 +782,140 @@ class LoginController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('yourmodule.login');
+        return redirect()->route('auth.login');
     }
 }
 ```
 
-**Auth Routes (auth.php):**
+**Routes (auth.php):**
 
 ```php
 use Illuminate\Support\Facades\Route;
-use Modules\YourModule\Http\Controllers\Auth\LoginController;
-use Modules\YourModule\Http\Controllers\Auth\RegisterController;
-use Modules\YourModule\Http\Controllers\Auth\ForgotPasswordController;
-use Modules\YourModule\Http\Controllers\Auth\ResetPasswordController;
-use Modules\YourModule\Http\Controllers\Auth\VerifyEmailController;
+use Modules\Auth\Http\Controllers\Auth\LoginController;
+use Modules\Auth\Http\Controllers\Auth\RegisterController;
+use Modules\Auth\Http\Controllers\Auth\ForgotPasswordController;
+use Modules\Auth\Http\Controllers\Auth\ResetPasswordController;
+use Modules\Auth\Http\Controllers\Auth\VerifyEmailController;
 
 Route::middleware('web')->group(function () {
     // Guest routes
-    Route::middleware('module.guest')->group(function () {
+    Route::middleware('auth.guest')->group(function () {
         // Login routes
         Route::get('/login', [LoginController::class, 'showLoginForm'])
-            ->name('yourmodule.login');
+            ->name('auth.login');
         Route::post('/login', [LoginController::class, 'login']);
 
         // Registration routes
         Route::get('/register', [RegisterController::class, 'showRegistrationForm'])
-            ->name('yourmodule.register');
+            ->name('auth.register');
         Route::post('/register', [RegisterController::class, 'register']);
 
         // Password reset routes
         Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])
-            ->name('yourmodule.password.request');
+            ->name('auth.password.request');
         Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])
-            ->name('yourmodule.password.email');
+            ->name('auth.password.email');
         Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showResetForm'])
-            ->name('yourmodule.password.reset');
+            ->name('auth.password.reset');
         Route::post('/reset-password', [ResetPasswordController::class, 'reset'])
-            ->name('yourmodule.password.update');
+            ->name('auth.password.update');
     });
 
     // Auth routes
-    Route::middleware('module.auth')->group(function () {
+    Route::middleware('auth.auth')->group(function () {
         Route::post('/logout', [LoginController::class, 'logout'])
-            ->name('yourmodule.logout');
+            ->name('auth.logout');
 
         // Email verification routes
         Route::get('/email/verify', [VerifyEmailController::class, 'show'])
-            ->name('yourmodule.verification.notice');
+            ->name('auth.verification.notice');
         Route::get('/email/verify/{id}/{hash}', [VerifyEmailController::class, 'verify'])
-            ->name('yourmodule.verification.verify');
+            ->name('auth.verification.verify');
         Route::post('/email/verification-notification', [VerifyEmailController::class, 'send'])
-            ->name('yourmodule.verification.send');
+            ->name('auth.verification.send');
     });
 });
 ```
 
-All files use your module's namespace and include clean, Tailwind CSS-styled views for a modern UI experience. The authentication system is fully contained within your module while following Laravel's authentication patterns and best practices.
+**View (login.blade.php):**
+
+```php
+@extends('auth::layouts.auth-layout')
+
+@section('content')
+<div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
+    <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
+        <h2 class="text-center text-2xl font-bold text-gray-800 mb-8">{{ __('Login') }}</h2>
+
+        @if (session('status'))
+            <div class="mb-4 font-medium text-sm text-green-600">
+                {{ session('status') }}
+            </div>
+        @endif
+
+        <form method="POST" action="{{ route('auth.login') }}">
+            @csrf
+
+            <!-- Email Address -->
+            <div class="mb-4">
+                <label for="email" class="block text-sm font-medium text-gray-700">{{ __('Email') }}</label>
+                <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+
+                @error('email')
+                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Password -->
+            <div class="mb-4">
+                <label for="password" class="block text-sm font-medium text-gray-700">{{ __('Password') }}</label>
+                <input id="password" type="password" name="password" required
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+
+                @error('password')
+                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Remember Me -->
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <input id="remember_me" type="checkbox" name="remember"
+                           class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                    <label for="remember_me" class="ml-2 block text-sm text-gray-700">
+                        {{ __('Remember me') }}
+                    </label>
+                </div>
+
+                @if (Route::has('auth.password.request'))
+                    <a class="text-sm text-indigo-600 hover:text-indigo-900"
+                       href="{{ route('auth.password.request') }}">
+                        {{ __('Forgot your password?') }}
+                    </a>
+                @endif
+            </div>
+
+            <div class="flex items-center justify-between mt-6">
+                <div>
+                    @if (Route::has('auth.register'))
+                        <a class="text-sm text-indigo-600 hover:text-indigo-900"
+                           href="{{ route('auth.register') }}">
+                            {{ __('Need an account?') }}
+                        </a>
+                    @endif
+                </div>
+
+                <button type="submit"
+                        class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 active:bg-gray-900 focus:outline-none focus:border-gray-900 focus:ring ring-gray-300 disabled:opacity-25 transition ease-in-out duration-150">
+                    {{ __('Log in') }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+@endsection
+```
 
 ### Component Generation
 

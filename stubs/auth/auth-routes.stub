@@ -17,53 +17,40 @@ use {{namespace}}\{{moduleName}}\Http\Controllers\Auth\VerifyEmailController;
 */
 
 Route::middleware('web')->group(function () {
-    // Authentication Routes
-    Route::get('/{{moduleNameLower}}/login', [LoginController::class, 'showLoginForm'])
-        ->middleware('guest')
-        ->name('{{moduleNameLower}}.login');
+    // Guest routes
+    Route::middleware('{{moduleNameLower}}.guest')->group(function () {
+        // Login routes
+        Route::get('/login', [LoginController::class, 'showLoginForm'])
+            ->name('{{moduleNameLower}}.login');
+        Route::post('/login', [LoginController::class, 'login']);
         
-    Route::post('/{{moduleNameLower}}/login', [LoginController::class, 'login'])
-        ->middleware('guest');
+        // Registration routes
+        Route::get('/register', [RegisterController::class, 'showRegistrationForm'])
+            ->name('{{moduleNameLower}}.register');
+        Route::post('/register', [RegisterController::class, 'register']);
         
-    Route::post('/{{moduleNameLower}}/logout', [LoginController::class, 'logout'])
-        ->middleware('auth')
-        ->name('{{moduleNameLower}}.logout');
+        // Password reset routes
+        Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])
+            ->name('{{moduleNameLower}}.password.request');
+        Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])
+            ->name('{{moduleNameLower}}.password.email');
+        Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showResetForm'])
+            ->name('{{moduleNameLower}}.password.reset');
+        Route::post('/reset-password', [ResetPasswordController::class, 'reset'])
+            ->name('{{moduleNameLower}}.password.update');
+    });
 
-    // Registration Routes
-    Route::get('/{{moduleNameLower}}/register', [RegisterController::class, 'showRegistrationForm'])
-        ->middleware('guest')
-        ->name('{{moduleNameLower}}.register');
+    // Auth routes
+    Route::middleware('{{moduleNameLower}}.auth')->group(function () {
+        Route::post('/logout', [LoginController::class, 'logout'])
+            ->name('{{moduleNameLower}}.logout');
         
-    Route::post('/{{moduleNameLower}}/register', [RegisterController::class, 'register'])
-        ->middleware('guest');
-
-    // Password Reset Routes
-    Route::get('/{{moduleNameLower}}/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])
-        ->middleware('guest')
-        ->name('{{moduleNameLower}}.password.request');
-        
-    Route::post('/{{moduleNameLower}}/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])
-        ->middleware('guest')
-        ->name('{{moduleNameLower}}.password.email');
-        
-    Route::get('/{{moduleNameLower}}/reset-password/{token}', [ResetPasswordController::class, 'showResetForm'])
-        ->middleware('guest')
-        ->name('{{moduleNameLower}}.password.reset');
-        
-    Route::post('/{{moduleNameLower}}/reset-password', [ResetPasswordController::class, 'reset'])
-        ->middleware('guest')
-        ->name('{{moduleNameLower}}.password.update');
-
-    // Email Verification Routes
-    Route::get('/{{moduleNameLower}}/email/verify', [VerifyEmailController::class, 'show'])
-        ->middleware('auth')
-        ->name('{{moduleNameLower}}.verification.notice');
-        
-    Route::get('/{{moduleNameLower}}/email/verify/{id}/{hash}', [VerifyEmailController::class, 'verify'])
-        ->middleware(['auth', 'signed', 'throttle:6,1'])
-        ->name('{{moduleNameLower}}.verification.verify');
-        
-    Route::post('/{{moduleNameLower}}/email/verification-notification', [VerifyEmailController::class, 'send'])
-        ->middleware(['auth', 'throttle:6,1'])
-        ->name('{{moduleNameLower}}.verification.send');
+        // Email verification routes
+        Route::get('/email/verify', [VerifyEmailController::class, 'show'])
+            ->name('{{moduleNameLower}}.verification.notice');
+        Route::get('/email/verify/{id}/{hash}', [VerifyEmailController::class, 'verify'])
+            ->name('{{moduleNameLower}}.verification.verify');
+        Route::post('/email/verification-notification', [VerifyEmailController::class, 'send'])
+            ->name('{{moduleNameLower}}.verification.send');
+    });
 }); 

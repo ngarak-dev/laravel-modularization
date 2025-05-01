@@ -1,0 +1,86 @@
+<?php
+
+namespace {{namespace}}\{{moduleName}}\Providers;
+
+use Illuminate\Support\ServiceProvider;
+
+class {{moduleName}}ServiceProvider extends ServiceProvider
+{
+    /**
+     * Register services.
+     *
+     * @return void
+     */
+    public function register()
+    {
+        //
+    }
+
+    /**
+     * Bootstrap services.
+     *
+     * @return void
+     */
+    public function boot()
+    {
+        $this->registerTranslations();
+        $this->registerConfig();
+        $this->registerViews();
+        $this->loadMigrationsFrom(module_path('{{moduleName}}', 'Database/Migrations'));
+        $this->loadRoutesFrom(__DIR__ . '/../Routes/web.php');
+        $this->loadRoutesFrom(__DIR__ . '/../Routes/auth.php');
+
+        // Register middleware
+        $router = $this->app['router'];
+        $router->aliasMiddleware('{{moduleNameLower}}.auth', \{{namespace}}\{{moduleName}}\Http\Middleware\Authenticate::class);
+        $router->aliasMiddleware('{{moduleNameLower}}.guest', \{{namespace}}\{{moduleName}}\Http\Middleware\RedirectIfAuthenticated::class);
+    }
+
+    /**
+     * Register views.
+     *
+     * @return void
+     */
+    protected function registerViews()
+    {
+        $viewPath = resource_path('views/modules/{{moduleNameLower}}');
+        $sourcePath = module_path('{{moduleName}}', 'Resources/views');
+
+        $this->publishes([
+            $sourcePath => $viewPath
+        ], ['views', '{{moduleNameLower}}-module-views']);
+
+        $this->loadViewsFrom(array_merge([$sourcePath], []), '{{moduleNameLower}}');
+    }
+
+    /**
+     * Register translations.
+     *
+     * @return void
+     */
+    protected function registerTranslations()
+    {
+        $langPath = resource_path('lang/modules/{{moduleNameLower}}');
+
+        if (is_dir($langPath)) {
+            $this->loadTranslationsFrom($langPath, '{{moduleNameLower}}');
+        } else {
+            $this->loadTranslationsFrom(module_path('{{moduleName}}', 'Resources/lang'), '{{moduleNameLower}}');
+        }
+    }
+
+    /**
+     * Register config.
+     *
+     * @return void
+     */
+    protected function registerConfig()
+    {
+        $this->publishes([
+            module_path('{{moduleName}}', 'Config/config.php') => config_path('{{moduleNameLower}}.php'),
+        ], 'config');
+        $this->mergeConfigFrom(
+            module_path('{{moduleName}}', 'Config/config.php'), '{{moduleNameLower}}'
+        );
+    }
+} 
