@@ -597,5 +597,84 @@ EOT;
         } else {
             $this->error('Service provider not found.');
         }
+
+        // Create RouteServiceProvider
+        $this->createRouteServiceProvider($moduleName, $modulePath);
+    }
+
+    /**
+     * Create RouteServiceProvider for the module.
+     *
+     * @param string $moduleName
+     * @param string $modulePath
+     * @return void
+     */
+    protected function createRouteServiceProvider($moduleName, $modulePath)
+    {
+        $providerPath = $modulePath . '/Providers/RouteServiceProvider.php';
+        $namespace = config('modularization.namespace', 'Modules');
+        $moduleNameLower = strtolower($moduleName);
+
+        if (!$this->files->exists($providerPath)) {
+            $content = <<<EOT
+<?php
+
+namespace {$namespace}\\{$moduleName}\\Providers;
+
+use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Route;
+
+class RouteServiceProvider extends ServiceProvider
+{
+    /**
+     * The module namespace to assume when generating URLs to actions.
+     *
+     * @var string
+     */
+    protected \$moduleNamespace = '{$namespace}\\{$moduleName}\\Http\\Controllers';
+
+    /**
+     * Called before routes are registered.
+     *
+     * Register any model bindings or pattern based filters.
+     *
+     * @return void
+     */
+    public function boot()
+    {
+        parent::boot();
+    }
+
+    /**
+     * Define the routes for the application.
+     *
+     * @return void
+     */
+    public function map()
+    {
+        \$this->mapWebRoutes();
+    }
+
+    /**
+     * Define the "web" routes for the application.
+     *
+     * These routes all receive session state, CSRF protection, etc.
+     *
+     * @return void
+     */
+    protected function mapWebRoutes()
+    {
+        Route::middleware('web')
+            ->prefix('{$moduleNameLower}')
+            ->group(module_path('{$moduleName}', 'Routes/web.php'));
+    }
+}
+EOT;
+
+            $this->files->put($providerPath, $content);
+            $this->line("Created: RouteServiceProvider.php");
+        } else {
+            $this->warn("Skipped: RouteServiceProvider.php (already exists)");
+        }
     }
 }
