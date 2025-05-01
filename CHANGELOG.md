@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.1] - 2024-05-26
+
+### Fixed
+
+- Issue with missing Config/config.php file in Auth module causing "Failed to open stream" errors
+- Added automatic config file creation for the Auth module
+- Ensured Config directory is always created in the module structure
+- Fixed auth logout route naming
+
 ## [1.0.0] - 2024-05-26
 
 ### Added

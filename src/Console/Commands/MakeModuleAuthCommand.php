@@ -64,6 +64,15 @@ class MakeModuleAuthCommand extends Command
                 $this->info("Operation cancelled.");
                 return 1;
             }
+
+            // Ensure Config directory exists in existing module
+            $configDir = $modulePath . '/Config';
+            if (!$this->files->isDirectory($configDir)) {
+                $this->files->makeDirectory($configDir, 0755, true);
+                $this->createConfigFile($moduleName, $modulePath);
+            } else if (!$this->files->exists($configDir . '/config.php') || $force) {
+                $this->createConfigFile($moduleName, $modulePath);
+            }
         }
 
         // Create authentication files
@@ -101,6 +110,7 @@ class MakeModuleAuthCommand extends Command
             'Resources/views/layouts',
             'Resources/views/auth',
             'Routes',
+            'Config',
         ];
 
         foreach ($directories as $directory) {
@@ -120,6 +130,56 @@ class MakeModuleAuthCommand extends Command
 
         $this->files->put($providerPath, $providerContent);
         $this->line("Created: {$moduleName}ServiceProvider.php");
+
+        // Create config file
+        $this->createConfigFile($moduleName, $modulePath);
+    }
+
+    /**
+     * Create config file for the module.
+     *
+     * @param string $moduleName
+     * @param string $modulePath
+     * @return void
+     */
+    protected function createConfigFile($moduleName, $modulePath)
+    {
+        $configPath = $modulePath . '/Config/config.php';
+        $moduleNameLower = strtolower($moduleName);
+
+        $content = <<<EOT
+<?php
+
+return [
+    'name' => '{$moduleName}',
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication Guards
+    |--------------------------------------------------------------------------
+    |
+    | This package uses the default Laravel authentication guards.
+    | If you need custom guards, modify the config in config/auth.php
+    |
+    */
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Route Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configure the routes for the authentication module.
+    |
+    */
+    'routes' => [
+        'prefix' => '',
+        'middleware' => ['web'],
+    ],
+];
+EOT;
+
+        $this->files->put($configPath, $content);
+        $this->line("Created: Config/config.php");
     }
 
     /**
@@ -272,10 +332,11 @@ class MakeModuleAuthCommand extends Command
     protected function createDashboardView($moduleName, $path, $force)
     {
         $viewPath = $path . '/index.blade.php';
+        $moduleNameLower = strtolower($moduleName);
 
         if (!$this->files->exists($viewPath) || $force) {
             $content = <<<EOT
-@extends('{$moduleName}::layouts.auth-layout')
+@extends('{$moduleNameLower}::layouts.auth-layout')
 
 @section('content')
 <div class="py-12">
@@ -286,7 +347,7 @@ class MakeModuleAuthCommand extends Command
                 <p>You're logged in as <strong>{{ Auth::user()->name }}</strong>!</p>
                 
                 <div class="mt-6">
-                    <form method="POST" action="{{ route('{{ strtolower($moduleName) }}.logout') }}" class="inline">
+                    <form method="POST" action="{{ route('{{ $moduleNameLower }}.logout') }}" class="inline">
                         @csrf
                         <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700">
                             {{ __('Log Out') }}
