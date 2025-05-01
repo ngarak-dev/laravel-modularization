@@ -48,6 +48,7 @@ class ModularizationServiceProvider extends ServiceProvider
                 'command.module.make-event',
                 'command.module.make-translation',
                 'command.module.export',
+                'command.module.make-auth',
             ]);
         }
     }
@@ -109,6 +110,11 @@ class ModularizationServiceProvider extends ServiceProvider
         // Register module:export command
         $this->app->singleton('command.module.export', function ($app) {
             return new ModuleExportCommand($app['files']);
+        });
+
+        // Register module:make-auth command
+        $this->app->singleton('command.module.make-auth', function ($app) {
+            return new \NgarakDev\Modularization\Console\Commands\MakeModuleAuthCommand($app['files']);
         });
     }
 
@@ -342,10 +348,6 @@ class ModularizationServiceProvider extends ServiceProvider
      */
     protected function kebabCase($string): string
     {
-        return strtolower(preg_replace(
-            ['/([a-z\d])([A-Z])/', '/([^-])([A-Z][a-z])/'],
-            ['$1-$2', '$1-$2'],
-            $string
-        ));
+        return strtolower(preg_replace('/([a-z])([A-Z])/', '$1-$2', $string));
     }
 }
