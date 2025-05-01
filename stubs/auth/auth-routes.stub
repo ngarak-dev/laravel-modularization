@@ -1,0 +1,69 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use {{namespace}}\{{moduleName}}\Http\Controllers\Auth\LoginController;
+use {{namespace}}\{{moduleName}}\Http\Controllers\Auth\RegisterController;
+use {{namespace}}\{{moduleName}}\Http\Controllers\Auth\ForgotPasswordController;
+use {{namespace}}\{{moduleName}}\Http\Controllers\Auth\ResetPasswordController;
+use {{namespace}}\{{moduleName}}\Http\Controllers\Auth\VerifyEmailController;
+
+/*
+|--------------------------------------------------------------------------
+| Authentication Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register authentication routes for your module.
+|
+*/
+
+Route::middleware('web')->group(function () {
+    // Authentication Routes
+    Route::get('/{{moduleNameLower}}/login', [LoginController::class, 'showLoginForm'])
+        ->middleware('guest')
+        ->name('{{moduleNameLower}}.login');
+        
+    Route::post('/{{moduleNameLower}}/login', [LoginController::class, 'login'])
+        ->middleware('guest');
+        
+    Route::post('/{{moduleNameLower}}/logout', [LoginController::class, 'logout'])
+        ->middleware('auth')
+        ->name('{{moduleNameLower}}.logout');
+
+    // Registration Routes
+    Route::get('/{{moduleNameLower}}/register', [RegisterController::class, 'showRegistrationForm'])
+        ->middleware('guest')
+        ->name('{{moduleNameLower}}.register');
+        
+    Route::post('/{{moduleNameLower}}/register', [RegisterController::class, 'register'])
+        ->middleware('guest');
+
+    // Password Reset Routes
+    Route::get('/{{moduleNameLower}}/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])
+        ->middleware('guest')
+        ->name('{{moduleNameLower}}.password.request');
+        
+    Route::post('/{{moduleNameLower}}/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])
+        ->middleware('guest')
+        ->name('{{moduleNameLower}}.password.email');
+        
+    Route::get('/{{moduleNameLower}}/reset-password/{token}', [ResetPasswordController::class, 'showResetForm'])
+        ->middleware('guest')
+        ->name('{{moduleNameLower}}.password.reset');
+        
+    Route::post('/{{moduleNameLower}}/reset-password', [ResetPasswordController::class, 'reset'])
+        ->middleware('guest')
+        ->name('{{moduleNameLower}}.password.update');
+
+    // Email Verification Routes
+    Route::get('/{{moduleNameLower}}/email/verify', [VerifyEmailController::class, 'show'])
+        ->middleware('auth')
+        ->name('{{moduleNameLower}}.verification.notice');
+        
+    Route::get('/{{moduleNameLower}}/email/verify/{id}/{hash}', [VerifyEmailController::class, 'verify'])
+        ->middleware(['auth', 'signed', 'throttle:6,1'])
+        ->name('{{moduleNameLower}}.verification.verify');
+        
+    Route::post('/{{moduleNameLower}}/email/verification-notification', [VerifyEmailController::class, 'send'])
+        ->middleware(['auth', 'throttle:6,1'])
+        ->name('{{moduleNameLower}}.verification.send');
+}); 
