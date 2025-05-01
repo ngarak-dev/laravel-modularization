@@ -2352,7 +2352,7 @@ class {{moduleName}}Service implements {{moduleName}}ServiceInterface
         $this->line("   " . url($moduleNameLower));
         $this->newLine();
         $this->line("4. Run migrations if needed:");
-        // $this->line("   php artisan migrate");
+        $this->line("   php artisan migrate");
         $this->newLine();
     }
 

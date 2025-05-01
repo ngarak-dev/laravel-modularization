@@ -689,6 +689,150 @@ php artisan module:toggle ModuleName
 php artisan module:export ModuleName
 ```
 
+### Authentication Scaffolding
+
+```bash
+# Generate authentication scaffolding for a module
+php artisan module:make-auth ModuleName [--force]
+```
+
+This command creates a complete Laravel authentication system within your module, including:
+
+- Login and registration controllers
+- Password reset functionality
+- Email verification
+- Authentication middleware
+- Blade templates with Tailwind CSS styling
+- Authentication routes
+
+The generated authentication system uses pure Blade templates (no Livewire) and follows Laravel's best practices while maintaining a clean, modular structure.
+
+When you run this command, it generates the following structure in your module:
+
+```
+modules/YourModule/
+├── Http/
+│   ├── Controllers/
+│   │   └── Auth/                       # Authentication controllers
+│   │       ├── LoginController.php
+│   │       ├── RegisterController.php
+│   │       ├── ForgotPasswordController.php
+│   │       ├── ResetPasswordController.php
+│   │       └── VerifyEmailController.php
+│   └── Middleware/                     # Authentication middleware
+│       ├── Authenticate.php
+│       └── RedirectIfAuthenticated.php
+├── Resources/
+│   └── views/
+│       ├── auth/                       # Authentication views
+│       │   ├── login.blade.php
+│       │   ├── register.blade.php
+│       │   ├── forgot-password.blade.php
+│       │   ├── reset-password.blade.php
+│       │   └── verify-email.blade.php
+│       └── layouts/
+│           └── auth-layout.blade.php   # Authentication layout
+└── Routes/
+    └── auth.php                        # Authentication routes
+```
+
+#### Sample Generated Code
+
+**LoginController.php:**
+
+```php
+namespace Modules\YourModule\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class LoginController extends Controller
+{
+    public function showLoginForm()
+    {
+        return view('yourmodule::auth.login');
+    }
+
+    public function login(Request $request)
+    {
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+
+        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            $request->session()->regenerate();
+            return redirect()->intended(route('yourmodule.dashboard'));
+        }
+
+        return back()->withErrors([
+            'email' => 'The provided credentials do not match our records.',
+        ])->onlyInput('email');
+    }
+
+    public function logout(Request $request)
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        return redirect()->route('yourmodule.login');
+    }
+}
+```
+
+**Auth Routes (auth.php):**
+
+```php
+use Illuminate\Support\Facades\Route;
+use Modules\YourModule\Http\Controllers\Auth\LoginController;
+use Modules\YourModule\Http\Controllers\Auth\RegisterController;
+use Modules\YourModule\Http\Controllers\Auth\ForgotPasswordController;
+use Modules\YourModule\Http\Controllers\Auth\ResetPasswordController;
+use Modules\YourModule\Http\Controllers\Auth\VerifyEmailController;
+
+Route::middleware('web')->group(function () {
+    // Guest routes
+    Route::middleware('module.guest')->group(function () {
+        // Login routes
+        Route::get('/login', [LoginController::class, 'showLoginForm'])
+            ->name('yourmodule.login');
+        Route::post('/login', [LoginController::class, 'login']);
+
+        // Registration routes
+        Route::get('/register', [RegisterController::class, 'showRegistrationForm'])
+            ->name('yourmodule.register');
+        Route::post('/register', [RegisterController::class, 'register']);
+
+        // Password reset routes
+        Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])
+            ->name('yourmodule.password.request');
+        Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])
+            ->name('yourmodule.password.email');
+        Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showResetForm'])
+            ->name('yourmodule.password.reset');
+        Route::post('/reset-password', [ResetPasswordController::class, 'reset'])
+            ->name('yourmodule.password.update');
+    });
+
+    // Auth routes
+    Route::middleware('module.auth')->group(function () {
+        Route::post('/logout', [LoginController::class, 'logout'])
+            ->name('yourmodule.logout');
+
+        // Email verification routes
+        Route::get('/email/verify', [VerifyEmailController::class, 'show'])
+            ->name('yourmodule.verification.notice');
+        Route::get('/email/verify/{id}/{hash}', [VerifyEmailController::class, 'verify'])
+            ->name('yourmodule.verification.verify');
+        Route::post('/email/verification-notification', [VerifyEmailController::class, 'send'])
+            ->name('yourmodule.verification.send');
+    });
+});
+```
+
+All files use your module's namespace and include clean, Tailwind CSS-styled views for a modern UI experience. The authentication system is fully contained within your module while following Laravel's authentication patterns and best practices.
+
 ### Component Generation
 
 ```bash
