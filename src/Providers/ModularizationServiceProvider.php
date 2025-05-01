@@ -64,6 +64,9 @@ class ModularizationServiceProvider extends ServiceProvider
             'modularization'
         );
 
+        // Helper functions are autoloaded via composer.json "files" directive
+        // Make sure to run "composer dump-autoload" after installing the package
+
         // Register the ModularizationService
         $this->app->singleton('modularization', function ($app) {
             return new ModularizationService($app['files']);

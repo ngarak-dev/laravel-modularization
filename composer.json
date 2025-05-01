@@ -19,7 +19,10 @@
     "autoload": {
         "psr-4": {
             "NgarakDev\\Modularization\\": "src/"
-        }
+        },
+        "files": [
+            "src/helpers.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
@@ -33,6 +36,6 @@
             ]
         }
     },
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "prefer-stable": true
 }

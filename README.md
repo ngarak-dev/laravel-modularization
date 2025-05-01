@@ -5,6 +5,7 @@
 <a href="https://packagist.org/packages/ngarak-dev/laravel-modularization"><img src="https://img.shields.io/packagist/v/ngarak-dev/laravel-modularization.svg" alt="Latest Version"></a>
 <a href="https://packagist.org/packages/ngarak-dev/laravel-modularization"><img src="https://img.shields.io/packagist/dt/ngarak-dev/laravel-modularization.svg" alt="Total Downloads"></a>
 <a href="https://github.com/ngarak-dev/laravel-modularization/blob/main/LICENSE.md"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
+<a href="https://packagist.org/packages/ngarak-dev/laravel-modularization"><img src="https://img.shields.io/badge/Stability-Stable-brightgreen.svg" alt="Stability"></a>
 </p>
 
 This package implements a modular architecture for Laravel applications, combining the Repository Pattern and Service Layer pattern to create maintainable, scalable applications organized by business domain rather than technical function.
@@ -73,6 +74,30 @@ Edit `config/modularization.php` to:
 ### Step 4: Create Directory Structure
 
 The package will automatically create the modules directory when you create your first module.
+
+### Step 5: Run composer dump-autoload
+
+After installation, run the following command to ensure helper functions are properly loaded:
+
+```bash
+composer dump-autoload
+```
+
+## Helper Functions
+
+The package provides helper functions to simplify working with modules:
+
+### module_path()
+
+Get the path to modules or a specific module:
+
+```php
+// Get path to a module
+$modulePath = module_path('Products');  // /path/to/your/app/modules/Products
+
+// Get path to a specific directory within a module
+$viewsPath = module_path('Products', 'Resources/views');  // /path/to/your/app/modules/Products/Resources/views
+```
 
 ## Step-by-Step Usage Guide
 
