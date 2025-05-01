@@ -152,28 +152,15 @@ class MakeModuleAuthCommand extends Command
 
 return [
     'name' => '{$moduleName}',
-    
-    /*
-    |--------------------------------------------------------------------------
-    | Authentication Guards
-    |--------------------------------------------------------------------------
-    |
-    | This package uses the default Laravel authentication guards.
-    | If you need custom guards, modify the config in config/auth.php
-    |
-    */
-    
-    /*
-    |--------------------------------------------------------------------------
-    | Route Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Configure the routes for the authentication module.
-    |
-    */
+    'description' => '{$moduleName} Module',
+    'enabled' => true,
     'routes' => [
-        'prefix' => '',
+        'prefix' => '{$moduleNameLower}',
         'middleware' => ['web'],
+    ],
+    'menu' => [
+        'title' => '{$moduleName}',
+        'icon' => 'fa fa-lock',
     ],
 ];
 EOT;
@@ -347,7 +334,7 @@ EOT;
                 <p>You're logged in as <strong>{{ Auth::user()->name }}</strong>!</p>
                 
                 <div class="mt-6">
-                    <form method="POST" action="{{ route('{{ $moduleNameLower }}.logout') }}" class="inline">
+                    <form method="POST" action="{{ route('{$moduleNameLower}.logout') }}" class="inline">
                         @csrf
                         <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700">
                             {{ __('Log Out') }}

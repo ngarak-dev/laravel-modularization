@@ -49,6 +49,7 @@ class ModularizationServiceProvider extends ServiceProvider
                 'command.module.make-translation',
                 'command.module.export',
                 'command.module.make-auth',
+                'command.module.make-manager',
             ]);
         }
     }
@@ -118,6 +119,11 @@ class ModularizationServiceProvider extends ServiceProvider
         // Register module:make-auth command
         $this->app->singleton('command.module.make-auth', function ($app) {
             return new \NgarakDev\Modularization\Console\Commands\MakeModuleAuthCommand($app['files']);
+        });
+
+        // Register module:make-manager command
+        $this->app->singleton('command.module.make-manager', function ($app) {
+            return new \NgarakDev\Modularization\Console\Commands\MakeModuleManagerCommand($app['files']);
         });
     }
 

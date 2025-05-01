@@ -1398,16 +1398,17 @@ Route::apiResource(\'{{moduleNameLower}}\', {{moduleName}}Controller::class);',
             'config' => '<?php
 
 return [
-    /*
-    |--------------------------------------------------------------------------
-    | {{moduleName}} Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Configuration specific to the {{moduleName}} module.
-    |
-    */
     \'name\' => \'{{moduleName}}\',
+    \'description\' => \'{{moduleName}} Module\',
     \'enabled\' => true,
+    \'routes\' => [
+        \'prefix\' => \'{{moduleNameLower}}\',
+        \'middleware\' => [\'web\'],
+    ],
+    \'menu\' => [
+        \'title\' => \'{{moduleName}}\',
+        \'icon\' => \'fa fa-th-large\',
+    ],
 ];',
             'migration' => '<?php
 

@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.2] - 2024-05-27
+
+### Added
+
+- Standardized module configuration structure with name, description, routes, and menu settings
+- New `module:make-manager` command to create a module management dashboard
+- Module Manager UI for enabling/disabling modules through a web interface
+- Icon support for module menu items in configuration
+
+### Changed
+
+- Updated config file structure for all modules to follow a consistent format
+- Improved Authentication module with better route handling
+
 ## [1.0.1] - 2024-05-26
 
 ### Fixed

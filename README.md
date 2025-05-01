@@ -26,6 +26,7 @@ This package implements a modular architecture for Laravel applications, combini
 - [Advanced Usage](#advanced-usage)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
+- [Version History](#version-history)
 - [License](#license)
 
 ## Features
@@ -712,6 +713,9 @@ php artisan module:toggle ModuleName
 
 # Export a module as a package
 php artisan module:export ModuleName
+
+# Create a module manager dashboard
+php artisan module:make-manager [ModuleName] [--force]
 ```
 
 ### Authentication Scaffolding
@@ -961,6 +965,54 @@ php artisan module:make-translation ModuleName Language
 # Publish stubs for customization
 php artisan module:publish-stubs
 ```
+
+### Module Structure and Configuration
+
+All modules follow a standardized configuration structure:
+
+```php
+// modules/ModuleName/Config/config.php
+return [
+    'name' => 'ModuleName',           // Module display name
+    'description' => 'Description',    // Module description
+    'enabled' => true,                 // Module enabled status
+    'routes' => [
+        'prefix' => 'modulename',      // URL prefix for routes
+        'middleware' => ['web'],       // Default middleware
+    ],
+    'menu' => [
+        'title' => 'ModuleName',       // Menu item title
+        'icon' => 'fa fa-th-large',    // Font Awesome icon class
+    ],
+];
+```
+
+### Module Manager Dashboard
+
+The Module Manager provides a web interface for managing your modules. To create a module manager:
+
+```bash
+php artisan module:make-manager
+```
+
+Features:
+
+- Beautiful dashboard UI with Tailwind CSS
+- List of all installed modules with their status
+- Enable/disable modules with a single click
+- Module details including description and configuration
+- Integrated with Font Awesome icons
+
+After installation, you can access your module manager at `/modulemanager` and control all your modules from one place.
+
+The generated module manager automatically:
+
+- Scans for all modules in your application
+- Displays status, description and other details from module configs
+- Allows toggling module status (enabled/disabled)
+- Uses the icon defined in each module's config
+
+The module manager is fully customizable - you can extend it with additional functionality or modify its appearance.
 
 ## Module Structure
 
@@ -1269,6 +1321,12 @@ dd($isEnabled);
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Version History
+
+- **v1.0.2**: Added standardized config structure and module manager functionality
+- **v1.0.1**: Fixed Config directory creation issues
+- **v1.0.0**: First stable release
 
 ## License
 
