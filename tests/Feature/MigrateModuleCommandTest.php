@@ -89,7 +89,102 @@ class MigrateModuleCommandTest extends TestCase
         $this->artisan('module:migrate', ['name' => $this->testModuleName])
             ->expectsOutput("Running migrations for module [{$this->testModuleName}]...")
             ->expectsOutput("Migration output")
-            ->expectsOutput("Migrations for module [{$this->testModuleName}] completed successfully.")
+            ->expectsOutput("Running migrations for module [{$this->testModuleName}] completed successfully.")
+            ->assertExitCode(0);
+    }
+
+    /** @test */
+    public function it_runs_migrations_fresh_when_fresh_option_is_used()
+    {
+        // Mocking the Artisan::call() result
+        Artisan::shouldReceive('call')
+            ->once()
+            ->with('migrate:fresh', \Mockery::type('array'))
+            ->andReturn(0);
+
+        Artisan::shouldReceive('output')
+            ->andReturn('Fresh migration output');
+
+        $this->artisan('module:migrate', ['name' => $this->testModuleName, '--fresh' => true])
+            ->expectsOutput("Refreshing database and re-running all migrations for module [{$this->testModuleName}]...")
+            ->expectsOutput("Fresh migration output")
+            ->expectsOutput("Refreshing database and re-running all migrations for module [{$this->testModuleName}] completed successfully.")
+            ->assertExitCode(0);
+    }
+
+    /** @test */
+    public function it_rolls_back_migrations_when_rollback_option_is_used()
+    {
+        // Mocking the Artisan::call() result
+        Artisan::shouldReceive('call')
+            ->once()
+            ->with('migrate:rollback', \Mockery::type('array'))
+            ->andReturn(0);
+
+        Artisan::shouldReceive('output')
+            ->andReturn('Rollback output');
+
+        $this->artisan('module:migrate', ['name' => $this->testModuleName, '--rollback' => true])
+            ->expectsOutput("Rolling back migrations for module [{$this->testModuleName}]...")
+            ->expectsOutput("Rollback output")
+            ->expectsOutput("Rolling back migrations for module [{$this->testModuleName}] completed successfully.")
+            ->assertExitCode(0);
+    }
+
+    /** @test */
+    public function it_shows_migration_status_when_status_option_is_used()
+    {
+        // Mocking the Artisan::call() result
+        Artisan::shouldReceive('call')
+            ->once()
+            ->with('migrate:status', \Mockery::type('array'))
+            ->andReturn(0);
+
+        Artisan::shouldReceive('output')
+            ->andReturn('Status output');
+
+        $this->artisan('module:migrate', ['name' => $this->testModuleName, '--status' => true])
+            ->expectsOutput("Showing migration status for module [{$this->testModuleName}]...")
+            ->expectsOutput("Status output")
+            ->expectsOutput("Showing migration status for module [{$this->testModuleName}] completed successfully.")
+            ->assertExitCode(0);
+    }
+
+    /** @test */
+    public function it_resets_migrations_when_reset_option_is_used()
+    {
+        // Mocking the Artisan::call() result
+        Artisan::shouldReceive('call')
+            ->once()
+            ->with('migrate:reset', \Mockery::type('array'))
+            ->andReturn(0);
+
+        Artisan::shouldReceive('output')
+            ->andReturn('Reset output');
+
+        $this->artisan('module:migrate', ['name' => $this->testModuleName, '--reset' => true])
+            ->expectsOutput("Resetting all migrations for module [{$this->testModuleName}]...")
+            ->expectsOutput("Reset output")
+            ->expectsOutput("Resetting all migrations for module [{$this->testModuleName}] completed successfully.")
+            ->assertExitCode(0);
+    }
+
+    /** @test */
+    public function it_refreshes_migrations_when_refresh_option_is_used()
+    {
+        // Mocking the Artisan::call() result
+        Artisan::shouldReceive('call')
+            ->once()
+            ->with('migrate:refresh', \Mockery::type('array'))
+            ->andReturn(0);
+
+        Artisan::shouldReceive('output')
+            ->andReturn('Refresh output');
+
+        $this->artisan('module:migrate', ['name' => $this->testModuleName, '--refresh' => true])
+            ->expectsOutput("Refreshing all migrations for module [{$this->testModuleName}]...")
+            ->expectsOutput("Refresh output")
+            ->expectsOutput("Refreshing all migrations for module [{$this->testModuleName}] completed successfully.")
             ->assertExitCode(0);
     }
 

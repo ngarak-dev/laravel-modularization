@@ -718,10 +718,10 @@ php artisan module:export ModuleName
 php artisan module:make-manager [ModuleName] [--force]
 
 # Run migrations for a specific module
-php artisan module:migrate ModuleName [--force] [--seed] [--step] [--pretend]
+php artisan module:migrate ModuleName [--force] [--seed] [--step] [--pretend] [--fresh] [--rollback] [--status] [--reset] [--refresh]
 
 # Run migrations for all modules
-php artisan module:migrate-all [--force] [--seed] [--step] [--pretend] [--only-enabled]
+php artisan module:migrate-all [--force] [--seed] [--step] [--pretend] [--only-enabled] [--fresh] [--rollback] [--status] [--reset] [--refresh]
 ```
 
 ### Authentication Scaffolding
@@ -761,13 +761,13 @@ modules/Auth/
 ├── Resources/
 │   └── views/
 │       ├── auth/                       # Authentication views
-│       │   ├── login.blade.php
-│       │   ├── register.blade.php
-│       │   ├── forgot-password.blade.php
-│       │   ├── reset-password.blade.php
-│       │   └── verify-email.blade.php
+│           ├── login.blade.php
+│           ├── register.blade.php
+│           ├── forgot-password.blade.php
+│           ├── reset-password.blade.php
+│           └── verify-email.blade.php
 │       ├── dashboard/
-│       │   └── index.blade.php         # Dashboard view
+│           └── index.blade.php         # Dashboard view
 │       └── layouts/
 │           └── auth-layout.blade.php   # Authentication layout
 ├── Providers/
@@ -990,6 +990,25 @@ Options:
 - `--step`: Run the migrations incrementally
 - `--pretend`: Show the SQL queries that would run without actually executing them
 
+#### Additional Migration Operations
+
+```bash
+# Run fresh migrations (drop all tables and re-run migrations)
+php artisan module:migrate ModuleName --fresh
+
+# Rollback the last batch of migrations
+php artisan module:migrate ModuleName --rollback
+
+# Show migration status
+php artisan module:migrate ModuleName --status
+
+# Reset all migrations (rollback all migrations)
+php artisan module:migrate ModuleName --reset
+
+# Refresh all migrations (reset and re-migrate)
+php artisan module:migrate ModuleName --refresh
+```
+
 ```bash
 # Run migrations for all modules
 php artisan module:migrate-all [--force] [--seed] [--step] [--pretend] [--only-enabled]
@@ -998,6 +1017,8 @@ php artisan module:migrate-all [--force] [--seed] [--step] [--pretend] [--only-e
 The `module:migrate-all` command runs migrations for all modules, with an additional option:
 
 - `--only-enabled`: Only run migrations for modules that are enabled
+
+All the migration operations (fresh, rollback, status, reset, refresh) are also available for the `module:migrate-all` command.
 
 This helps you manage your database migrations in a modular way, allowing you to:
 

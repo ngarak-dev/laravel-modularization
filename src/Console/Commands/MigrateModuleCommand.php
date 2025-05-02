@@ -18,7 +18,12 @@ class MigrateModuleCommand extends Command
                             {--force : Force the operation to run when in production}
                             {--seed : Indicates if the seed task should be re-run}
                             {--step : Force the migrations to be run so they can be rolled back individually}
-                            {--pretend : Dump the SQL queries that would be run}';
+                            {--pretend : Dump the SQL queries that would be run}
+                            {--fresh : Drop all tables and re-run all migrations}
+                            {--rollback : Rollback the last database migration}
+                            {--status : Show the status of each migration}
+                            {--reset : Rollback all database migrations}
+                            {--refresh : Reset and re-run all migrations}';
 
     /**
      * The console command description.
@@ -51,9 +56,10 @@ class MigrateModuleCommand extends Command
             return 0;
         }
 
-        // Get options
+        // Get base options
         $options = ['--path' => str_replace(base_path() . '/', '', $migrationsPath)];
 
+        // Process standard options
         if ($this->option('force')) {
             $options['--force'] = true;
         }
@@ -70,16 +76,37 @@ class MigrateModuleCommand extends Command
             $options['--pretend'] = true;
         }
 
-        // Run the migrations
-        $this->info("Running migrations for module [{$moduleName}]...");
-        $result = Artisan::call('migrate', $options);
+        // Determine which migrate command to run based on flags
+        $command = 'migrate';
+        $action = 'Running migrations';
 
-        $this->info(Artisan::output());
+        if ($this->option('fresh')) {
+            $command = 'migrate:fresh';
+            $action = 'Refreshing database and re-running all migrations';
+        } else if ($this->option('rollback')) {
+            $command = 'migrate:rollback';
+            $action = 'Rolling back migrations';
+        } else if ($this->option('status')) {
+            $command = 'migrate:status';
+            $action = 'Showing migration status';
+        } else if ($this->option('reset')) {
+            $command = 'migrate:reset';
+            $action = 'Resetting all migrations';
+        } else if ($this->option('refresh')) {
+            $command = 'migrate:refresh';
+            $action = 'Refreshing all migrations';
+        }
+
+        // Run the migrations
+        $this->info("{$action} for module [{$moduleName}]...");
+        $result = Artisan::call($command, $options);
+
+        $this->output->write(Artisan::output());
 
         if ($result === 0) {
-            $this->info("Migrations for module [{$moduleName}] completed successfully.");
+            $this->info("{$action} for module [{$moduleName}] completed successfully.");
         } else {
-            $this->error("Migrations for module [{$moduleName}] failed.");
+            $this->error("{$action} for module [{$moduleName}] failed.");
         }
 
         return $result;
