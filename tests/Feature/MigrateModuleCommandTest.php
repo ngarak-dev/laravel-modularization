@@ -96,19 +96,34 @@ class MigrateModuleCommandTest extends TestCase
     /** @test */
     public function it_runs_migrations_fresh_when_fresh_option_is_used()
     {
+        // Mocking file system operations for table detection
+        \Mockery::mock('alias:Illuminate\Support\Facades\DB')
+            ->shouldReceive('table->whereIn->get')
+            ->andReturn(collect());
+
+        \Mockery::mock('alias:Illuminate\Support\Facades\Schema')
+            ->shouldReceive('disableForeignKeyConstraints')
+            ->once()
+            ->shouldReceive('enableForeignKeyConstraints')
+            ->once()
+            ->shouldReceive('hasTable')
+            ->andReturn(true)
+            ->shouldReceive('dropIfExists')
+            ->times(1);
+
         // Mocking the Artisan::call() result
         Artisan::shouldReceive('call')
             ->once()
-            ->with('migrate:fresh', \Mockery::type('array'))
+            ->with('migrate', \Mockery::type('array'))
             ->andReturn(0);
 
         Artisan::shouldReceive('output')
-            ->andReturn('Fresh migration output');
+            ->andReturn('Migration output');
 
         $this->artisan('module:migrate', ['name' => $this->testModuleName, '--fresh' => true])
-            ->expectsOutput("Refreshing database and re-running all migrations for module [{$this->testModuleName}]...")
-            ->expectsOutput("Fresh migration output")
-            ->expectsOutput("Refreshing database and re-running all migrations for module [{$this->testModuleName}] completed successfully.")
+            ->expectsOutput("Executing fresh migrations for module [{$this->testModuleName}]...")
+            ->expectsOutput("Migration output")
+            ->expectsOutput("Fresh migrations for module [{$this->testModuleName}] completed successfully.")
             ->assertExitCode(0);
     }
 

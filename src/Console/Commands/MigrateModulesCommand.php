@@ -76,6 +76,9 @@ class MigrateModulesCommand extends Command
         $failedModules = [];
         $successCount = 0;
 
+        // Process each module
+        $this->info("Starting {$action} process for all modules" . ($onlyEnabled ? " (enabled only)" : "") . "...");
+
         foreach ($modules as $module) {
             // Skip disabled modules if only-enabled flag is set
             if ($onlyEnabled) {
@@ -96,7 +99,15 @@ class MigrateModulesCommand extends Command
                 }
             }
 
-            // Build command options
+            // First check if the module has migrations
+            $migrationsPath = $modulesPath . '/' . $module . '/Database/Migrations';
+            if (!File::isDirectory($migrationsPath) || count(File::glob($migrationsPath . '/*.php')) === 0) {
+                $this->info("Skipping module [{$module}] - no migrations found.");
+                continue;
+            }
+
+            // Build command options - always pass all options to the module:migrate command
+            // which will handle module-specific migrations safely
             $options = ['name' => $module];
 
             if ($this->option('force')) {
@@ -135,7 +146,7 @@ class MigrateModulesCommand extends Command
                 $options['--refresh'] = true;
             }
 
-            // Execute migration for this module
+            // Execute migration for this module using module:migrate which ensures scope safety
             $this->info("\nProcessing {$action} for module [{$module}]...");
             $result = Artisan::call('module:migrate', $options);
 
