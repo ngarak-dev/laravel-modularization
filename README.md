@@ -195,7 +195,120 @@ modules/Inventory/
 ...
 ```
 
-### 5. Define Your Model
+### 5. Add Resource Controller and Routes (Optional)
+
+```bash
+php artisan module:make Products --with-resource
+```
+
+This generates a resourceful controller with all standard CRUD methods and registers resource routes:
+
+```
+modules/Products/
+├── Http/
+│   ├── Controllers/
+│   │   └── ProductsController.php  # With resource methods: index, create, store, show, edit, update, destroy
+├── Routes/
+│   └── web.php                     # With resource routes
+...
+```
+
+The generated controller includes all RESTful resource methods following Laravel's conventions:
+
+```php
+// modules/Products/Http/Controllers/ProductsController.php
+namespace Modules\Products\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
+
+class ProductsController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     * @return \Illuminate\View\View
+     */
+    public function index()
+    {
+        return view('products::index');
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     * @return \Illuminate\View\View
+     */
+    public function create()
+    {
+        return view('products::create');
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function store(Request $request)
+    {
+        // Store logic here
+
+        return redirect()->route('products.index');
+    }
+
+    /**
+     * Show the specified resource.
+     * @param int $id
+     * @return \Illuminate\View\View
+     */
+    public function show($id)
+    {
+        return view('products::show', compact('id'));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     * @param int $id
+     * @return \Illuminate\View\View
+     */
+    public function edit($id)
+    {
+        return view('products::edit', compact('id'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function update(Request $request, $id)
+    {
+        // Update logic here
+
+        return redirect()->route('products.index');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     * @param int $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function destroy($id)
+    {
+        // Delete logic here
+
+        return redirect()->route('products.index');
+    }
+}
+```
+
+The routes are also automatically registered as a resource in web.php:
+
+```php
+// modules/Products/Routes/web.php
+Route::resource('products', 'ProductsController');
+```
+
+### 6. Define Your Model
 
 Create a model in your module:
 
@@ -221,7 +334,7 @@ class Product extends Model
 }
 ```
 
-### 6. Create a Migration
+### 7. Create a Migration
 
 ```bash
 php artisan make:migration create_products_table
@@ -256,7 +369,7 @@ return new class extends Migration
 };
 ```
 
-### 7. Implement Repository Interface and Class
+### 8. Implement Repository Interface and Class
 
 The repository interface and class should already be scaffolded. Update them to match your model:
 
@@ -324,7 +437,7 @@ class ProductRepository implements ProductRepositoryInterface
 }
 ```
 
-### 8. Implement Service Interface and Class
+### 9. Implement Service Interface and Class
 
 ```php
 // modules/Products/Services/Interfaces/ProductServiceInterface.php
@@ -389,7 +502,7 @@ class ProductService implements ProductServiceInterface
 }
 ```
 
-### 9. Register Dependencies in Service Provider
+### 10. Register Dependencies in Service Provider
 
 The module service provider is automatically created and registered. Bind your interfaces:
 
@@ -418,7 +531,7 @@ class ProductsServiceProvider extends ServiceProvider
 }
 ```
 
-### 10. Update Controllers
+### 11. Update Controllers
 
 The web and API controllers should already be scaffolded. Update them to use your service:
 
@@ -540,7 +653,7 @@ class ProductsController extends Controller
 }
 ```
 
-### 11. Create Form Requests
+### 12. Create Form Requests
 
 Generate form requests for validation:
 
@@ -592,7 +705,7 @@ class UpdateProductRequest extends FormRequest
 }
 ```
 
-### 12. Add Routes
+### 13. Add Routes
 
 Routes are already set up in the module, but you may need to customize them:
 
@@ -622,7 +735,7 @@ Route::middleware('api')->prefix('api')->group(function() {
 });
 ```
 
-### 13. Create Livewire Components (Optional)
+### 14. Create Livewire Components (Optional)
 
 You can add Livewire components to an existing module:
 
@@ -706,7 +819,7 @@ Use the component in your views:
 
 ```bash
 # Create a new module
-php artisan module:make ModuleName [--api] [--with-views] [--with-livewire] [--force]
+php artisan module:make ModuleName [--api] [--with-views] [--with-livewire] [--with-resource] [--force]
 
 # Enable or disable a module
 php artisan module:toggle ModuleName
