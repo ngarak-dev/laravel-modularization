@@ -716,6 +716,12 @@ php artisan module:export ModuleName
 
 # Create a module manager dashboard
 php artisan module:make-manager [ModuleName] [--force]
+
+# Run migrations for a specific module
+php artisan module:migrate ModuleName [--force] [--seed] [--step] [--pretend]
+
+# Run migrations for all modules
+php artisan module:migrate-all [--force] [--seed] [--step] [--pretend] [--only-enabled]
 ```
 
 ### Authentication Scaffolding
@@ -965,6 +971,39 @@ php artisan module:make-translation ModuleName Language
 # Publish stubs for customization
 php artisan module:publish-stubs
 ```
+
+### Module Migrations
+
+The package provides commands to run migrations specifically for your modules:
+
+```bash
+# Run migrations for a specific module
+php artisan module:migrate ModuleName [--force] [--seed] [--step] [--pretend]
+```
+
+This command runs the migrations located in the `Database/Migrations` directory of the specified module.
+
+Options:
+
+- `--force`: Force the operation to run in production
+- `--seed`: Run the database seeds after migration
+- `--step`: Run the migrations incrementally
+- `--pretend`: Show the SQL queries that would run without actually executing them
+
+```bash
+# Run migrations for all modules
+php artisan module:migrate-all [--force] [--seed] [--step] [--pretend] [--only-enabled]
+```
+
+The `module:migrate-all` command runs migrations for all modules, with an additional option:
+
+- `--only-enabled`: Only run migrations for modules that are enabled
+
+This helps you manage your database migrations in a modular way, allowing you to:
+
+- Run migrations for specific modules during development
+- Deploy only certain modules to production
+- Skip migrations for disabled modules
 
 ### Module Structure and Configuration
 

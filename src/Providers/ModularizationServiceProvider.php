@@ -15,6 +15,8 @@ use NgarakDev\Modularization\Console\Commands\MakeModuleTranslationCommand;
 use NgarakDev\Modularization\Console\Commands\ModuleExportCommand;
 use NgarakDev\Modularization\Console\Commands\ModuleToggleCommand;
 use NgarakDev\Modularization\Console\Commands\PublishStubsCommand;
+use NgarakDev\Modularization\Console\Commands\MigrateModuleCommand;
+use NgarakDev\Modularization\Console\Commands\MigrateModulesCommand;
 use NgarakDev\Modularization\ModularizationService;
 
 class ModularizationServiceProvider extends ServiceProvider
@@ -50,6 +52,8 @@ class ModularizationServiceProvider extends ServiceProvider
                 'command.module.export',
                 'command.module.make-auth',
                 'command.module.make-manager',
+                'command.module.migrate',
+                'command.module.migrate-all',
             ]);
         }
     }
@@ -124,6 +128,16 @@ class ModularizationServiceProvider extends ServiceProvider
         // Register module:make-manager command
         $this->app->singleton('command.module.make-manager', function ($app) {
             return new \NgarakDev\Modularization\Console\Commands\MakeModuleManagerCommand($app['files']);
+        });
+
+        // Register module:migrate command
+        $this->app->singleton('command.module.migrate', function ($app) {
+            return new MigrateModuleCommand();
+        });
+
+        // Register module:migrate-all command
+        $this->app->singleton('command.module.migrate-all', function ($app) {
+            return new MigrateModulesCommand();
         });
     }
 
