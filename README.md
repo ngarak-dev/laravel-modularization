@@ -1090,6 +1090,19 @@ php artisan module:publish-stubs
 The package provides commands to run migrations specifically for your modules:
 
 ```bash
+# Create a migration for a specific module
+php artisan module:make-migration migration_name ModuleName [--create=table_name] [--table=table_name] [--path=custom/path]
+```
+
+This command creates a new migration file in the specified module's `Database/Migrations` directory.
+
+Options:
+
+- `--create=table_name`: Create a new table migration
+- `--table=table_name`: Create a table migration for an existing table
+- `--path=custom/path`: Specify a custom path within the module for the migration
+
+```bash
 # Run migrations for a specific module
 php artisan module:migrate ModuleName [--force] [--seed] [--step] [--pretend]
 ```
