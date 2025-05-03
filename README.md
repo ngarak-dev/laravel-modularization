@@ -100,6 +100,15 @@ $modulePath = module_path('Products');  // /path/to/your/app/modules/Products
 $viewsPath = module_path('Products', 'Resources/views');  // /path/to/your/app/modules/Products/Resources/views
 ```
 
+The `module_path()` function is especially useful for:
+
+- Loading view files from specific module directories
+- Including configuration files
+- Specifying paths for migrations and seeders
+- Working with module-specific assets
+
+Note: The function respects the `modules_path` setting in your `config/modularization.php` file, so if you change the default modules directory, this function will continue to work correctly.
+
 ## Step-by-Step Usage Guide
 
 ### 1. Create Your First Module
@@ -819,16 +828,32 @@ Use the component in your views:
 
 ```bash
 # Create a new module
-php artisan module:make ModuleName [--api] [--with-views] [--with-livewire] [--with-resource] [--force]
+php artisan module:make ModuleName [options]
+# Alternative command
+php artisan make:module ModuleName [options]
+
+# Module creation options:
+#  --api                    : Generate API controller and routes
+#  --force                  : Force overwrite if module already exists
+#  --resource=ResourceName  : Create a resource within the module (can specify multiple separated by comma)
+#  --with-views             : Generate view files for the module
+#  --with-livewire          : Generate Livewire components
+#  --with-livewire-only     : Generate only Livewire components without controllers
+#  --with-crud              : Generate CRUD operations
+#  --with-translations      : Generate translation files (en, es, fr, de)
+#  --languages=*            : Specify languages for translation files
 
 # Enable or disable a module
-php artisan module:toggle ModuleName
+php artisan module:toggle ModuleName [--enable] [--disable]
 
 # Export a module as a package
 php artisan module:export ModuleName
 
 # Create a module manager dashboard
 php artisan module:make-manager [ModuleName] [--force]
+
+# Create module-specific migrations
+php artisan module:make-migration migration_name ModuleName [--create=table_name] [--table=table_name] [--path=custom/path]
 
 # Run migrations for a specific module
 php artisan module:migrate ModuleName [--force] [--seed] [--step] [--pretend] [--fresh] [--rollback] [--status] [--reset] [--refresh]
@@ -1072,10 +1097,10 @@ Route::middleware('web')->group(function () {
 php artisan module:make-livewire ModuleName ComponentName [--force] [--subdirectory=Subfolder] [--view-only] [--class-only]
 
 # Create module-specific events
-php artisan module:make-event ModuleName EventName
+php artisan module:make-event ModuleName EventName [--force]
 
 # Create module-specific translations
-php artisan module:make-translation ModuleName Language
+php artisan module:make-translation ModuleName Language [--force]
 ```
 
 ### Customization
@@ -1289,10 +1314,49 @@ The repository pattern separates data access logic from business logic:
 
 ```php
 // Interface defines the contract
-interface ProductRepositoryInterface { ... }
+interface ProductRepositoryInterface {
+    public function all();
+    public function find($id);
+    public function create(array $data);
+    public function update($id, array $data);
+    public function delete($id);
+    // Added compatibility methods to standardize naming
+    public function getAll();
+    public function findById($id);
+}
 
 // Implementation handles actual data access
-class ProductRepository implements ProductRepositoryInterface { ... }
+class ProductRepository implements ProductRepositoryInterface {
+    protected $model;
+
+    public function __construct(Product $model)
+    {
+        $this->model = $model;
+    }
+
+    public function all()
+    {
+        return $this->model->all();
+    }
+
+    public function find($id)
+    {
+        return $this->model->findOrFail($id);
+    }
+
+    // Compatibility methods to standardize naming
+    public function getAll()
+    {
+        return $this->all();
+    }
+
+    public function findById($id)
+    {
+        return $this->find($id);
+    }
+
+    // Other methods...
+}
 ```
 
 Benefits:
@@ -1300,6 +1364,7 @@ Benefits:
 - Makes code more testable by allowing mock repositories in tests
 - Centralizes data access logic
 - Enables easy swapping of data sources without affecting business logic
+- Added compatibility methods maintain consistency between repository and service naming conventions
 
 ### Service Layer Pattern
 
@@ -1307,17 +1372,77 @@ The service layer contains business logic:
 
 ```php
 // Interface defines the contract
-interface ProductServiceInterface { ... }
+interface ProductServiceInterface {
+    public function getAllProducts();
+    public function getProductById($id);
+    public function createProduct(array $data);
+    public function updateProduct($id, array $data);
+    public function deleteProduct($id);
+}
 
 // Implementation contains business rules
-class ProductService implements ProductServiceInterface { ... }
+class ProductService implements ProductServiceInterface {
+    protected $repository;
+
+    public function __construct(ProductRepositoryInterface $repository)
+    {
+        $this->repository = $repository;
+    }
+
+    public function getAllProducts()
+    {
+        return $this->repository->getAll();
+    }
+
+    public function getProductById($id)
+    {
+        return $this->repository->findById($id);
+    }
+
+    // Other methods...
+}
+```
+
+### View & Layout System
+
+The package includes a module-specific view and layout system:
+
+```
+modules/Products/
+├── Resources/
+│   └── views/
+│       ├── layouts/
+│       │   ├── module-layout.blade.php    # Module-specific layout with consistent structure
+│       │   └── navigation.blade.php       # Module-specific navigation menu
+│       └── products/                      # Module views
+│           ├── index.blade.php
+│           ├── create.blade.php
+│           ├── edit.blade.php
+│           └── show.blade.php
 ```
 
 Benefits:
 
-- Separates business logic from controllers
-- Promotes reusability across controllers (web, API)
-- Makes business rules explicit and testable
+- Each module has its own isolated view structure
+- Module-specific layouts allow for customization
+- Navigation can be tailored to module functionality
+- Views are namespaced to avoid conflicts
+
+To use module views in controllers:
+
+```php
+// Inside a module controller
+return view('products::products.index');  // Uses modules/Products/Resources/views/products/index.blade.php
+```
+
+For layouts:
+
+```php
+// Inside a module view
+@extends('products::layouts.module-layout')
+```
+
+The package's view system ensures each module has its own isolated views while maintaining a consistent structure across your application.
 
 ## Facade Usage
 
@@ -1479,30 +1604,78 @@ public function boot()
 
 ## Troubleshooting
 
-### Common Issues
+### Common Issues and Solutions
 
-**Issue**: Module views not found
-**Solution**: Ensure you're using the correct namespace: `modulename::view-name`
+#### View Not Found Errors
 
-**Issue**: Service bindings not working
-**Solution**: Make sure your module's service provider is properly registered and bindings are in the `register()` method
+If you encounter "View not found" errors:
 
-**Issue**: Routes not accessible
-**Solution**: Check that your routes are properly defined with the correct middleware and namespaces
+1. Make sure your view exists in the module's Resources/views directory
+2. Check that you're using the correct namespace format (`modulename::view`)
+3. Verify that your module's service provider properly loads views
+4. Ensure the module is enabled (no .disabled file in module directory)
 
-### Debugging
-
-To debug module discovery and registration:
+##### Example:
 
 ```php
-// Get all registered modules
-$modules = app('modularization')->getModules();
-dd($modules);
+// Correct view reference
+return view('products::products.index');
 
-// Check if a specific module is enabled
-$isEnabled = app('modularization')->isEnabled('ModuleName');
-dd($isEnabled);
+// Incorrect view reference
+return view('products.index');  // Missing module namespace
 ```
+
+#### Route Issues (Double-Prefixing)
+
+If your route names are being double-prefixed (e.g., "products.products.index"):
+
+1. Make sure you're explicitly naming routes in your routes file:
+
+```php
+// In modules/Products/Routes/web.php
+Route::resource('products', 'ProductsController')->names([
+    'index' => 'products.index',
+    'create' => 'products.create',
+    'store' => 'products.store',
+    'show' => 'products.show',
+    'edit' => 'products.edit',
+    'update' => 'products.update',
+    'destroy' => 'products.destroy',
+]);
+```
+
+#### Repository-Service Method Mismatch
+
+If you're getting errors about undefined methods between repositories and services:
+
+1. Make sure your repository implements both standard methods (`all()`, `find()`) and compatibility methods (`getAll()`, `findById()`)
+2. Use appropriate method names in your service classes (`getAll()`, `findById()`)
+
+#### Module Not Being Discovered
+
+If your module is not auto-discovered:
+
+1. Check that your module directory structure follows the expected pattern
+2. Verify that the module's service provider exists and is properly formatted
+3. Make sure there's no `.disabled` file in the module directory
+4. Run `composer dump-autoload` to refresh class autoloading
+
+#### Navigation Not Displaying Correctly
+
+If your module's navigation isn't displaying correctly:
+
+1. Check that your module has a `Resources/views/layouts/navigation.blade.php` file
+2. Verify that your module-layout.blade.php correctly includes this navigation file
+3. Make sure you're using the module's layout in your views with `@extends('modulename::layouts.module-layout')`
+
+#### Missing Navigation File in New Modules
+
+If new modules don't have a navigation.blade.php file:
+
+1. Make sure you're using the latest version of the package (v0.1.5-alpha or later)
+2. Run `php artisan module:publish-stubs` to update your local stubs
+3. Create a new module with the `--with-views` option
+4. Verify that the navigation file is created in `Resources/views/layouts/`
 
 ## Contributing
 
@@ -1510,9 +1683,65 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Version History
 
-- **v1.0.2**: Added standardized config structure and module manager functionality
-- **v1.0.1**: Fixed Config directory creation issues
-- **v1.0.0**: First stable release
+### v1.0.6 (Latest)
+
+- Fixed repository-service method naming mismatch by adding compatibility methods (`getAll()`, `findById()`)
+- Fixed double-prefixing of route names in module routes
+- Resolved "View [layouts.app] not found" errors by adding module-specific navigation file
+- Updated view stubs to use module-specific layouts
+- Created navigation.stub for new modules
+- Fixed type errors in the repository pattern implementation
+- Enhanced route naming convention
+
+### v1.0.5
+
+- Added module:make-migration command for creating module-specific migrations
+- Support for custom migration paths within modules
+- Options for table creation and modification in module migrations
+
+### v1.0.4
+
+- Added module migration commands to run migrations for specific modules
+- Added migrate:fresh, migrate:rollback, and migrate:status functionality
+- Expanded documentation for resource generation
+
+### v1.0.3
+
+- Fixed missing RouteServiceProvider in module:make-manager command
+- Improved module manager routes registration
+
+### v1.0.2
+
+- Added module_path() helper function for easier module path resolution
+- Added standardized config structure and module manager dashboard
+- Created Module Manager UI for enabling/disabling modules
+- Added icon support for module menu items in configuration
+
+### v1.0.1
+
+- Fixed missing Config/config.php file in Auth module
+- Added automatic config file creation for Auth module
+- Ensured Config directory is always created in module structure
+
+### v1.0.0
+
+- First stable release with full feature set
+- Complete authentication module generation
+- Enhanced view styling and module discovery
+
+### v0.1.9-alpha
+
+- Beta release with authentication scaffolding
+- Improved repository and service pattern implementation
+
+### v0.1.4-alpha
+
+- Initial public release with core functionality
+- Added module generation capabilities
+- Implemented repository pattern infrastructure
+- Added service layer implementation
+- Built module discovery and auto-registration
+- Integrated Livewire component support
 
 ## License
 
