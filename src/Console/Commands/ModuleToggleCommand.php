@@ -5,6 +5,8 @@ namespace NgarakDev\Modularization\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
+use NgarakDev\Modularization\Exceptions\InvalidModuleNameException;
+use NgarakDev\Modularization\Support\ModulePathResolver;
 
 class ModuleToggleCommand extends Command
 {
@@ -13,7 +15,7 @@ class ModuleToggleCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'module:toggle {name : The name of the module} {--disable : Disable the module instead of enabling it}';
+    protected $signature = 'module:toggle {name : The name of the module} {--disable : Disable the module instead of enabling it} {--enable : Explicitly enable the module}';
 
     /**
      * The console command description.
@@ -51,8 +53,18 @@ class ModuleToggleCommand extends Command
         $moduleName = $this->argument('name');
         $disable = $this->option('disable');
 
+        if ($disable && $this->option('enable')) {
+            $this->error('Choose either --enable or --disable, not both.');
+            return self::FAILURE;
+        }
+
         $modulesPath = base_path(config('modularization.modules_path', 'modules'));
-        $moduleDir = $modulesPath . '/' . $moduleName;
+        try {
+            $moduleDir = (new ModulePathResolver($modulesPath))->module($moduleName);
+        } catch (InvalidModuleNameException $exception) {
+            $this->error($exception->getMessage());
+            return self::FAILURE;
+        }
 
         // Check if module exists
         if (!$this->files->isDirectory($moduleDir)) {

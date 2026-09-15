@@ -1,5 +1,7 @@
 <?php
 
+use NgarakDev\Modularization\Support\ModulePathResolver;
+
 if (!function_exists('module_path')) {
     /**
      * Get the path to the specified module.
@@ -8,11 +10,12 @@ if (!function_exists('module_path')) {
      * @param string $path The path to append to the module path
      * @return string
      */
-    function module_path($name, $path = '')
+    function module_path(string $name, string $path = ''): string
     {
-        $modulesPath = base_path(config('modularization.modules_path', 'modules'));
-        $modulePath = $modulesPath . '/' . $name;
+        $resolver = new ModulePathResolver(
+            base_path((string) config('modularization.modules_path', 'modules'))
+        );
 
-        return $path ? $modulePath . '/' . ltrim($path, '/') : $modulePath;
+        return $path === '' ? $resolver->module($name) : $resolver->child($name, $path);
     }
 }

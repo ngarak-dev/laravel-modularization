@@ -85,4 +85,18 @@ return [
     |
     */
     'enforce_repository_pattern' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Discovery
+    |--------------------------------------------------------------------------
+    |
+    | Discovery is intentionally filesystem-based by default for development.
+    | Production deployments may enable the generated metadata cache.
+    |
+    */
+    'discovery' => [
+        'use_cache' => env('MODULARIZATION_USE_CACHE', false),
+        'cache_path' => 'bootstrap/cache/modularization.php',
+    ],
 ];

@@ -2,6 +2,11 @@
 
 This document outlines the key architectural patterns used throughout the application.
 
+The package scaffolds repositories and services because they are useful boundaries in
+larger domains; they are optional. Prefer direct Eloquent for simple CRUD and add a
+service when there is business behavior to coordinate. Do not create a repository that
+only mirrors every method on an Eloquent model.
+
 ## Table of Contents
 
 - [Architectural Patterns](#architectural-patterns)

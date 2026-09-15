@@ -5,6 +5,8 @@ namespace NgarakDev\Modularization\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
+use NgarakDev\Modularization\Exceptions\InvalidModuleNameException;
+use NgarakDev\Modularization\Support\ModulePathResolver;
 
 class MakeModuleCommand extends Command
 {
@@ -59,7 +61,14 @@ class MakeModuleCommand extends Command
      */
     public function handle()
     {
-        $name = $this->argument('name');
+        try {
+            $name = (new ModulePathResolver(base_path(config('modularization.modules_path', 'modules'))))
+                ->normalizeName((string) $this->argument('name'));
+        } catch (InvalidModuleNameException $exception) {
+            $this->error($exception->getMessage());
+
+            return self::FAILURE;
+        }
         $modulesPath = base_path(config('modularization.modules_path', 'modules'));
         $namespace = config('modularization.namespace', 'Modules');
         $path = $modulesPath . '/' . $name;
@@ -99,6 +108,7 @@ class MakeModuleCommand extends Command
 
         // Create module files
         $this->createModuleFiles($name, $path, $namespace, $withApi, $withViews, $withLivewire, $withLivewireOnly, $resources, $withCrud);
+        $this->createManifest($name, $path, $namespace);
 
         // Create translation files if needed
         if ($withTranslations) {
@@ -113,6 +123,18 @@ class MakeModuleCommand extends Command
 
         $this->info("Module [{$name}] created successfully.");
         return 0;
+    }
+
+    protected function createManifest(string $name, string $path, string $namespace): void
+    {
+        $this->files->put($path . '/module.json', json_encode([
+            'name' => $name,
+            'namespace' => $namespace . '\\' . str_replace('/', '\\', $name),
+            'provider' => $namespace . '\\' . str_replace('/', '\\', $name) . '\\Providers\\' . basename($name) . 'ServiceProvider',
+            'version' => '1.0.0',
+            'description' => $name . ' module',
+            'requires' => [],
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
     }
 
     /**

@@ -8,7 +8,7 @@
 <a href="https://packagist.org/packages/ngarak-dev/laravel-modularization"><img src="https://img.shields.io/badge/Stability-Stable-brightgreen.svg" alt="Stability"></a>
 </p>
 
-This package implements a modular architecture for Laravel applications, combining the Repository Pattern and Service Layer pattern to create maintainable, scalable applications organized by business domain rather than technical function.
+This package provides a lightweight, domain-oriented module system for Laravel. It keeps each business area self-contained while using Laravel's normal service providers, routes, migrations, views, translations, and Livewire components. Repository and service scaffolding is available, but neither pattern is required for every feature.
 
 ## Table of Contents
 
@@ -45,8 +45,9 @@ This package implements a modular architecture for Laravel applications, combini
 
 ## Requirements
 
-- PHP 8.0 or higher
-- Laravel 9.0 or higher
+- PHP 8.1 or higher
+- Laravel 10, 11, or 12
+- Livewire 3 (only required when using Livewire integration)
 - Composer
 
 ## Installation
@@ -83,6 +84,45 @@ After installation, run the following command to ensure helper functions are pro
 ```bash
 composer dump-autoload
 ```
+
+## Discovery, manifests, and production deployments
+
+Modules are discovered from `modules/` in deterministic alphabetical order. A generated
+module contains a `module.json` manifest:
+
+```json
+{
+  "name": "Orders",
+  "namespace": "Modules\\Orders",
+  "provider": "Modules\\Orders\\Providers\\OrdersServiceProvider",
+  "version": "1.0.0",
+  "requires": ["Users"]
+}
+```
+
+Dependencies are validated and loaded before the module that requires them. Missing and
+circular dependencies fail with an actionable exception. Modules can be disabled without
+deleting code:
+
+```bash
+php artisan module:list
+php artisan module:toggle Orders --disable
+php artisan module:toggle Orders --enable
+php artisan module:cache
+php artisan module:clear
+```
+
+Use `MODULARIZATION_USE_CACHE=true` in a production environment after running
+`module:cache`. Run `module:clear` before deploying changed module manifests. Filesystem
+discovery remains the default so local development does not require a cache refresh.
+
+## Choosing repositories and services
+
+Repositories are useful when a domain has meaningful query boundaries, multiple data
+sources, or needs an isolated persistence contract. Direct Eloquent is often clearer for
+simple CRUD. Services are useful for business workflows and transactions; a controller
+that only delegates one call does not need an extra service merely because the module has
+service scaffolding.
 
 ## Helper Functions
 

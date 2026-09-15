@@ -28,7 +28,7 @@ The modular architecture organizes code by business domain rather than technical
 Each module follows a consistent structure:
 
 ```
-app/Modules/ModuleName/
+modules/ModuleName/
 ├── Config/                     # Module-specific configuration
 ├── Database/
 │   ├── Migrations/             # Module-specific migrations
@@ -54,6 +54,7 @@ app/Modules/ModuleName/
 │   └── api.php                 # Module API routes
 ├── Services/                   # Business logic layer
 │   └── Interfaces/             # Service interfaces
+├── module.json                 # Module metadata and dependencies
 └── Tests/                      # Module-specific tests
     ├── Unit/                   # Unit tests
     └── Feature/                # Feature tests
@@ -61,9 +62,9 @@ app/Modules/ModuleName/
 
 ## Module Registration
 
-Modules are automatically discovered and registered by the `ModulesServiceProvider`. This provider:
+Modules are automatically discovered and registered by the `ModularizationServiceProvider`. This provider:
 
-1. Scans the `app/Modules` directory for module folders
+1. Scans the configured `modules_path` directory for module folders
 2. Loads all module routes, views, translations, and migrations
 3. Registers module service providers
 4. Auto-registers Livewire components

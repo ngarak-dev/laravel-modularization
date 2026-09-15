@@ -18,7 +18,14 @@ use NgarakDev\Modularization\Console\Commands\PublishStubsCommand;
 use NgarakDev\Modularization\Console\Commands\MigrateModuleCommand;
 use NgarakDev\Modularization\Console\Commands\MigrateModulesCommand;
 use NgarakDev\Modularization\Console\Commands\MakeMigrationCommand;
+use NgarakDev\Modularization\Console\Commands\ModuleListCommand;
+use NgarakDev\Modularization\Console\Commands\ModuleCacheCommand;
+use NgarakDev\Modularization\Console\Commands\ModuleClearCommand;
 use NgarakDev\Modularization\ModularizationService;
+use NgarakDev\Modularization\ModuleDiscovery;
+use NgarakDev\Modularization\ModuleManager;
+use NgarakDev\Modularization\ModuleStatusManager;
+use NgarakDev\Modularization\Support\ModulePathResolver;
 
 class ModularizationServiceProvider extends ServiceProvider
 {
@@ -56,6 +63,9 @@ class ModularizationServiceProvider extends ServiceProvider
                 'command.module.migrate',
                 'command.module.migrate-all',
                 'command.module.make-migration',
+                ModuleListCommand::class,
+                ModuleCacheCommand::class,
+                ModuleClearCommand::class,
             ]);
         }
     }
@@ -76,11 +86,23 @@ class ModularizationServiceProvider extends ServiceProvider
 
         // Register the ModularizationService
         $this->app->singleton('modularization', function ($app) {
-            return new ModularizationService($app['files']);
+            return new ModularizationService($app->make(ModuleManager::class));
         });
 
         // Register Facade alias
         $this->app->alias('modularization', ModularizationService::class);
+
+        $this->app->singleton(ModulePathResolver::class, fn () => new ModulePathResolver(
+            base_path((string) config('modularization.modules_path', 'modules'))
+        ));
+        $this->app->singleton(ModuleDiscovery::class);
+        $this->app->singleton(ModuleStatusManager::class);
+        $this->app->singleton(ModuleManager::class, fn ($app) => new ModuleManager(
+            $app->make(ModuleDiscovery::class),
+            $app->make(ModuleStatusManager::class),
+            $app['files'],
+            base_path((string) config('modularization.discovery.cache_path', 'bootstrap/cache/modularization.php'))
+        ));
 
         // Register commands
         $this->app->singleton('command.module.make', function ($app) {
@@ -153,24 +175,12 @@ class ModularizationServiceProvider extends ServiceProvider
      */
     private function loadModules()
     {
-        $modulesPath = base_path(config('modularization.modules_path', 'modules'));
-
-        if (!File::isDirectory($modulesPath)) {
-            return;
-        }
-
-        $modules = File::directories($modulesPath);
-
-        foreach ($modules as $module) {
-            $moduleName = basename($module);
-
-            // Skip disabled modules
-            if (File::exists($module . '/.disabled')) {
-                continue;
-            }
+        foreach ($this->app->make(ModuleManager::class)->loadable() as $moduleData) {
+            $module = $moduleData['path'];
+            $moduleName = $moduleData['name'];
 
             // Register Service Provider from module
-            $this->registerModuleServiceProvider($module, $moduleName);
+            $this->registerModuleServiceProvider($module, $moduleName, $moduleData['provider'] ?? null);
 
             // Register Routes
             $this->registerRoutes($module, $moduleName);
@@ -198,13 +208,13 @@ class ModularizationServiceProvider extends ServiceProvider
     /**
      * Register module service provider.
      */
-    protected function registerModuleServiceProvider($module, $moduleName): void
+    protected function registerModuleServiceProvider($module, $moduleName, ?string $manifestProvider = null): void
     {
         $namespace = config('modularization.namespace', 'Modules');
         $providerPath = "$module/Providers/{$moduleName}ServiceProvider.php";
 
         if (File::exists($providerPath)) {
-            $providerClass = "{$namespace}\\{$moduleName}\\Providers\\{$moduleName}ServiceProvider";
+            $providerClass = $manifestProvider ?: "{$namespace}\\{$moduleName}\\Providers\\{$moduleName}ServiceProvider";
             if (class_exists($providerClass)) {
                 $this->app->register($providerClass);
             }

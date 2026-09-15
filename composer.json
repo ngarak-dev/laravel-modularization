@@ -9,12 +9,20 @@
     }],
     "require": {
         "php": "^8.1",
-        "illuminate/support": "^10.0|^11.0|^12.0",
-        "livewire/livewire": "^3.0"
+        "illuminate/support": "^10.0|^11.0|^12.0"
     },
     "require-dev": {
         "orchestra/testbench": "^8.0|^9.0",
-        "phpunit/phpunit": "^10.0"
+        "phpunit/phpunit": "^10.0",
+        "laravel/pint": "^1.18"
+    },
+    "suggest": {
+        "livewire/livewire": "Required only when using module Livewire components (^3.0)"
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test-coverage": "phpunit --coverage-text",
+        "format": "vendor/bin/pint --test"
     },
     "autoload": {
         "psr-4": {
