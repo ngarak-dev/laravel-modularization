@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Added
+
+- Focused module discovery, path resolution, status, and lifecycle services.
+- `module.json` metadata with dependency validation and deterministic load ordering.
+- `module:list`, `module:cache`, and `module:clear` commands.
+- Safe module-name and child-path validation to prevent path traversal.
+- Pint and GitHub Actions quality checks.
+
+### Changed
+
+- Discovery can use generated metadata in production while remaining filesystem-based by default.
+- Livewire is now an optional integration dependency.
+- Documentation now reflects the `modules/` layout and treats repositories/services as optional patterns.
+
 ## [1.0.6] - 2024-05-31
 
 ### Added
