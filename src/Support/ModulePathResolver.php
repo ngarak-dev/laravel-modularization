@@ -41,6 +41,9 @@ final class ModulePathResolver
     {
         $path = $this->module($module);
         $relativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\'));
+        if (in_array('..', explode(DIRECTORY_SEPARATOR, $relativePath), true) || str_contains($relativePath, "\0")) {
+            throw new InvalidModuleNameException('The requested module path contains an unsafe segment.');
+        }
         $candidate = $path . DIRECTORY_SEPARATOR . $relativePath;
         $root = rtrim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
 
