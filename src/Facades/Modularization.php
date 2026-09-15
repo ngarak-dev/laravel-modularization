@@ -1,27 +1,44 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization\Facades;
 
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Facade;
+use NgarakDev\Modularization\Contracts\ModuleInterface;
+use NgarakDev\Modularization\ModuleManager;
 
 /**
- * @method static array getModules()
- * @method static bool hasModule(string $name)
- * @method static bool isEnabled(string $name)
- * @method static bool enable(string $name)
- * @method static bool disable(string $name)
+ * Facade for the module manager.
  *
- * @see \NgarakDev\Modularization\ModularizationService
+ * @method static Collection<string, ModuleInterface> all()
+ * @method static Collection<string, ModuleInterface> enabled()
+ * @method static Collection<string, ModuleInterface> disabled()
+ * @method static ModuleInterface|null find(string $name)
+ * @method static ModuleInterface findOrFail(string $name)
+ * @method static bool has(string $name)
+ * @method static bool isEnabled(string $name)
+ * @method static bool isDisabled(string $name)
+ * @method static void enable(string $name)
+ * @method static void disable(string $name)
+ * @method static bool toggle(string $name)
+ * @method static int count()
+ * @method static void cache()
+ * @method static void clearCache()
+ * @method static bool isCached()
+ * @method static void refresh()
+ * @method static array getStatusSummary()
+ *
+ * @see \NgarakDev\Modularization\ModuleManager
  */
 class Modularization extends Facade
 {
     /**
      * Get the registered name of the component.
-     *
-     * @return string
      */
-    protected static function getFacadeAccessor()
+    protected static function getFacadeAccessor(): string
     {
-        return 'modularization';
+        return ModuleManager::class;
     }
 }

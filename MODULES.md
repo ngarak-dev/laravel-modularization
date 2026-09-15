@@ -1,294 +1,302 @@
-# Laravel Modular Architecture
+# Module Architecture
 
-This document outlines how the module system works in our Laravel application.
+This document explains how the module system works in this Laravel package.
 
-## Table of Contents
+## Overview
 
-- [Introduction](#introduction)
-- [Module Structure](#module-structure)
-- [Module Registration](#module-registration)
-- [Creating a Module](#creating-a-module)
-- [Module Components](#module-components)
-- [Integration Examples](#integration-examples)
-
-## Introduction
-
-The modular architecture organizes code by business domain rather than technical function, improving maintainability and scalability. Each module is a self-contained unit with all necessary components.
-
-### Benefits
-
-- **Separation of Concerns**: Isolate business domains from each other
-- **Maintainability**: Changes within a module don't affect other modules
-- **Team Collaboration**: Different teams can work on different modules
-- **Testability**: Modules can be tested in isolation
-- **Reusability**: Modules can be reused across projects
+The modular architecture organizes code by business domain rather than technical function. Each module is a self-contained unit with all components needed for a specific domain.
 
 ## Module Structure
 
-Each module follows a consistent structure:
-
 ```
-app/Modules/ModuleName/
-├── Config/                     # Module-specific configuration
+modules/ModuleName/
+├── Config/
+│   └── config.php           # Module configuration
 ├── Database/
-│   ├── Migrations/             # Module-specific migrations
-│   ├── Seeders/                # Module-specific seeders
-│   └── Factories/              # Model factories
+│   ├── Factories/           # Model factories
+│   ├── Migrations/          # Database migrations
+│   └── Seeders/             # Database seeders
 ├── Http/
-│   ├── Controllers/            # Web controllers
-│   │   └── API/                # API controllers
-│   ├── Middleware/             # Module-specific middleware
-│   └── Requests/               # Form requests with validation
-├── Livewire/                   # Livewire components
-├── Models/                     # Domain models
-├── Providers/                  # Service providers
-├── Repositories/               # Data access layer
-│   └── Interfaces/             # Repository interfaces
+│   ├── Controllers/         # Web controllers
+│   │   └── API/             # API controllers
+│   ├── Middleware/          # Module-specific middleware
+│   └── Requests/            # Form request validation
+├── Livewire/                # Livewire components
+├── Models/                  # Eloquent models
+├── Providers/
+│   └── ModuleServiceProvider.php
+├── Repositories/
+│   ├── Interfaces/          # Repository contracts
+│   └── ModuleRepository.php
 ├── Resources/
-│   ├── views/                  # Module-specific views
-│   │   └── livewire/           # Livewire component views
-│   ├── lang/                   # Module-specific translations
-│   └── assets/                 # Module-specific assets
+│   ├── assets/              # CSS, JS, images
+│   ├── lang/                # Translation files
+│   └── views/               # Blade templates
 ├── Routes/
-│   ├── web.php                 # Module web routes
-│   └── api.php                 # Module API routes
-├── Services/                   # Business logic layer
-│   └── Interfaces/             # Service interfaces
-└── Tests/                      # Module-specific tests
-    ├── Unit/                   # Unit tests
-    └── Feature/                # Feature tests
+│   ├── api.php              # API routes
+│   ├── livewire.php         # Livewire routes
+│   └── web.php              # Web routes
+├── Services/
+│   ├── Interfaces/          # Service contracts
+│   └── ModuleService.php
+├── Tests/
+│   ├── Feature/             # Feature tests
+│   └── Unit/                # Unit tests
+└── module.json              # Module manifest
 ```
 
-## Module Registration
+## Module Manifest (module.json)
 
-Modules are automatically discovered and registered by the `ModulesServiceProvider`. This provider:
+Every module has a `module.json` file that defines its metadata:
 
-1. Scans the `app/Modules` directory for module folders
-2. Loads all module routes, views, translations, and migrations
-3. Registers module service providers
-4. Auto-registers Livewire components
-
-### How Auto-Discovery Works
-
-The `ModulesServiceProvider` uses the following process:
-
-```php
-class ModulesServiceProvider extends ServiceProvider
+```json
 {
-    public function boot()
-    {
-        $this->loadModules();
+    "name": "Products",
+    "description": "Product management module",
+    "version": "1.0.0",
+    "enabled": true,
+    "provider": "Modules\\Products\\Providers\\ProductsServiceProvider",
+    "requires": [],
+    "routes": {
+        "prefix": "products",
+        "middleware": ["web"]
+    },
+    "menu": {
+        "title": "Products",
+        "icon": "fa fa-box"
     }
-
-    private function loadModules()
-    {
-        $modules = File::directories(app_path('Modules'));
-
-        foreach ($modules as $module) {
-            $this->loadRoutes($module);
-            $this->loadViews($module);
-            $this->loadMigrations($module);
-            $this->loadTranslations($module);
-            $this->registerLivewireComponents($module);
-            $this->registerProviders($module);
-        }
-    }
-
-    // Other methods for loading specific module components...
 }
 ```
 
-## Creating a Module
+### Manifest Fields
 
-You can create a new module using the provided artisan command:
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Module name (PascalCase) |
+| `description` | string | Human-readable description |
+| `version` | string | Semantic version |
+| `enabled` | boolean | Whether module is active |
+| `provider` | string | Service provider class |
+| `requires` | array | Module dependencies |
+| `routes.prefix` | string | URL prefix for routes |
+| `routes.middleware` | array | Default middleware |
+| `menu.title` | string | Display name in menus |
+| `menu.icon` | string | Icon class (Font Awesome) |
 
-```bash
-php artisan make:module ModuleName
-```
+## Module Lifecycle
 
-This command creates the necessary directory structure and base files.
+### 1. Discovery
 
-### Options
-
-- `--api`: Generate API controllers and routes
-- `--with-views`: Generate view files
-- `--with-livewire`: Generate Livewire components
-- `--force`: Overwrite existing module files
-
-## Module Components
-
-### Controllers
-
-Controllers handle HTTP requests and delegate business logic to services:
+On application boot, the `ModuleDiscovery` service scans the modules directory:
 
 ```php
-namespace App\Modules\Products\Http\Controllers;
+$discovery = app(ModuleDiscoveryInterface::class);
+$modules = $discovery->discover();
+```
 
-use App\Modules\Products\Services\Interfaces\ProductServiceInterface;
+In production, use caching to skip filesystem scanning:
 
-class ProductController extends Controller
+```bash
+php artisan module:cache
+```
+
+### 2. Registration
+
+Modules are registered in dependency order. The `ModuleRepository` performs topological sorting to ensure dependencies load first.
+
+### 3. Loading
+
+The `ModuleLoader` handles loading each module's components:
+
+- Service provider registration
+- Route loading (web, API, Livewire)
+- View namespace registration
+- Translation loading
+- Migration registration
+- Livewire component registration
+- Configuration merging
+
+### 4. Booting
+
+The `ModuleManager` coordinates the boot process:
+
+```php
+$manager = app(ModuleManager::class);
+$manager->boot();
+```
+
+## Module Dependencies
+
+Declare dependencies in `module.json`:
+
+```json
 {
-    protected $productService;
+    "name": "Orders",
+    "requires": ["Products", "Users"]
+}
+```
 
-    public function __construct(ProductServiceInterface $productService)
-    {
-        $this->productService = $productService;
-    }
+### Dependency Rules
+
+1. Dependencies must exist in the modules directory
+2. Dependencies must be enabled
+3. Circular dependencies are not allowed
+4. Modules load in dependency order
+
+### Dependency Validation
+
+The package validates dependencies at boot time:
+
+```php
+$resolver = app(DependencyResolver::class);
+$resolver->validateAll(); // Throws on missing/disabled dependencies
+```
+
+## Enable/Disable Modules
+
+### Via Command
+
+```bash
+php artisan module:toggle Products --disable
+php artisan module:toggle Products --enable
+```
+
+### Via Code
+
+```php
+use NgarakDev\Modularization\Facades\Modularization;
+
+Modularization::disable('Products');
+Modularization::enable('Products');
+```
+
+### Disabled Module Behavior
+
+When a module is disabled:
+
+- A `.disabled` file is created in the module directory
+- The `enabled` field in `module.json` is set to `false`
+- Routes are not registered
+- Service provider is not loaded
+- Views, translations, and migrations are not registered
+- Livewire components are not available
+
+## Module Cache
+
+For production, cache module metadata:
+
+```bash
+# Generate cache
+php artisan module:cache
+
+# Clear cache
+php artisan module:clear
+```
+
+The cache is stored in `bootstrap/cache/modules.php` and contains:
+
+- Module names and paths
+- Namespace mappings
+- Enabled/disabled status
+- Manifest data
+- Dependency information
+
+## Accessing Modules
+
+### Helper Functions
+
+```php
+// Get module path
+module_path('Products');
+module_path('Products', 'Http/Controllers');
+
+// Get module manager
+$manager = modules();
+
+// Get specific module
+$module = module('Products');
+
+// Check if enabled
+if (module_enabled('Products')) {
+    // ...
+}
+```
+
+### Facade
+
+```php
+use NgarakDev\Modularization\Facades\Modularization;
+
+// Get all modules
+$all = Modularization::all();
+
+// Get enabled modules
+$enabled = Modularization::enabled();
+
+// Find module by name
+$module = Modularization::find('Products');
+
+// Check existence
+Modularization::has('Products');
+
+// Check status
+Modularization::isEnabled('Products');
+```
+
+### Service Injection
+
+```php
+use NgarakDev\Modularization\ModuleManager;
+
+class SomeController
+{
+    public function __construct(
+        private ModuleManager $modules,
+    ) {}
 
     public function index()
     {
-        $products = $this->productService->getAllProducts();
-        return view('products::index', compact('products'));
+        $enabled = $this->modules->enabled();
     }
 }
 ```
 
-### Repositories
+## Cross-Module Communication
 
-Repositories handle data access operations:
+### Via Service Injection
 
 ```php
-namespace App\Modules\Products\Repositories;
+// In OrdersController
+use Modules\Products\Services\Interfaces\ProductsServiceInterface;
 
-use App\Modules\Products\Models\Product;
-use App\Modules\Products\Repositories\Interfaces\ProductRepositoryInterface;
-
-class ProductRepository implements ProductRepositoryInterface
-{
-    public function getAll()
-    {
-        return Product::all();
-    }
-
-    public function findById($id)
-    {
-        return Product::findOrFail($id);
-    }
-}
+public function __construct(
+    private ProductsServiceInterface $products,
+) {}
 ```
 
-### Services
-
-Services contain business logic:
+### Via Events
 
 ```php
-namespace App\Modules\Products\Services;
+// In Products module - dispatch event
+event(new ProductCreated($product));
 
-use App\Modules\Products\Repositories\Interfaces\ProductRepositoryInterface;
-use App\Modules\Products\Services\Interfaces\ProductServiceInterface;
-
-class ProductService implements ProductServiceInterface
+// In Orders module - listen for event
+class OrdersServiceProvider extends ServiceProvider
 {
-    protected $productRepository;
-
-    public function __construct(ProductRepositoryInterface $productRepository)
+    public function boot()
     {
-        $this->productRepository = $productRepository;
-    }
-
-    public function getAllProducts()
-    {
-        return $this->productRepository->getAll();
+        Event::listen(ProductCreated::class, function ($event) {
+            // Handle product creation
+        });
     }
 }
 ```
 
-### Livewire Components
+## Best Practices
 
-Livewire components handle real-time UI interactions:
-
-```php
-namespace App\Modules\Products\Livewire;
-
-use Livewire\Component;
-use App\Modules\Products\Services\Interfaces\ProductServiceInterface;
-
-class ProductList extends Component
-{
-    public $products = [];
-
-    public function mount(ProductServiceInterface $productService)
-    {
-        $this->products = $productService->getAllProducts();
-    }
-
-    public function render()
-    {
-        return view('products::livewire.product-list');
-    }
-}
-```
-
-## Integration Examples
-
-### User Profile Module Integration
-
-The User Profile module demonstrates effective integration with other modules through:
-
-1. **Event-Based Communication**: Using Laravel events to notify other modules of profile changes
-2. **Service Interfaces**: Other modules can interact with user profiles through a clean service interface
-3. **API Endpoints**: REST API for CRUD operations on user profiles
-
-Example of the User Profile service interface:
-
-```php
-namespace App\Modules\UserProfile\Services\Interfaces;
-
-interface UserProfileServiceInterface
-{
-    public function getUserProfile($userId);
-    public function updateUserProfile($userId, array $data);
-    public function deleteUserProfile($userId);
-    public function createUserProfile($userId, array $data);
-}
-```
-
-Other modules can consume the User Profile service:
-
-```php
-// In another module's service
-public function someBusinessFunction($userId)
-{
-    $userProfile = $this->userProfileService->getUserProfile($userId);
-
-    // Process based on user profile data
-    if ($userProfile->hasPermission('some-action')) {
-        // Perform action
-    }
-}
-```
-
-### Cross-Module Events
-
-Example of using events for cross-module communication:
-
-```php
-// In UserProfile module
-class ProfileUpdatedEvent
-{
-    public $userId;
-    public $profile;
-
-    public function __construct($userId, $profile)
-    {
-        $this->userId = $userId;
-        $this->profile = $profile;
-    }
-}
-
-// In UserProfile service
-public function updateUserProfile($userId, array $data)
-{
-    $profile = $this->userProfileRepository->update($userId, $data);
-    event(new ProfileUpdatedEvent($userId, $profile));
-    return $profile;
-}
-
-// In another module's service provider
-$this->app['events']->listen(
-    \App\Modules\UserProfile\Events\ProfileUpdatedEvent::class,
-    function ($event) {
-        // React to profile updates
-    }
-);
-```
+1. **Keep modules focused**: One domain per module
+2. **Minimize dependencies**: Prefer events over direct coupling
+3. **Use interfaces**: Depend on contracts, not implementations
+4. **Test in isolation**: Each module should have its own tests
+5. **Cache in production**: Always run `module:cache` in production
+6. **Document dependencies**: Keep `module.json` accurate

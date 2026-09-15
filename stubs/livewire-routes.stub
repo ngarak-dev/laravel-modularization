@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Route;
 use {{namespace}}\{{moduleName}}\Livewire\{{moduleName}}Table;
 use {{namespace}}\{{moduleName}}\Livewire\{{moduleName}}Form;
 
 /*
 |--------------------------------------------------------------------------
-| Livewire Routes
+| {{moduleName}} Livewire Routes
 |--------------------------------------------------------------------------
 |
-| Here is where you can register Livewire routes for your module.
+| Here is where you can register Livewire routes for the {{moduleName}} module.
 |
 */
 
@@ -19,8 +21,5 @@ Route::get('/{{moduleNameLower}}', {{moduleName}}Table::class)
 Route::get('/{{moduleNameLower}}/create', {{moduleName}}Form::class)
     ->name('{{moduleNameLower}}.create');
 
-Route::get('/{{moduleNameLower}}/{id}/edit', {{moduleName}}Form::class)
+Route::get('/{{moduleNameLower}}/{{{moduleNameLower}}Id}/edit', {{moduleName}}Form::class)
     ->name('{{moduleNameLower}}.edit');
-
-Route::get('/{{moduleNameLower}}/{id}', {{moduleName}}Form::class)
-    ->name('{{moduleNameLower}}.show'); 

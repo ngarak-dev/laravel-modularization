@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace {{namespace}}\{{moduleName}}\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
@@ -22,7 +24,7 @@ class {{moduleName}}Request extends FormRequest
     public function rules(): array
     {
         return [
-            // Define validation rules for your {{moduleName}} here
+            'name' => ['required', 'string', 'max:255'],
         ];
     }
-} 
+}

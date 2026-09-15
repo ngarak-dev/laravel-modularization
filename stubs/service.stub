@@ -1,82 +1,62 @@
 <?php
 
+declare(strict_types=1);
+
 namespace {{namespace}}\{{moduleName}}\Services;
 
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
+use {{namespace}}\{{moduleName}}\Models\{{moduleName}};
 use {{namespace}}\{{moduleName}}\Repositories\Interfaces\{{moduleName}}RepositoryInterface;
 use {{namespace}}\{{moduleName}}\Services\Interfaces\{{moduleName}}ServiceInterface;
 
 class {{moduleName}}Service implements {{moduleName}}ServiceInterface
 {
-    /**
-     * @var {{moduleName}}RepositoryInterface
-     */
-    protected $repository;
-
-    /**
-     * Constructor
-     */
-    public function __construct({{moduleName}}RepositoryInterface $repository)
-    {
-        $this->repository = $repository;
+    public function __construct(
+        protected {{moduleName}}RepositoryInterface $repository,
+    ) {
     }
 
-    /**
-     * Get all records
-     * 
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    public function getAll()
+    public function getAll(): Collection
     {
         return $this->repository->getAll();
     }
 
-    /**
-     * Find record by ID
-     * 
-     * @param int $id
-     * @return {{namespace}}\{{moduleName}}\Models\{{moduleName}}|null
-     */
-    public function findById($id)
+    public function paginate(int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->repository->paginate($perPage);
+    }
+
+    public function findById(int $id): ?{{moduleName}}
     {
         return $this->repository->findById($id);
     }
 
-    /**
-     * Create a new record
-     * 
-     * @param array $data
-     * @return {{namespace}}\{{moduleName}}\Models\{{moduleName}}
-     */
-    public function create(array $data)
+    public function findOrFail(int $id): {{moduleName}}
     {
-        // Add any business logic before creation
+        return $this->repository->findOrFail($id);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    public function create(array $data): {{moduleName}}
+    {
         return $this->repository->create($data);
     }
 
     /**
-     * Update existing record
-     * 
-     * @param int $id
-     * @param array $data
-     * @return {{namespace}}\{{moduleName}}\Models\{{moduleName}}
+     * @param array<string, mixed> $data
      */
-    public function update($id, array $data)
+    public function update(int $id, array $data): {{moduleName}}
     {
-        // Add any business logic before update
-        $model = $this->repository->findById($id);
+        $model = $this->repository->findOrFail($id);
         return $this->repository->update($model, $data);
     }
 
-    /**
-     * Delete record
-     * 
-     * @param int $id
-     * @return bool
-     */
-    public function delete($id)
+    public function delete(int $id): bool
     {
-        // Add any business logic before deletion
-        $model = $this->repository->findById($id);
+        $model = $this->repository->findOrFail($id);
         return $this->repository->delete($model);
     }
-} 
+}

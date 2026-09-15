@@ -3,18 +3,41 @@
     "description": "A Laravel package for module-based application architecture with Repository + Service Pattern",
     "type": "library",
     "license": "MIT",
-    "authors": [{
-        "name": "Ngara K",
-        "email": "ngarakiringo@gmail.com"
-    }],
+    "keywords": [
+        "laravel",
+        "modules",
+        "modular",
+        "architecture",
+        "repository-pattern",
+        "service-layer",
+        "domain-driven-design"
+    ],
+    "authors": [
+        {
+            "name": "Ngara K",
+            "email": "ngarakiringo@gmail.com"
+        }
+    ],
+    "homepage": "https://github.com/ngarak-dev/laravel-modularization",
+    "support": {
+        "issues": "https://github.com/ngarak-dev/laravel-modularization/issues",
+        "source": "https://github.com/ngarak-dev/laravel-modularization"
+    },
     "require": {
         "php": "^8.1",
         "illuminate/support": "^10.0|^11.0|^12.0",
-        "livewire/livewire": "^3.0"
+        "illuminate/console": "^10.0|^11.0|^12.0",
+        "illuminate/filesystem": "^10.0|^11.0|^12.0"
     },
     "require-dev": {
-        "orchestra/testbench": "^8.0|^9.0",
-        "phpunit/phpunit": "^10.0"
+        "larastan/larastan": "^2.0",
+        "laravel/pint": "^1.0",
+        "livewire/livewire": "^3.0",
+        "orchestra/testbench": "^8.0|^9.0|^10.0",
+        "phpunit/phpunit": "^10.0|^11.0"
+    },
+    "suggest": {
+        "livewire/livewire": "Required to use Livewire components in modules"
     },
     "autoload": {
         "psr-4": {
@@ -33,7 +56,28 @@
         "laravel": {
             "providers": [
                 "NgarakDev\\Modularization\\Providers\\ModularizationServiceProvider"
-            ]
+            ],
+            "aliases": {
+                "Module": "NgarakDev\\Modularization\\Facades\\Modularization"
+            }
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "test-coverage": "vendor/bin/phpunit --coverage-html coverage",
+        "analyse": "vendor/bin/phpstan analyse",
+        "format": "vendor/bin/pint",
+        "format-check": "vendor/bin/pint --test",
+        "ci": [
+            "@format-check",
+            "@analyse",
+            "@test"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "phpstan/extension-installer": true
         }
     },
     "minimum-stability": "stable",

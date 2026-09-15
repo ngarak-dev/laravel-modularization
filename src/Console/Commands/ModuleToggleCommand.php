@@ -1,100 +1,117 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Config;
+use NgarakDev\Modularization\Exceptions\ModuleNotFoundException;
+use NgarakDev\Modularization\ModuleManager;
 
+/**
+ * Command to enable or disable modules.
+ */
 class ModuleToggleCommand extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'module:toggle {name : The name of the module} {--disable : Disable the module instead of enabling it}';
+    protected $signature = 'module:toggle
+                            {name : The name of the module}
+                            {--enable : Enable the module}
+                            {--disable : Disable the module}';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Enable or disable a module';
 
-    /**
-     * The filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
-    protected $files;
-
-    /**
-     * Create a new command instance.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @return void
-     */
-    public function __construct(Filesystem $files)
-    {
+    public function __construct(
+        private readonly Filesystem $files,
+    ) {
         parent::__construct();
-        $this->files = $files;
     }
 
-    /**
-     * Execute the console command.
-     *
-     * @return int
-     */
-    public function handle()
+    public function handle(): int
     {
         $moduleName = $this->argument('name');
-        $disable = $this->option('disable');
+        $enableFlag = $this->option('enable');
+        $disableFlag = $this->option('disable');
 
-        $modulesPath = base_path(config('modularization.modules_path', 'modules'));
-        $moduleDir = $modulesPath . '/' . $moduleName;
+        /** @var ModuleManager $manager */
+        $manager = app(ModuleManager::class);
 
-        // Check if module exists
-        if (!$this->files->isDirectory($moduleDir)) {
-            $this->error("Module [$moduleName] does not exist!");
-            return 1;
+        if (!$manager->has($moduleName)) {
+            $this->error("Module [{$moduleName}] does not exist.");
+            return self::FAILURE;
         }
 
-        // Get or create status file path (.disabled)
-        $statusFile = $moduleDir . '/.disabled';
-
-        if ($disable) {
-            // Disable the module
-            if ($this->files->exists($statusFile)) {
-                $this->info("Module [$moduleName] is already disabled.");
-                return 0;
+        try {
+            if ($disableFlag) {
+                $this->disableModule($manager, $moduleName);
+            } elseif ($enableFlag) {
+                $this->enableModule($manager, $moduleName);
+            } else {
+                $this->toggleModule($manager, $moduleName);
             }
+        } catch (ModuleNotFoundException $e) {
+            $this->error($e->getMessage());
+            return self::FAILURE;
+        }
 
-            // Create disabled file
-            $this->files->put($statusFile, json_encode([
-                'disabled_at' => now()->toDateTimeString(),
-                'disabled_by' => get_current_user(),
-            ]));
+        $this->clearConfigCache();
 
-            $this->info("Module [$moduleName] has been disabled.");
+        return self::SUCCESS;
+    }
+
+    private function enableModule(ModuleManager $manager, string $name): void
+    {
+        if ($manager->isEnabled($name)) {
+            $this->info("Module [{$name}] is already enabled.");
+            return;
+        }
+
+        $manager->enable($name);
+        $this->info("Module [{$name}] has been enabled.");
+    }
+
+    private function disableModule(ModuleManager $manager, string $name): void
+    {
+        if ($manager->isDisabled($name)) {
+            $this->info("Module [{$name}] is already disabled.");
+            return;
+        }
+
+        $dependents = $manager->getDependents($name);
+
+        if ($dependents->isNotEmpty()) {
+            $depList = $dependents->keys()->implode(', ');
+            $this->warn("The following modules depend on [{$name}]: {$depList}");
+
+            if (!$this->confirm('Do you want to continue?', false)) {
+                $this->info('Operation cancelled.');
+                return;
+            }
+        }
+
+        $manager->disable($name);
+        $this->info("Module [{$name}] has been disabled.");
+    }
+
+    private function toggleModule(ModuleManager $manager, string $name): void
+    {
+        $wasEnabled = $manager->isEnabled($name);
+
+        if ($wasEnabled) {
+            $this->disableModule($manager, $name);
         } else {
-            // Enable the module
-            if (!$this->files->exists($statusFile)) {
-                $this->info("Module [$moduleName] is already enabled.");
-                return 0;
-            }
-
-            // Remove disabled file
-            $this->files->delete($statusFile);
-
-            $this->info("Module [$moduleName] has been enabled.");
+            $this->enableModule($manager, $name);
         }
+    }
 
-        // Clear configuration cache if exists
+    private function clearConfigCache(): void
+    {
         if ($this->laravel->bound('Illuminate\Contracts\Console\Kernel')) {
-            $this->call('config:clear');
+            try {
+                $this->call('config:clear');
+            } catch (\Exception) {
+                // Config cache might not exist
+            }
         }
-
-        return 0;
     }
 }

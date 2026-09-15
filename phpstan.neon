@@ -1,0 +1,23 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - src
+
+    level: 6
+
+    ignoreErrors:
+        - '#Call to an undefined method Illuminate\\Contracts\\Foundation\\Application::#'
+    
+    excludePaths:
+        - src/Console/Commands/MakeModuleAuthCommand.php
+        - src/Console/Commands/MakeModuleManagerCommand.php
+        - src/Console/Commands/MakeModuleLivewireCommand.php
+        - src/Console/Commands/ModuleExportCommand.php
+        - src/Console/Commands/MigrateModuleCommand.php
+        - src/Console/Commands/MigrateModulesCommand.php
+        - src/Console/Commands/MakeModuleEventCommand.php
+        - src/Console/Commands/MakeModuleTranslationCommand.php
+        - src/Console/Commands/PublishStubsCommand.php
+        - src/Console/Commands/MakeMigrationCommand.php

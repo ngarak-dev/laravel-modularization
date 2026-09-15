@@ -1,397 +1,494 @@
 # Design Patterns & Best Practices
 
-This document outlines the key architectural patterns used throughout the application.
+This document outlines the architectural patterns used in this package and best practices for module development.
 
-## Table of Contents
+## Repository Pattern
 
-- [Architectural Patterns](#architectural-patterns)
-- [Design Patterns](#design-patterns)
-- [SOLID Principles](#solid-principles)
-- [Laravel Best Practices](#laravel-best-practices)
+The repository pattern provides an abstraction layer between your business logic and data access.
 
-## Architectural Patterns
+### Why Use It?
 
-### Repository Pattern
+- **Testability**: Mock repositories in tests without touching the database
+- **Flexibility**: Swap data sources without changing business logic
+- **Single Responsibility**: Data access logic stays in one place
+- **Reusability**: Share data access code across services
 
-The repository pattern decouples the data access layer from business logic:
+### Implementation
 
 ```php
-// Interface
-interface ProductRepositoryInterface
+// Contract (Interface)
+interface ProductsRepositoryInterface
 {
-    public function getAll();
-    public function findById($id);
-    public function create(array $data);
-    public function update($id, array $data);
-    public function delete($id);
+    public function all(): Collection;
+    public function find(int $id): ?Products;
+    public function findOrFail(int $id): Products;
+    public function paginate(int $perPage = 15): LengthAwarePaginator;
+    public function create(array $data): Products;
+    public function update(Products $model, array $data): Products;
+    public function delete(Products $model): bool;
 }
 
 // Implementation
-class ProductRepository implements ProductRepositoryInterface
+class ProductsRepository implements ProductsRepositoryInterface
 {
-    protected $model;
+    public function __construct(
+        protected Products $model,
+    ) {}
 
-    public function __construct(Product $model)
-    {
-        $this->model = $model;
-    }
-
-    public function getAll()
+    public function all(): Collection
     {
         return $this->model->all();
     }
 
-    // Other methods...
+    public function find(int $id): ?Products
+    {
+        return $this->model->find($id);
+    }
+
+    public function findOrFail(int $id): Products
+    {
+        return $this->model->findOrFail($id);
+    }
+
+    public function create(array $data): Products
+    {
+        return $this->model->create($data);
+    }
+
+    public function update(Products $model, array $data): Products
+    {
+        $model->update($data);
+        return $model->fresh();
+    }
+
+    public function delete(Products $model): bool
+    {
+        return $model->delete();
+    }
 }
 ```
 
-**Why use it?**
+### When NOT to Use
 
-- Makes code more testable by allowing mock repositories in tests
-- Centralizes data access logic
-- Enables easy swapping of data sources without affecting business logic
+For simple CRUD with no business logic, you can skip repositories and use Eloquent directly in your controllers. Repositories add value when:
 
-### Service Layer Pattern
+- You need complex queries
+- You want to test without database
+- You might change data sources
+- Multiple services need the same data access logic
 
-The service layer encapsulates business logic:
+## Service Layer Pattern
+
+The service layer contains business logic that shouldn't live in controllers or models.
+
+### Why Use It?
+
+- **Reusability**: Same logic for web, API, CLI, and jobs
+- **Testability**: Test business logic without HTTP layer
+- **Separation**: Controllers stay thin
+- **Organization**: Business rules are explicit
+
+### Implementation
 
 ```php
-// Interface
-interface ProductServiceInterface
+// Contract
+interface ProductsServiceInterface
 {
-    public function getAllProducts();
-    public function getProductById($id);
-    public function createProduct(array $data);
-    public function updateProduct($id, array $data);
-    public function deleteProduct($id);
+    public function getAll(): Collection;
+    public function findById(int $id): ?Products;
+    public function create(array $data): Products;
+    public function update(int $id, array $data): Products;
+    public function delete(int $id): bool;
 }
 
 // Implementation
-class ProductService implements ProductServiceInterface
+class ProductsService implements ProductsServiceInterface
 {
-    protected $repository;
+    public function __construct(
+        protected ProductsRepositoryInterface $repository,
+    ) {}
 
-    public function __construct(ProductRepositoryInterface $repository)
+    public function getAll(): Collection
     {
-        $this->repository = $repository;
+        return $this->repository->all();
     }
 
-    public function getAllProducts()
+    public function create(array $data): Products
     {
-        return $this->repository->getAll();
+        // Business logic before creation
+        $data['slug'] = Str::slug($data['name']);
+        
+        // Create the product
+        $product = $this->repository->create($data);
+        
+        // Business logic after creation
+        event(new ProductCreated($product));
+        
+        return $product;
     }
 
-    // Additional business logic...
+    public function update(int $id, array $data): Products
+    {
+        $product = $this->repository->findOrFail($id);
+        
+        // Business rules
+        if ($product->is_locked) {
+            throw new ProductLockedException($product);
+        }
+        
+        return $this->repository->update($product, $data);
+    }
 }
 ```
 
-**Why use it?**
+### Service Layer Guidelines
 
-- Separates business logic from controllers
-- Promotes reusability across controllers (web, API)
-- Makes business rules explicit and testable
+1. **One service per domain concept** - ProductsService, not ProductsAndCategoriesService
+2. **Inject dependencies** - Don't use facades inside services
+3. **Keep methods focused** - Each method does one thing
+4. **Throw domain exceptions** - Let the controller handle HTTP responses
 
-### Livewire Component Pattern
+## Controller Patterns
 
-Livewire components use a reactive approach for dynamic UI elements:
+### Thin Controllers
+
+Controllers should only:
+
+1. Validate input (via Form Requests)
+2. Call services
+3. Return responses
 
 ```php
-namespace App\Modules\Products\Livewire;
-
-use Livewire\Component;
-use App\Modules\Products\Services\Interfaces\ProductServiceInterface;
-
-class ProductForm extends Component
+class ProductsController extends Controller
 {
-    public $name;
-    public $description;
-    public $price;
-    public $product;
+    public function __construct(
+        protected ProductsServiceInterface $service,
+    ) {}
 
-    protected $rules = [
-        'name' => 'required|min:3',
-        'description' => 'required',
-        'price' => 'required|numeric|min:0',
-    ];
-
-    public function mount($productId = null, ProductServiceInterface $productService)
+    public function index(): View
     {
-        if ($productId) {
-            $this->product = $productService->getProductById($productId);
-            $this->name = $this->product->name;
-            $this->description = $this->product->description;
-            $this->price = $this->product->price;
-        }
+        $products = $this->service->getAll();
+        return view('products::index', compact('products'));
     }
 
-    public function save(ProductServiceInterface $productService)
+    public function store(ProductsRequest $request): RedirectResponse
     {
-        $this->validate();
+        $this->service->create($request->validated());
+        return redirect()->route('products.index')
+            ->with('success', 'Product created.');
+    }
+}
+```
 
-        $data = [
-            'name' => $this->name,
-            'description' => $this->description,
-            'price' => $this->price,
+### API Controllers
+
+Return consistent JSON responses:
+
+```php
+class ProductsController extends Controller
+{
+    public function index(): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->service->getAll(),
+        ]);
+    }
+
+    public function store(ProductsRequest $request): JsonResponse
+    {
+        $product = $this->service->create($request->validated());
+        
+        return response()->json([
+            'data' => $product,
+            'message' => 'Product created successfully.',
+        ], 201);
+    }
+
+    public function destroy(int $id): JsonResponse
+    {
+        $this->service->delete($id);
+        
+        return response()->json([
+            'message' => 'Product deleted successfully.',
+        ]);
+    }
+}
+```
+
+## Dependency Injection
+
+### Service Provider Bindings
+
+```php
+class ProductsServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        // Bind interface to implementation
+        $this->app->bind(
+            ProductsRepositoryInterface::class,
+            ProductsRepository::class
+        );
+
+        $this->app->bind(
+            ProductsServiceInterface::class,
+            ProductsService::class
+        );
+    }
+}
+```
+
+### Constructor Injection
+
+```php
+class ProductsService implements ProductsServiceInterface
+{
+    public function __construct(
+        protected ProductsRepositoryInterface $repository,
+        protected EventDispatcher $events,
+        protected CacheManager $cache,
+    ) {}
+}
+```
+
+## Form Requests
+
+Use form requests for validation:
+
+```php
+class ProductsRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true; // Or check permissions
+    }
+
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'category_id' => ['required', 'exists:categories,id'],
         ];
-
-        if ($this->product) {
-            $productService->updateProduct($this->product->id, $data);
-            $this->dispatch('productUpdated');
-        } else {
-            $productService->createProduct($data);
-            $this->dispatch('productCreated');
-        }
-
-        $this->reset(['name', 'description', 'price']);
     }
 
-    public function render()
+    public function messages(): array
     {
-        return view('products::livewire.product-form');
+        return [
+            'name.required' => 'Product name is required.',
+        ];
     }
 }
 ```
 
-**Why use it?**
+## Event-Driven Architecture
 
-- Provides reactive UI updates without full page reloads
-- Combines frontend and backend logic in a single file
-- Simplifies state management
+Use events for cross-module communication:
 
-## Design Patterns
-
-### Observer Pattern
-
-Used for event-driven architecture:
+### Define Events
 
 ```php
-// Model with observer support
-class Product extends Model
-{
-    // ...
-
-    protected $dispatchesEvents = [
-        'created' => ProductCreated::class,
-        'updated' => ProductUpdated::class,
-        'deleted' => ProductDeleted::class,
-    ];
-}
-
-// Event class
+// In Products module
 class ProductCreated
 {
-    public $product;
-
-    public function __construct(Product $product)
-    {
-        $this->product = $product;
-    }
+    public function __construct(
+        public readonly Products $product,
+    ) {}
 }
 
-// Listener
-class NotifyAdminAboutNewProduct implements ShouldQueue
+class ProductDeleted
 {
-    public function handle(ProductCreated $event)
+    public function __construct(
+        public readonly int $productId,
+    ) {}
+}
+```
+
+### Dispatch Events
+
+```php
+class ProductsService
+{
+    public function create(array $data): Products
     {
-        // Send notification
+        $product = $this->repository->create($data);
+        event(new ProductCreated($product));
+        return $product;
     }
 }
 ```
 
-### Factory Pattern
-
-Used for creating objects:
+### Listen in Other Modules
 
 ```php
-// Abstract factory interface
-interface ReportGeneratorFactory
+// In Orders module
+class OrdersServiceProvider extends ServiceProvider
 {
-    public function createPdfReport(): ReportInterface;
-    public function createCsvReport(): ReportInterface;
-}
-
-// Concrete factory
-class SalesReportFactory implements ReportGeneratorFactory
-{
-    public function createPdfReport(): ReportInterface
+    public function boot(): void
     {
-        return new SalesPdfReport();
-    }
-
-    public function createCsvReport(): ReportInterface
-    {
-        return new SalesCsvReport();
+        Event::listen(
+            ProductDeleted::class,
+            function (ProductDeleted $event) {
+                // Remove product from pending orders
+                $this->orderService->removeProduct($event->productId);
+            }
+        );
     }
 }
 ```
 
-### Decorator Pattern
+## Testing Patterns
 
-Used to add functionality to objects dynamically:
+### Unit Testing Services
 
 ```php
-// Interface
-interface ReportInterface
+class ProductsServiceTest extends TestCase
 {
-    public function generate(): string;
-}
+    private ProductsService $service;
+    private ProductsRepositoryInterface $repository;
 
-// Base implementation
-class BasicReport implements ReportInterface
-{
-    public function generate(): string
+    protected function setUp(): void
     {
-        return "Basic report content";
-    }
-}
-
-// Decorator
-class HtmlReportDecorator implements ReportInterface
-{
-    protected $report;
-
-    public function __construct(ReportInterface $report)
-    {
-        $this->report = $report;
+        parent::setUp();
+        
+        $this->repository = $this->createMock(ProductsRepositoryInterface::class);
+        $this->service = new ProductsService($this->repository);
     }
 
-    public function generate(): string
+    public function test_create_adds_slug(): void
     {
-        return '<html><body>' . $this->report->generate() . '</body></html>';
+        $data = ['name' => 'Test Product'];
+        
+        $this->repository
+            ->expects($this->once())
+            ->method('create')
+            ->with($this->callback(function ($arg) {
+                return $arg['slug'] === 'test-product';
+            }));
+        
+        $this->service->create($data);
+    }
+}
+```
+
+### Feature Testing Controllers
+
+```php
+class ProductsControllerTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_index_displays_products(): void
+    {
+        $products = Products::factory()->count(3)->create();
+        
+        $response = $this->get(route('products.index'));
+        
+        $response->assertStatus(200);
+        $response->assertViewHas('products');
+    }
+
+    public function test_store_creates_product(): void
+    {
+        $data = [
+            'name' => 'New Product',
+            'price' => 99.99,
+        ];
+        
+        $response = $this->post(route('products.store'), $data);
+        
+        $response->assertRedirect(route('products.index'));
+        $this->assertDatabaseHas('products', $data);
     }
 }
 ```
 
 ## SOLID Principles
 
-### Single Responsibility Principle
+### Single Responsibility
 
-Each class has only one reason to change:
+Each class has one reason to change:
 
-- Controllers handle HTTP requests only
-- Repositories handle data access only
-- Services handle business logic only
+- Controllers: Handle HTTP
+- Services: Business logic
+- Repositories: Data access
+- Requests: Validation
 
-### Open/Closed Principle
+### Open/Closed
 
-Classes are open for extension but closed for modification:
-
-- Use interfaces to define contracts
-- Extend functionality through new implementations rather than modifying existing code
-
-### Liskov Substitution Principle
-
-Subtypes must be substitutable for their base types:
-
-- All repository implementations can be used interchangeably where the interface is expected
-
-### Interface Segregation Principle
-
-Clients should not be forced to depend on methods they do not use:
-
-- Use focused interfaces rather than large, general-purpose ones
-
-### Dependency Inversion Principle
-
-High-level modules should not depend on low-level modules:
-
-- Controllers depend on service interfaces, not implementations
-- Services depend on repository interfaces, not implementations
-
-## Laravel Best Practices
-
-### Route Organization
-
-- Group routes by module
-- Use route names with module prefix
-- Apply middleware at the group level
+Extend through interfaces, not modification:
 
 ```php
-Route::prefix('products')
-    ->middleware(['auth', 'verified'])
-    ->name('products.')
-    ->group(function () {
-        Route::get('/', [ProductController::class, 'index'])->name('index');
-        Route::get('/{product}', [ProductController::class, 'show'])->name('show');
-        // More routes...
-    });
-```
-
-### Validation
-
-- Use form request classes for complex validation
-- Use `$rules` property in Livewire components for simple validation
-
-```php
-// Form request
-class StoreProductRequest extends FormRequest
+// Add a new implementation
+class CachedProductsRepository implements ProductsRepositoryInterface
 {
-    public function rules()
+    public function __construct(
+        private ProductsRepository $repository,
+        private CacheManager $cache,
+    ) {}
+
+    public function all(): Collection
     {
-        return [
-            'name' => 'required|min:3|max:255',
-            'description' => 'required',
-            'price' => 'required|numeric|min:0',
-            'category_id' => 'required|exists:categories,id',
-        ];
+        return $this->cache->remember('products', 3600, fn () => 
+            $this->repository->all()
+        );
     }
 }
 ```
 
-### Authorization
+### Liskov Substitution
 
-- Use policies for authorization logic
-- Register policies in service providers
+All implementations are interchangeable:
 
 ```php
-class ProductPolicy
-{
-    public function view(User $user, Product $product)
-    {
-        return $user->hasPermission('view-products') || $product->user_id === $user->id;
-    }
+// Both work wherever ProductsRepositoryInterface is expected
+$repository = new ProductsRepository($model);
+$repository = new CachedProductsRepository($repository, $cache);
+```
 
-    // Other permission methods...
+### Interface Segregation
+
+Keep interfaces focused:
+
+```php
+// Good: Focused interfaces
+interface Searchable
+{
+    public function search(string $query): Collection;
+}
+
+interface Sortable
+{
+    public function sortBy(string $field, string $direction): Collection;
+}
+
+// Implement only what you need
+class ProductsRepository implements 
+    ProductsRepositoryInterface, 
+    Searchable
+{
+    // ...
 }
 ```
 
-### Testing
+### Dependency Inversion
 
-- Write unit tests for services and repositories
-- Write feature tests for HTTP endpoints and Livewire components
+Depend on abstractions:
 
 ```php
-// Service unit test
-public function test_get_all_products_returns_collection()
+// Good: Depends on interface
+class ProductsService
 {
-    // Arrange
-    $mockRepository = $this->createMock(ProductRepositoryInterface::class);
-    $mockRepository->expects($this->once())
-        ->method('getAll')
-        ->willReturn(collect([new Product(), new Product()]));
-
-    $service = new ProductService($mockRepository);
-
-    // Act
-    $result = $service->getAllProducts();
-
-    // Assert
-    $this->assertInstanceOf(Collection::class, $result);
-    $this->assertCount(2, $result);
+    public function __construct(
+        protected ProductsRepositoryInterface $repository,
+    ) {}
 }
 
-// Controller feature test
-public function test_index_returns_products_view()
+// Bad: Depends on concrete class
+class ProductsService
 {
-    // Arrange
-    $this->actingAs(User::factory()->create());
-
-    // Act
-    $response = $this->get(route('products.index'));
-
-    // Assert
-    $response->assertStatus(200);
-    $response->assertViewIs('products::index');
-    $response->assertViewHas('products');
+    public function __construct(
+        protected ProductsRepository $repository,
+    ) {}
 }
 ```

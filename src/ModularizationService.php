@@ -1,123 +1,106 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization;
 
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Str;
+use Illuminate\Support\Collection;
+use NgarakDev\Modularization\Contracts\ModuleInterface;
 
+/**
+ * Legacy service class for backwards compatibility.
+ *
+ * @deprecated Use ModuleManager instead. This class will be removed in v2.0.
+ */
 class ModularizationService
 {
-    /**
-     * @var Filesystem
-     */
-    protected $files;
-
-    /**
-     * @var string
-     */
-    protected $basePath;
-
-    /**
-     * @var array
-     */
-    protected $modules = [];
-
-    /**
-     * Create a new ModularizationService instance.
-     *
-     * @param Filesystem $files
-     */
-    public function __construct(Filesystem $files)
-    {
-        $this->files = $files;
-        $this->basePath = base_path(config('modularization.modules_path'));
-        $this->scanModules();
-    }
-
-    /**
-     * Scan for all available modules.
-     *
-     * @return void
-     */
-    public function scanModules()
-    {
-        if (!$this->files->isDirectory($this->basePath)) {
-            return;
-        }
-
-        $modules = $this->files->directories($this->basePath);
-
-        foreach ($modules as $module) {
-            $name = basename($module);
-            $this->modules[$name] = [
-                'name' => $name,
-                'path' => $module,
-                'enabled' => true, // By default, all modules are enabled
-            ];
-        }
+    public function __construct(
+        private readonly ModuleManager $manager,
+    ) {
     }
 
     /**
      * Get all modules.
      *
-     * @return array
+     * @return array<string, array{name: string, path: string, enabled: bool}>
+     * @deprecated Use ModuleManager::all() instead
      */
-    public function getModules()
+    public function getModules(): array
     {
-        return $this->modules;
+        return $this->manager->all()->map(function (ModuleInterface $module) {
+            return [
+                'name' => $module->getName(),
+                'path' => $module->getPath(),
+                'enabled' => $module->isEnabled(),
+            ];
+        })->all();
     }
 
     /**
-     * Determine whether the given module exists.
+     * Check if a module exists.
      *
-     * @param string $name
-     * @return bool
+     * @deprecated Use ModuleManager::has() instead
      */
-    public function hasModule($name)
+    public function hasModule(string $name): bool
     {
-        return isset($this->modules[$name]);
+        return $this->manager->has($name);
     }
 
     /**
-     * Determine whether the given module is enabled.
+     * Check if a module is enabled.
      *
-     * @param string $name
-     * @return bool
+     * @deprecated Use ModuleManager::isEnabled() instead
      */
-    public function isEnabled($name)
+    public function isEnabled(string $name): bool
     {
-        return $this->hasModule($name) && $this->modules[$name]['enabled'];
+        return $this->manager->isEnabled($name);
     }
 
     /**
      * Enable a module.
      *
-     * @param string $name
-     * @return bool
+     * @deprecated Use ModuleManager::enable() instead
      */
-    public function enable($name)
+    public function enable(string $name): bool
     {
-        if ($this->hasModule($name)) {
-            $this->modules[$name]['enabled'] = true;
+        try {
+            $this->manager->enable($name);
             return true;
+        } catch (\Exception) {
+            return false;
         }
-
-        return false;
     }
 
     /**
      * Disable a module.
      *
-     * @param string $name
-     * @return bool
+     * @deprecated Use ModuleManager::disable() instead
      */
-    public function disable($name)
+    public function disable(string $name): bool
     {
-        if ($this->hasModule($name)) {
-            $this->modules[$name]['enabled'] = false;
+        try {
+            $this->manager->disable($name);
             return true;
+        } catch (\Exception) {
+            return false;
         }
+    }
 
-        return false;
+    /**
+     * Scan for modules.
+     *
+     * @deprecated Modules are discovered automatically
+     */
+    public function scanModules(): void
+    {
+        $this->manager->refresh();
+    }
+
+    /**
+     * Get the underlying module manager.
+     */
+    public function getManager(): ModuleManager
+    {
+        return $this->manager;
     }
 }

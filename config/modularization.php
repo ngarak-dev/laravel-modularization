@@ -1,88 +1,188 @@
 <?php
 
+declare(strict_types=1);
+
 return [
+
     /*
     |--------------------------------------------------------------------------
     | Modules Directory
     |--------------------------------------------------------------------------
     |
-    | This is the path where all modules will be stored. This path is relative
-    | to the application base path.
+    | The directory where your modules are stored. This path is relative to
+    | the application base path unless it starts with a forward slash.
     |
     */
-    'modules_path' => 'modules',
+    'modules_path' => env('MODULES_PATH', 'modules'),
 
     /*
     |--------------------------------------------------------------------------
     | Module Namespace
     |--------------------------------------------------------------------------
     |
-    | Define the namespace for your modules. All modules will be created under
-    | this namespace. Default is "Modules".
+    | The base namespace for all modules. This namespace must be registered
+    | in your composer.json autoload configuration.
+    |
+    | Example composer.json:
+    | "autoload": {
+    |     "psr-4": {
+    |         "Modules\\": "modules/"
+    |     }
+    | }
     |
     */
-    'namespace' => 'Modules',
+    'namespace' => env('MODULES_NAMESPACE', 'Modules'),
 
     /*
     |--------------------------------------------------------------------------
-    | Module Directories
+    | Default Module Directories
     |--------------------------------------------------------------------------
     |
-    | These are the default directories that will be created within each module.
+    | The directories that will be created within each new module. These
+    | follow Laravel conventions while supporting the Repository Pattern
+    | and Service Layer architecture.
     |
     */
     'directories' => [
+        'Config',
+        'Database/Factories',
+        'Database/Migrations',
+        'Database/Seeders',
         'Http/Controllers',
         'Http/Controllers/API',
         'Http/Middleware',
         'Http/Requests',
+        'Livewire',
         'Models',
+        'Providers',
         'Repositories',
         'Repositories/Interfaces',
+        'Resources/assets/css',
+        'Resources/assets/js',
+        'Resources/lang',
+        'Resources/views',
+        'Routes',
         'Services',
         'Services/Interfaces',
-        'Providers',
-        'database/migrations',
-        'database/seeders',
-        'database/factories',
-        'routes',
-        'config',
-        'resources/views',
-        'resources/lang',
-        'Livewire',
-        'Tests/Unit',
         'Tests/Feature',
+        'Tests/Unit',
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Auto-register Controllers
+    | Auto-Register Service Providers
     |--------------------------------------------------------------------------
     |
-    | If set to true, controllers will be automatically registered with Laravel's
-    | route system using the appropriate middleware and namespaces.
+    | When enabled, the package will automatically register each module's
+    | service provider during application boot.
     |
     */
-    'auto_register_controllers' => true,
+    'auto_register_providers' => true,
 
     /*
     |--------------------------------------------------------------------------
-    | Auto-register Livewire Components
+    | Auto-Register Routes
     |--------------------------------------------------------------------------
     |
-    | If set to true, Livewire components will be automatically registered.
+    | When enabled, the package will automatically load routes from each
+    | module's Routes directory (web.php, api.php, livewire.php).
+    |
+    */
+    'auto_register_routes' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Auto-Register Views
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, the package will automatically register each module's
+    | views with a namespace matching the module name (lowercase).
+    |
+    | Example: @extends('products::layouts.app')
+    |
+    */
+    'auto_register_views' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Auto-Register Translations
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, the package will automatically register each module's
+    | translations from Resources/lang.
+    |
+    | Example: __('products::messages.welcome')
+    |
+    */
+    'auto_register_translations' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Auto-Register Migrations
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, the package will automatically register each module's
+    | migrations from Database/Migrations.
+    |
+    */
+    'auto_register_migrations' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Auto-Register Livewire Components
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, the package will automatically register Livewire
+    | components from each module's Livewire directory.
+    |
+    | Example: <livewire:products.product-table />
     |
     */
     'auto_register_livewire' => true,
 
     /*
     |--------------------------------------------------------------------------
-    | Repository Pattern Implementation
+    | Repository Pattern Enforcement
     |--------------------------------------------------------------------------
     |
-    | Controls whether to force the use of repository interfaces. If true,
-    | all repositories must implement their corresponding interface.
+    | When enabled, generated controllers and services will follow the
+    | Repository Pattern, with data access abstracted through repository
+    | interfaces.
+    |
+    | Note: This is a generator setting, not a runtime enforcement.
     |
     */
     'enforce_repository_pattern' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cache Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configure module caching behavior. When caching is enabled and cached
+    | data exists, modules will be loaded from cache instead of scanning
+    | the filesystem.
+    |
+    | Use `php artisan module:cache` to generate the cache.
+    | Use `php artisan module:clear` to clear the cache.
+    |
+    */
+    'cache' => [
+        'enabled' => env('MODULES_CACHE', false),
+        'path' => env('MODULES_CACHE_PATH', null), // null = bootstrap/cache/modules.php
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Stubs Path
+    |--------------------------------------------------------------------------
+    |
+    | The path to custom stubs for module generation. If a stub exists at
+    | this location, it will be used instead of the package defaults.
+    |
+    | Publish stubs with: php artisan module:publish-stubs
+    |
+    */
+    'stubs_path' => base_path('stubs/vendor/modularization'),
+
 ];

@@ -1,46 +1,51 @@
 <?php
 
+declare(strict_types=1);
+
 namespace {{namespace}}\{{moduleName}}\Services\Interfaces;
+
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
+use {{namespace}}\{{moduleName}}\Models\{{moduleName}};
 
 interface {{moduleName}}ServiceInterface
 {
     /**
-     * Get all records
-     * 
-     * @return \Illuminate\Database\Eloquent\Collection
+     * Get all records.
      */
-    public function getAll();
+    public function getAll(): Collection;
 
     /**
-     * Find record by ID
-     * 
-     * @param int $id
-     * @return {{namespace}}\{{moduleName}}\Models\{{moduleName}}|null
+     * Get paginated records.
      */
-    public function findById($id);
+    public function paginate(int $perPage = 15): LengthAwarePaginator;
 
     /**
-     * Create a new record
-     * 
-     * @param array $data
-     * @return {{namespace}}\{{moduleName}}\Models\{{moduleName}}
+     * Find a record by ID.
      */
-    public function create(array $data);
+    public function findById(int $id): ?{{moduleName}};
 
     /**
-     * Update existing record
-     * 
-     * @param int $id
-     * @param array $data
-     * @return {{namespace}}\{{moduleName}}\Models\{{moduleName}}
+     * Find a record by ID or throw exception.
      */
-    public function update($id, array $data);
+    public function findOrFail(int $id): {{moduleName}};
 
     /**
-     * Delete record
-     * 
-     * @param int $id
-     * @return bool
+     * Create a new record.
+     *
+     * @param array<string, mixed> $data
      */
-    public function delete($id);
-} 
+    public function create(array $data): {{moduleName}};
+
+    /**
+     * Update an existing record.
+     *
+     * @param array<string, mixed> $data
+     */
+    public function update(int $id, array $data): {{moduleName}};
+
+    /**
+     * Delete a record.
+     */
+    public function delete(int $id): bool;
+}

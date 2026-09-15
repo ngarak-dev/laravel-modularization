@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Route;
 use {{namespace}}\{{moduleName}}\Http\Controllers\API\{{moduleName}}Controller;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes
+| {{moduleName}} API Routes
 |--------------------------------------------------------------------------
 |
-| Here is where you can register API routes for your module.
+| Here is where you can register API routes for the {{moduleName}} module.
 |
 */
 
-Route::apiResource('{{moduleNameLower}}', {{moduleName}}Controller::class); 
+Route::apiResource('{{moduleNameLower}}', {{moduleName}}Controller::class);
