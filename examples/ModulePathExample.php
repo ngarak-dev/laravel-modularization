@@ -1,18 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization\Examples;
 
 /**
- * This file demonstrates how to use the module_path() helper function 
+ * This file demonstrates how to use the module_path() helper function
  * provided by the Laravel Modularization package.
  */
 class ModulePathExample
 {
     /**
      * Example of using module_path() function.
-     *
-     * @param string $moduleName
-     * @return array
      */
     public function getModulePaths(string $moduleName): array
     {
@@ -34,10 +33,6 @@ class ModulePathExample
 
     /**
      * Example of loading a view using module_path().
-     *
-     * @param string $moduleName
-     * @param string $view
-     * @return string
      */
     public function loadModuleView(string $moduleName, string $view): string
     {

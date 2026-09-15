@@ -1,6 +1,6 @@
-# Laravel Modular Architecture
+# Module System Reference
 
-This document outlines how the module system works in our Laravel application.
+This document describes how the module system works in the `ngarak-dev/laravel-modularization` package.
 
 ## Table of Contents
 
@@ -28,35 +28,34 @@ The modular architecture organizes code by business domain rather than technical
 Each module follows a consistent structure:
 
 ```
-app/Modules/ModuleName/
+modules/ModuleName/
 ├── Config/                     # Module-specific configuration
-├── Database/
-│   ├── Migrations/             # Module-specific migrations
-│   ├── Seeders/                # Module-specific seeders
-│   └── Factories/              # Model factories
 ├── Http/
-│   ├── Controllers/            # Web controllers
-│   │   └── API/                # API controllers
-│   ├── Middleware/             # Module-specific middleware
+│   ├── Controllers/            # Web and API controllers
 │   └── Requests/               # Form requests with validation
-├── Livewire/                   # Livewire components
+├── Livewire/                   # Livewire components (optional)
 ├── Models/                     # Domain models
-├── Providers/                  # Service providers
+├── Providers/
+│   └── ModuleNameServiceProvider.php
 ├── Repositories/               # Data access layer
-│   └── Interfaces/             # Repository interfaces
+│   ├── Interfaces/             # Repository interfaces
+│   └── ModuleNameRepository.php
 ├── Resources/
-│   ├── views/                  # Module-specific views
-│   │   └── livewire/           # Livewire component views
-│   ├── lang/                   # Module-specific translations
-│   └── assets/                 # Module-specific assets
+│   ├── views/                  # Module-specific Blade views
+│   └── lang/                   # Module-specific translations
+│       └── en/
+│           ├── general.php
+│           ├── validation.php
+│           └── module.php
 ├── Routes/
 │   ├── web.php                 # Module web routes
 │   └── api.php                 # Module API routes
 ├── Services/                   # Business logic layer
-│   └── Interfaces/             # Service interfaces
-└── Tests/                      # Module-specific tests
-    ├── Unit/                   # Unit tests
-    └── Feature/                # Feature tests
+│   ├── Interfaces/             # Service interfaces
+│   └── ModuleNameService.php
+├── database/
+│   └── migrations/             # Module-specific migrations
+└── module.json                 # Module manifest (metadata & dependencies)
 ```
 
 ## Module Registration

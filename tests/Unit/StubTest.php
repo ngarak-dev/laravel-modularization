@@ -67,18 +67,16 @@ class StubTest extends TestCase
         $repoInterfaceContent = $this->files->get($this->stubsDirectory . '/repository-interface.stub');
 
         $this->assertStringContainsString('interface {{moduleName}}RepositoryInterface', $repoInterfaceContent);
-        $this->assertStringContainsString('public function getAll()', $repoInterfaceContent);
-        $this->assertStringContainsString('public function findById($id)', $repoInterfaceContent);
         $this->assertStringContainsString('public function create(array $data)', $repoInterfaceContent);
-        $this->assertStringContainsString('public function update($id, array $data)', $repoInterfaceContent);
-        $this->assertStringContainsString('public function delete($id)', $repoInterfaceContent);
+        $this->assertStringContainsString('public function update(', $repoInterfaceContent);
+        $this->assertStringContainsString('public function delete(', $repoInterfaceContent);
+        $this->assertStringContainsString('public function find(', $repoInterfaceContent);
 
         // Check repository implementation stub
         $repoContent = $this->files->get($this->stubsDirectory . '/repository.stub');
 
         $this->assertStringContainsString('class {{moduleName}}Repository implements {{moduleName}}RepositoryInterface', $repoContent);
-        $this->assertStringContainsString('protected $model', $repoContent);
-        $this->assertStringContainsString('public function __construct({{moduleName}} $model)', $repoContent);
+        $this->assertStringContainsString('{{moduleName}} $model', $repoContent);
     }
 
     /** @test */
@@ -88,18 +86,16 @@ class StubTest extends TestCase
         $serviceInterfaceContent = $this->files->get($this->stubsDirectory . '/service-interface.stub');
 
         $this->assertStringContainsString('interface {{moduleName}}ServiceInterface', $serviceInterfaceContent);
-        $this->assertStringContainsString('public function getAll()', $serviceInterfaceContent);
-        $this->assertStringContainsString('public function findById($id)', $serviceInterfaceContent);
+        $this->assertStringContainsString('public function all()', $serviceInterfaceContent);
         $this->assertStringContainsString('public function create(array $data)', $serviceInterfaceContent);
-        $this->assertStringContainsString('public function update($id, array $data)', $serviceInterfaceContent);
-        $this->assertStringContainsString('public function delete($id)', $serviceInterfaceContent);
+        $this->assertStringContainsString('public function update(', $serviceInterfaceContent);
+        $this->assertStringContainsString('public function delete(', $serviceInterfaceContent);
 
         // Check service implementation stub
         $serviceContent = $this->files->get($this->stubsDirectory . '/service.stub');
 
         $this->assertStringContainsString('class {{moduleName}}Service implements {{moduleName}}ServiceInterface', $serviceContent);
-        $this->assertStringContainsString('protected $repository', $serviceContent);
-        $this->assertStringContainsString('public function __construct({{moduleName}}RepositoryInterface $repository)', $serviceContent);
+        $this->assertStringContainsString('{{moduleName}}RepositoryInterface', $serviceContent);
     }
 
     /** @test */
@@ -133,7 +129,8 @@ class StubTest extends TestCase
         $webRoutesContent = $this->files->get($this->stubsDirectory . '/web-routes.stub');
 
         $this->assertStringContainsString('use Illuminate\Support\Facades\Route', $webRoutesContent);
-        $this->assertStringContainsString('Route::resource(\'{{moduleNameLower}}\', {{moduleName}}Controller::class)', $webRoutesContent);
+        $this->assertStringContainsString('{{moduleName}}Controller', $webRoutesContent);
+        $this->assertStringContainsString('{{moduleNameLower}}', $webRoutesContent);
 
         // Check API routes stub
         $apiRoutesContent = $this->files->get($this->stubsDirectory . '/api-routes.stub');

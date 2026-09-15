@@ -1,18 +1,23 @@
 <?php
 
-if (!function_exists('module_path')) {
+declare(strict_types=1);
+
+if (! function_exists('module_path')) {
     /**
-     * Get the path to the specified module.
+     * Get the absolute path to a module, or a path within it.
      *
-     * @param string $name The name of the module
-     * @param string $path The path to append to the module path
-     * @return string
+     * Examples:
+     *   module_path('Products')                      → /path/to/app/modules/Products
+     *   module_path('Products', 'Resources/views')   → /path/to/app/modules/Products/Resources/views
+     *
+     * @param  string  $name  Module name (StudlyCase)
+     * @param  string  $path  Optional sub-path within the module
      */
-    function module_path($name, $path = '')
+    function module_path(string $name, string $path = ''): string
     {
         $modulesPath = base_path(config('modularization.modules_path', 'modules'));
-        $modulePath = $modulesPath . '/' . $name;
+        $modulePath = $modulesPath.'/'.$name;
 
-        return $path ? $modulePath . '/' . ltrim($path, '/') : $modulePath;
+        return $path !== '' ? $modulePath.'/'.ltrim($path, '/') : $modulePath;
     }
 }

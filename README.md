@@ -1,1748 +1,724 @@
-# Laravel Modular Architecture with Repository Pattern
+# Laravel Modularization
 
 <p align="center">
-<a href="https://github.com/ngarak-dev/laravel-modularization"><img src="https://img.shields.io/badge/Maintained%3F-yes-green.svg" alt="Maintenance"></a>
+<a href="https://github.com/ngarak-dev/laravel-modularization/actions"><img src="https://github.com/ngarak-dev/laravel-modularization/workflows/Tests/badge.svg" alt="Tests"></a>
 <a href="https://packagist.org/packages/ngarak-dev/laravel-modularization"><img src="https://img.shields.io/packagist/v/ngarak-dev/laravel-modularization.svg" alt="Latest Version"></a>
 <a href="https://packagist.org/packages/ngarak-dev/laravel-modularization"><img src="https://img.shields.io/packagist/dt/ngarak-dev/laravel-modularization.svg" alt="Total Downloads"></a>
 <a href="https://github.com/ngarak-dev/laravel-modularization/blob/main/LICENSE.md"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
-<a href="https://packagist.org/packages/ngarak-dev/laravel-modularization"><img src="https://img.shields.io/badge/Stability-Stable-brightgreen.svg" alt="Stability"></a>
 </p>
 
-This package implements a modular architecture for Laravel applications, combining the Repository Pattern and Service Layer pattern to create maintainable, scalable applications organized by business domain rather than technical function.
+Organize large Laravel applications by **business domain** rather than technical layer. Each module is a self-contained unit with its own controllers, models, repositories, services, views, routes, migrations, and tests — living under `modules/`.
+
+This package is **not** a clone of `nwidart/laravel-modules`. Its focus is on the **Repository Pattern**, **Service Layer**, and **domain-oriented organization** with a minimal footprint. It generates clean, modern PHP that your team will actually want to maintain.
+
+---
 
 ## Table of Contents
 
-- [Features](#features)
+- [Why Modular?](#why-modular)
 - [Requirements](#requirements)
 - [Installation](#installation)
-- [Step-by-Step Usage Guide](#step-by-step-usage-guide)
-- [Available Commands](#available-commands)
+- [Quick Start](#quick-start)
 - [Module Structure](#module-structure)
-- [Module Lifecycle](#module-lifecycle)
-- [Design Patterns](#design-patterns)
-- [Facade Usage](#facade-usage)
-- [Configuration Options](#configuration-options)
+- [Module Manifest (module.json)](#module-manifest-modulejson)
+- [Module Dependencies](#module-dependencies)
+- [Generating Classes](#generating-classes)
+- [Routes](#routes)
+- [Controllers](#controllers)
+- [Services and Repositories](#services-and-repositories)
+- [Models](#models)
+- [Views](#views)
+- [API Modules](#api-modules)
+- [Livewire Components](#livewire-components)
+- [Events](#events)
+- [Translations](#translations)
+- [Enabling and Disabling Modules](#enabling-and-disabling-modules)
+- [Caching Module Metadata](#caching-module-metadata)
+- [Available Commands](#available-commands)
+- [Testing Modules](#testing-modules)
+- [Configuration](#configuration)
 - [Stub Customization](#stub-customization)
-- [Advanced Usage](#advanced-usage)
-- [Troubleshooting](#troubleshooting)
+- [Upgrade Guide](#upgrade-guide)
 - [Contributing](#contributing)
-- [Version History](#version-history)
 - [License](#license)
 
-## Features
+---
 
-- **Modular Architecture**: Organize code by business domain with auto-discovery
-- **Command-Line Generation**: Generate modules, repositories, services, controllers with a single command
-- **Repository Pattern**: Clean separation between data access and business logic
-- **Service Layer**: Domain-specific business logic encapsulation
-- **Auto-Discovery**: Automatic module registration, routes, views, translations and assets
-- **Module Management**: Enable/disable modules or export them as packages
-- **View & Layout System**: Module-specific views with dedicated layouts
-- **API Support**: Built-in API controllers and routes
-- **Livewire Integration**: Create interactive UIs with auto-registered components
-- **Events & Translations**: Module-specific events and translations
-- **Repository Enforcement**: Enforce repository pattern implementation
+## Why Modular?
+
+A standard Laravel application organizes code by technical layer: `app/Http/Controllers`, `app/Models`, `app/Services`. This works well for small applications but breaks down as the codebase grows, because every feature is scattered across many directories.
+
+Modular architecture organizes code by **business domain** instead:
+
+```
+modules/
+  Billing/
+  Orders/
+  Inventory/
+  Users/
+```
+
+Each module is cohesive and independently understandable. A developer working on `Billing` only needs to look inside `modules/Billing/`.
+
+This package enforces the **Repository Pattern** and **Service Layer** as first-class architectural patterns within each module, making data access and business logic explicitly separated and easily testable.
+
+---
 
 ## Requirements
 
-- PHP 8.0 or higher
-- Laravel 9.0 or higher
+- PHP 8.1 or higher
+- Laravel 10, 11, or 12
 - Composer
 
-## Installation
+Optional:
+- Livewire 3.x (for `--with-livewire` support)
 
-### Step 1: Install the Package
+---
+
+## Installation
 
 ```bash
 composer require ngarak-dev/laravel-modularization
 ```
 
-### Step 2: Publish the Configuration
+The package is auto-discovered by Laravel. Publish the configuration file:
 
 ```bash
-php artisan vendor:publish --provider="NgarakDev\Modularization\Providers\ModularizationServiceProvider" --tag="modularization-config"
+php artisan vendor:publish --tag=modularization-config
 ```
 
-### Step 3: Customize Configuration (Optional)
+This creates `config/modularization.php`.
 
-Edit `config/modularization.php` to:
+---
 
-- Change the modules directory (default: `modules/`)
-- Adjust module namespace (default: `Modules`)
-- Customize auto-registration settings
-- Enable/disable repository pattern enforcement
-
-### Step 4: Create Directory Structure
-
-The package will automatically create the modules directory when you create your first module.
-
-### Step 5: Run composer dump-autoload
-
-After installation, run the following command to ensure helper functions are properly loaded:
+## Quick Start
 
 ```bash
-composer dump-autoload
+# Create a module
+php artisan module:make Billing
+
+# List all modules and their status
+php artisan module:list
+
+# Your new module is ready at:
+# modules/Billing/
 ```
 
-## Helper Functions
+---
 
-The package provides helper functions to simplify working with modules:
+## Module Structure
 
-### module_path()
+A generated module looks like this:
 
-Get the path to modules or a specific module:
+```
+modules/
+  Billing/
+    Config/
+      config.php
+    Http/
+      Controllers/
+        BillingController.php
+    Models/
+      Billing.php
+    Providers/
+      BillingServiceProvider.php
+    Repositories/
+      Interfaces/
+        BillingRepositoryInterface.php
+      BillingRepository.php
+    Resources/
+      lang/
+        en/
+          general.php
+          validation.php
+          module.php
+      views/
+        index.blade.php
+        create.blade.php
+        edit.blade.php
+        show.blade.php
+        layout.blade.php
+    Routes/
+      web.php
+      api.php
+    Services/
+      Interfaces/
+        BillingServiceInterface.php
+      BillingService.php
+    database/
+      migrations/
+    module.json
+```
+
+---
+
+## Module Manifest (module.json)
+
+Each module contains a `module.json` file that acts as its machine-readable contract:
+
+```json
+{
+    "name": "Billing",
+    "namespace": "Modules\\Billing",
+    "version": "1.0.0",
+    "description": "Handles billing, invoices, and payment processing",
+    "enabled": true,
+    "requires": [
+        "Users"
+    ]
+}
+```
+
+Fields:
+
+| Field | Description |
+|-------|-------------|
+| `name` | Module name (matches directory name) |
+| `namespace` | PHP namespace root for this module |
+| `version` | Semver version string |
+| `description` | Human-readable description |
+| `enabled` | Whether this module is active |
+| `requires` | Other module names this module depends on |
+
+---
+
+## Module Dependencies
+
+Declare inter-module dependencies in `module.json`:
+
+```json
+{
+    "name": "Orders",
+    "requires": ["Users", "Products"]
+}
+```
+
+The package will:
+
+1. Validate that all required modules exist and are enabled at boot.
+2. Detect circular dependencies (`A → B → A`).
+3. Load modules in a safe dependency order (dependencies first).
+4. Throw a descriptive `ModuleDependencyException` with a fix hint when dependencies are missing.
+
+---
+
+## Generating Classes
+
+### Create a new module
+
+```bash
+php artisan module:make ModuleName
+```
+
+Options:
+
+```bash
+--api                   Include API routes and controller
+--with-views            Include Blade views
+--with-livewire         Include a Livewire component
+--with-livewire-only    Only create a Livewire component (no traditional controller)
+--with-crud             Generate CRUD operations
+--resource=Name         Add a named resource (can be used multiple times)
+--with-translation      Generate translation files
+--force                 Overwrite existing files
+```
+
+Examples:
+
+```bash
+# Full module with API, views, and CRUD
+php artisan module:make Shop --api --with-views --with-crud
+
+# Module with a Livewire component for the main entity
+php artisan module:make Dashboard --with-livewire
+
+# Module with multiple resources
+php artisan module:make Catalog --resource=Product --resource=Category
+
+# Module with translation files
+php artisan module:make Blog --with-translation
+```
+
+### Generate inside an existing module
+
+```bash
+# Livewire component
+php artisan module:make-livewire ComponentName --module=ModuleName
+
+# Event and listener
+php artisan module:make-event EventName --module=ModuleName
+
+# Translation files
+php artisan module:make-translation --module=ModuleName --lang=en,fr,es
+
+# Migration
+php artisan module:make-migration create_orders_table --module=Orders
+```
+
+---
+
+## Routes
+
+### Web Routes
+
+Each module's `Routes/web.php` is auto-loaded and namespaced:
 
 ```php
-// Get path to a module
-$modulePath = module_path('Products');  // /path/to/your/app/modules/Products
+// modules/Billing/Routes/web.php
+use Modules\Billing\Http\Controllers\BillingController;
 
-// Get path to a specific directory within a module
-$viewsPath = module_path('Products', 'Resources/views');  // /path/to/your/app/modules/Products/Resources/views
+Route::prefix('billing')->name('billing.')->group(function () {
+    Route::get('/', [BillingController::class, 'index'])->name('index');
+    Route::get('/create', [BillingController::class, 'create'])->name('create');
+    Route::post('/', [BillingController::class, 'store'])->name('store');
+    Route::get('/{id}', [BillingController::class, 'show'])->name('show');
+    Route::get('/{id}/edit', [BillingController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [BillingController::class, 'update'])->name('update');
+    Route::delete('/{id}', [BillingController::class, 'destroy'])->name('destroy');
+});
 ```
 
-The `module_path()` function is especially useful for:
+### API Routes
 
-- Loading view files from specific module directories
-- Including configuration files
-- Specifying paths for migrations and seeders
-- Working with module-specific assets
+API routes at `Routes/api.php` are automatically loaded under the `api` middleware group:
 
-Note: The function respects the `modules_path` setting in your `config/modularization.php` file, so if you change the default modules directory, this function will continue to work correctly.
+```php
+// modules/Billing/Routes/api.php
+use Modules\Billing\Http\Controllers\BillingController;
 
-## Step-by-Step Usage Guide
-
-### 1. Create Your First Module
-
-```bash
-php artisan module:make Products
+Route::prefix('billing')->middleware('auth:sanctum')->group(function () {
+    Route::apiResource('invoices', BillingController::class);
+});
 ```
 
-This creates a new module with the following structure:
+---
 
-```
-modules/Products/
-├── Http/Controllers/
-├── Models/
-├── Providers/
-│   └── ProductsServiceProvider.php
-├── Repositories/
-│   └── Interfaces/
-├── Services/
-│   └── Interfaces/
-└── Routes/
-    ├── web.php
-    └── api.php
+## Controllers
+
+Generated controllers receive the module service via constructor injection:
+
+```php
+// modules/Billing/Http/Controllers/BillingController.php
+namespace Modules\Billing\Http\Controllers;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Modules\Billing\Services\Interfaces\BillingServiceInterface;
+
+class BillingController extends Controller
+{
+    public function __construct(
+        private readonly BillingServiceInterface $billingService,
+    ) {}
+
+    public function index()
+    {
+        $items = $this->billingService->getAll();
+        return view('billing::index', compact('items'));
+    }
+}
 ```
 
-### 2. Add API Support (Optional)
+---
+
+## Services and Repositories
+
+### Service Interface
+
+```php
+// modules/Billing/Services/Interfaces/BillingServiceInterface.php
+namespace Modules\Billing\Services\Interfaces;
+
+interface BillingServiceInterface
+{
+    public function getAll(): mixed;
+    public function create(array $data): mixed;
+    public function update(int $id, array $data): mixed;
+    public function delete(int $id): bool;
+}
+```
+
+### Service Implementation
+
+```php
+// modules/Billing/Services/BillingService.php
+namespace Modules\Billing\Services;
+
+use Modules\Billing\Repositories\Interfaces\BillingRepositoryInterface;
+use Modules\Billing\Services\Interfaces\BillingServiceInterface;
+
+class BillingService implements BillingServiceInterface
+{
+    public function __construct(
+        private readonly BillingRepositoryInterface $repository,
+    ) {}
+
+    public function getAll(): mixed
+    {
+        return $this->repository->all();
+    }
+
+    public function create(array $data): mixed
+    {
+        return $this->repository->create($data);
+    }
+
+    public function update(int $id, array $data): mixed
+    {
+        return $this->repository->update($id, $data);
+    }
+
+    public function delete(int $id): bool
+    {
+        return $this->repository->delete($id);
+    }
+}
+```
+
+### Repository Interface
+
+```php
+// modules/Billing/Repositories/Interfaces/BillingRepositoryInterface.php
+namespace Modules\Billing\Repositories\Interfaces;
+
+interface BillingRepositoryInterface
+{
+    public function all(): mixed;
+    public function create(array $data): mixed;
+    public function update(int $id, array $data): mixed;
+    public function delete(int $id): bool;
+}
+```
+
+### Repository Implementation
+
+```php
+// modules/Billing/Repositories/BillingRepository.php
+namespace Modules\Billing\Repositories;
+
+use Modules\Billing\Models\Billing;
+use Modules\Billing\Repositories\Interfaces\BillingRepositoryInterface;
+
+class BillingRepository implements BillingRepositoryInterface
+{
+    public function all(): mixed
+    {
+        return Billing::all();
+    }
+
+    public function create(array $data): mixed
+    {
+        return Billing::create($data);
+    }
+
+    public function update(int $id, array $data): mixed
+    {
+        return Billing::findOrFail($id)->update($data);
+    }
+
+    public function delete(int $id): bool
+    {
+        return (bool) Billing::destroy($id);
+    }
+}
+```
+
+### Binding in the Service Provider
+
+The generated `BillingServiceProvider` binds interfaces to implementations:
+
+```php
+// modules/Billing/Providers/BillingServiceProvider.php
+$this->app->bind(BillingRepositoryInterface::class, BillingRepository::class);
+$this->app->bind(BillingServiceInterface::class, BillingService::class);
+```
+
+> **When to use the Repository Pattern:** Use it when you need to abstract the data layer (e.g., switching from Eloquent to an API), write unit tests without hitting a database, or reuse query logic across multiple services. For simple CRUD that will never change its data source, direct Eloquent usage is perfectly fine.
+
+---
+
+## Models
+
+Models live at `modules/ModuleName/Models/`:
+
+```php
+// modules/Billing/Models/Invoice.php
+namespace Modules\Billing\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Invoice extends Model
+{
+    protected $fillable = ['amount', 'user_id', 'status'];
+}
+```
+
+---
+
+## Views
+
+Module views live at `modules/ModuleName/Resources/views/` and are accessed via the module alias:
+
+```php
+// In a controller
+return view('billing::index');
+return view('billing::invoices.show', compact('invoice'));
+```
+
+The view namespace is derived from the lowercase module name.
+
+---
+
+## API Modules
+
+Create a module with API support:
 
 ```bash
 php artisan module:make Orders --api
 ```
 
-This adds API controllers and routes to your module:
+This generates:
+- `Routes/api.php` with RESTful routes
+- `Http/Controllers/OrdersController.php` extending `Controller` (no view methods)
 
-```
-modules/Orders/
-├── Http/
-│   ├── Controllers/
-│   │   └── API/
-│   │       └── OrdersController.php
-...
-└── Routes/
-    ├── web.php
-    └── api.php
-```
+---
 
-### 3. Add Views (Optional)
+## Livewire Components
+
+Requires [Livewire 3](https://livewire.laravel.com):
 
 ```bash
-php artisan module:make Customers --with-views
+php artisan module:make Dashboard --with-livewire
+# or add a component to an existing module:
+php artisan module:make-livewire StatsWidget --module=Dashboard
 ```
 
-This adds view templates and layouts to your module:
+Components are automatically registered via the module's service provider using Livewire's component alias system.
 
-```
-modules/Customers/
-...
-├── Resources/
-│   └── views/
-│       ├── layouts/
-│       │   ├── module-layout.blade.php
-│       │   └── navigation.blade.php
-│       └── customers/
-│           ├── index.blade.php
-│           ├── create.blade.php
-│           ├── edit.blade.php
-│           └── show.blade.php
-...
-```
+---
 
-### 4. Add Livewire Components (Optional)
+## Events
 
 ```bash
-php artisan module:make Inventory --with-livewire
+php artisan module:make-event OrderPlaced --module=Orders
 ```
 
-This adds Livewire components and views to your module:
-
-```
-modules/Inventory/
-...
-├── Livewire/
-│   ├── InventoryTable.php
-│   └── InventoryForm.php
-├── Resources/
-│   └── views/
-│       └── livewire/
-│           ├── inventory-table.blade.php
-│           └── inventory-form.blade.php
-├── Routes/
-│   ├── web.php
-│   ├── api.php
-│   └── livewire.php
-...
-```
-
-### 5. Add Resource Controller and Routes (Optional)
-
-```bash
-php artisan module:make Products --with-resource
-```
-
-This generates a resourceful controller with all standard CRUD methods and registers resource routes:
-
-```
-modules/Products/
-├── Http/
-│   ├── Controllers/
-│   │   └── ProductsController.php  # With resource methods: index, create, store, show, edit, update, destroy
-├── Routes/
-│   └── web.php                     # With resource routes
-...
-```
-
-The generated controller includes all RESTful resource methods following Laravel's conventions:
+This generates an event class and a listener. Bind them in the module's service provider:
 
 ```php
-// modules/Products/Http/Controllers/ProductsController.php
-namespace Modules\Products\Http\Controllers;
-
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
-
-class ProductsController extends Controller
-{
-    /**
-     * Display a listing of the resource.
-     * @return \Illuminate\View\View
-     */
-    public function index()
-    {
-        return view('products::index');
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     * @return \Illuminate\View\View
-     */
-    public function create()
-    {
-        return view('products::create');
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function store(Request $request)
-    {
-        // Store logic here
-
-        return redirect()->route('products.index');
-    }
-
-    /**
-     * Show the specified resource.
-     * @param int $id
-     * @return \Illuminate\View\View
-     */
-    public function show($id)
-    {
-        return view('products::show', compact('id'));
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     * @param int $id
-     * @return \Illuminate\View\View
-     */
-    public function edit($id)
-    {
-        return view('products::edit', compact('id'));
-    }
-
-    /**
-     * Update the specified resource in storage.
-     * @param Request $request
-     * @param int $id
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function update(Request $request, $id)
-    {
-        // Update logic here
-
-        return redirect()->route('products.index');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     * @param int $id
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function destroy($id)
-    {
-        // Delete logic here
-
-        return redirect()->route('products.index');
-    }
-}
-```
-
-The routes are also automatically registered as a resource in web.php:
-
-```php
-// modules/Products/Routes/web.php
-Route::resource('products', 'ProductsController');
-```
-
-### 6. Define Your Model
-
-Create a model in your module:
-
-```php
-// modules/Products/Models/Product.php
-namespace Modules\Products\Models;
-
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-
-class Product extends Model
-{
-    use HasFactory;
-
-    protected $fillable = [
-        'name', 'description', 'price', 'is_active'
-    ];
-
-    protected $casts = [
-        'price' => 'decimal:2',
-        'is_active' => 'boolean',
-    ];
-}
-```
-
-### 7. Create a Migration
-
-```bash
-php artisan make:migration create_products_table
-```
-
-Move this migration to your module's `Database/Migrations` directory and customize it:
-
-```php
-// modules/Products/Database/Migrations/xxxx_xx_xx_create_products_table.php
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
-
-return new class extends Migration
-{
-    public function up()
-    {
-        Schema::create('products', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->decimal('price', 10, 2);
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-        });
-    }
-
-    public function down()
-    {
-        Schema::dropIfExists('products');
-    }
-};
-```
-
-### 8. Implement Repository Interface and Class
-
-The repository interface and class should already be scaffolded. Update them to match your model:
-
-```php
-// modules/Products/Repositories/Interfaces/ProductRepositoryInterface.php
-namespace Modules\Products\Repositories\Interfaces;
-
-interface ProductRepositoryInterface
-{
-    public function getAll();
-    public function findById($id);
-    public function create(array $data);
-    public function update($id, array $data);
-    public function delete($id);
-    public function getActive();
-}
-
-// modules/Products/Repositories/ProductRepository.php
-namespace Modules\Products\Repositories;
-
-use Modules\Products\Models\Product;
-use Modules\Products\Repositories\Interfaces\ProductRepositoryInterface;
-
-class ProductRepository implements ProductRepositoryInterface
-{
-    protected $model;
-
-    public function __construct(Product $model)
-    {
-        $this->model = $model;
-    }
-
-    public function getAll()
-    {
-        return $this->model->all();
-    }
-
-    public function findById($id)
-    {
-        return $this->model->findOrFail($id);
-    }
-
-    public function create(array $data)
-    {
-        return $this->model->create($data);
-    }
-
-    public function update($id, array $data)
-    {
-        $model = $this->findById($id);
-        $model->update($data);
-        return $model;
-    }
-
-    public function delete($id)
-    {
-        $model = $this->findById($id);
-        return $model->delete();
-    }
-
-    public function getActive()
-    {
-        return $this->model->where('is_active', true)->get();
-    }
-}
-```
-
-### 9. Implement Service Interface and Class
-
-```php
-// modules/Products/Services/Interfaces/ProductServiceInterface.php
-namespace Modules\Products\Services\Interfaces;
-
-interface ProductServiceInterface
-{
-    public function getAllProducts();
-    public function getProductById($id);
-    public function createProduct(array $data);
-    public function updateProduct($id, array $data);
-    public function deleteProduct($id);
-    public function getActiveProducts();
-}
-
-// modules/Products/Services/ProductService.php
-namespace Modules\Products\Services;
-
-use Modules\Products\Repositories\Interfaces\ProductRepositoryInterface;
-use Modules\Products\Services\Interfaces\ProductServiceInterface;
-
-class ProductService implements ProductServiceInterface
-{
-    protected $repository;
-
-    public function __construct(ProductRepositoryInterface $repository)
-    {
-        $this->repository = $repository;
-    }
-
-    public function getAllProducts()
-    {
-        return $this->repository->getAll();
-    }
-
-    public function getProductById($id)
-    {
-        return $this->repository->findById($id);
-    }
-
-    public function createProduct(array $data)
-    {
-        // You can add business logic here before creating
-        return $this->repository->create($data);
-    }
-
-    public function updateProduct($id, array $data)
-    {
-        // You can add business logic here before updating
-        return $this->repository->update($id, $data);
-    }
-
-    public function deleteProduct($id)
-    {
-        return $this->repository->delete($id);
-    }
-
-    public function getActiveProducts()
-    {
-        return $this->repository->getActive();
-    }
-}
-```
-
-### 10. Register Dependencies in Service Provider
-
-The module service provider is automatically created and registered. Bind your interfaces:
-
-```php
-// modules/Products/Providers/ProductsServiceProvider.php
-namespace Modules\Products\Providers;
-
-use Illuminate\Support\ServiceProvider;
-use Modules\Products\Repositories\Interfaces\ProductRepositoryInterface;
-use Modules\Products\Repositories\ProductRepository;
-use Modules\Products\Services\Interfaces\ProductServiceInterface;
-use Modules\Products\Services\ProductService;
-
-class ProductsServiceProvider extends ServiceProvider
-{
-    public function register()
-    {
-        $this->app->bind(ProductRepositoryInterface::class, ProductRepository::class);
-        $this->app->bind(ProductServiceInterface::class, ProductService::class);
-    }
-
-    public function boot()
-    {
-        // Additional module boot logic here
-    }
-}
-```
-
-### 11. Update Controllers
-
-The web and API controllers should already be scaffolded. Update them to use your service:
-
-```php
-// modules/Products/Http/Controllers/ProductsController.php
-namespace Modules\Products\Http\Controllers;
-
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
-use Modules\Products\Services\Interfaces\ProductServiceInterface;
-use Modules\Products\Http\Requests\StoreProductRequest;
-use Modules\Products\Http\Requests\UpdateProductRequest;
-
-class ProductsController extends Controller
-{
-    protected $productService;
-
-    public function __construct(ProductServiceInterface $productService)
-    {
-        $this->productService = $productService;
-    }
-
-    public function index()
-    {
-        $products = $this->productService->getAllProducts();
-        return view('products::products.index', compact('products'));
-    }
-
-    public function create()
-    {
-        return view('products::products.create');
-    }
-
-    public function store(StoreProductRequest $request)
-    {
-        $product = $this->productService->createProduct($request->validated());
-        return redirect()->route('products.show', $product->id)
-            ->with('success', 'Product created successfully.');
-    }
-
-    public function show($id)
-    {
-        $product = $this->productService->getProductById($id);
-        return view('products::products.show', compact('product'));
-    }
-
-    public function edit($id)
-    {
-        $product = $this->productService->getProductById($id);
-        return view('products::products.edit', compact('product'));
-    }
-
-    public function update(UpdateProductRequest $request, $id)
-    {
-        $product = $this->productService->updateProduct($id, $request->validated());
-        return redirect()->route('products.show', $product->id)
-            ->with('success', 'Product updated successfully.');
-    }
-
-    public function destroy($id)
-    {
-        $this->productService->deleteProduct($id);
-        return redirect()->route('products.index')
-            ->with('success', 'Product deleted successfully.');
-    }
-}
-```
-
-For API controllers:
-
-```php
-// modules/Products/Http/Controllers/API/ProductsController.php
-namespace Modules\Products\Http\Controllers\API;
-
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
-use Modules\Products\Services\Interfaces\ProductServiceInterface;
-use Modules\Products\Http\Requests\StoreProductRequest;
-use Modules\Products\Http\Requests\UpdateProductRequest;
-
-class ProductsController extends Controller
-{
-    protected $productService;
-
-    public function __construct(ProductServiceInterface $productService)
-    {
-        $this->productService = $productService;
-    }
-
-    public function index()
-    {
-        $products = $this->productService->getAllProducts();
-        return response()->json(['data' => $products]);
-    }
-
-    public function store(StoreProductRequest $request)
-    {
-        $product = $this->productService->createProduct($request->validated());
-        return response()->json(['data' => $product], 201);
-    }
-
-    public function show($id)
-    {
-        $product = $this->productService->getProductById($id);
-        return response()->json(['data' => $product]);
-    }
-
-    public function update(UpdateProductRequest $request, $id)
-    {
-        $product = $this->productService->updateProduct($id, $request->validated());
-        return response()->json(['data' => $product]);
-    }
-
-    public function destroy($id)
-    {
-        $this->productService->deleteProduct($id);
-        return response()->json(null, 204);
-    }
-}
-```
-
-### 12. Create Form Requests
-
-Generate form requests for validation:
-
-```php
-// modules/Products/Http/Requests/StoreProductRequest.php
-namespace Modules\Products\Http\Requests;
-
-use Illuminate\Foundation\Http\FormRequest;
-
-class StoreProductRequest extends FormRequest
-{
-    public function authorize()
-    {
-        return true;
-    }
-
-    public function rules()
-    {
-        return [
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'is_active' => 'boolean',
-        ];
-    }
-}
-
-// modules/Products/Http/Requests/UpdateProductRequest.php
-namespace Modules\Products\Http\Requests;
-
-use Illuminate\Foundation\Http\FormRequest;
-
-class UpdateProductRequest extends FormRequest
-{
-    public function authorize()
-    {
-        return true;
-    }
-
-    public function rules()
-    {
-        return [
-            'name' => 'sometimes|required|string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'sometimes|required|numeric|min:0',
-            'is_active' => 'boolean',
-        ];
-    }
-}
-```
-
-### 13. Add Routes
-
-Routes are already set up in the module, but you may need to customize them:
-
-```php
-// modules/Products/Routes/web.php
-use Illuminate\Support\Facades\Route;
-use Modules\Products\Http\Controllers\ProductsController;
-
-Route::middleware('web')->group(function() {
-    Route::prefix('products')->group(function() {
-        Route::get('/', [ProductsController::class, 'index'])->name('products.index');
-        Route::get('/create', [ProductsController::class, 'create'])->name('products.create');
-        Route::post('/', [ProductsController::class, 'store'])->name('products.store');
-        Route::get('/{id}', [ProductsController::class, 'show'])->name('products.show');
-        Route::get('/{id}/edit', [ProductsController::class, 'edit'])->name('products.edit');
-        Route::put('/{id}', [ProductsController::class, 'update'])->name('products.update');
-        Route::delete('/{id}', [ProductsController::class, 'destroy'])->name('products.destroy');
-    });
-});
-
-// modules/Products/Routes/api.php
-use Illuminate\Support\Facades\Route;
-use Modules\Products\Http\Controllers\API\ProductsController;
-
-Route::middleware('api')->prefix('api')->group(function() {
-    Route::apiResource('products', ProductsController::class);
-});
-```
-
-### 14. Create Livewire Components (Optional)
-
-You can add Livewire components to an existing module:
-
-```bash
-php artisan module:make-livewire Products ProductForm
-php artisan module:make-livewire Products ProductTable
-```
-
-Update the components to work with your services:
-
-```php
-// modules/Products/Livewire/ProductForm.php
-namespace Modules\Products\Livewire;
-
-use Livewire\Component;
-use Modules\Products\Services\Interfaces\ProductServiceInterface;
-
-class ProductForm extends Component
-{
-    public $name;
-    public $description;
-    public $price;
-    public $is_active = true;
-    public $product;
-    public $editing = false;
-
-    protected $rules = [
-        'name' => 'required|string|max:255',
-        'description' => 'nullable|string',
-        'price' => 'required|numeric|min:0',
-        'is_active' => 'boolean',
-    ];
-
-    public function mount($productId = null, ProductServiceInterface $productService)
-    {
-        if ($productId) {
-            $this->editing = true;
-            $this->product = $productService->getProductById($productId);
-            $this->name = $this->product->name;
-            $this->description = $this->product->description;
-            $this->price = $this->product->price;
-            $this->is_active = $this->product->is_active;
-        }
-    }
-
-    public function save(ProductServiceInterface $productService)
-    {
-        $validatedData = $this->validate();
-
-        if ($this->editing) {
-            $productService->updateProduct($this->product->id, $validatedData);
-            $this->dispatch('productUpdated');
-        } else {
-            $productService->createProduct($validatedData);
-            $this->dispatch('productCreated');
-        }
-
-        $this->reset(['name', 'description', 'price']);
-        $this->is_active = true;
-
-        session()->flash('success',
-            $this->editing ? 'Product updated successfully!' : 'Product created successfully!');
-    }
-
-    public function render()
-    {
-        return view('products::livewire.product-form');
-    }
-}
-```
-
-Use the component in your views:
-
-```php
-@livewire('products::product-form')
-```
-
-## Available Commands
-
-### Module Management
-
-```bash
-# Create a new module
-php artisan module:make ModuleName [options]
-# Alternative command
-php artisan make:module ModuleName [options]
-
-# Module creation options:
-#  --api                    : Generate API controller and routes
-#  --force                  : Force overwrite if module already exists
-#  --resource=ResourceName  : Create a resource within the module (can specify multiple separated by comma)
-#  --with-views             : Generate view files for the module
-#  --with-livewire          : Generate Livewire components
-#  --with-livewire-only     : Generate only Livewire components without controllers
-#  --with-crud              : Generate CRUD operations
-#  --with-translations      : Generate translation files (en, es, fr, de)
-#  --languages=*            : Specify languages for translation files
-
-# Enable or disable a module
-php artisan module:toggle ModuleName [--enable] [--disable]
-
-# Export a module as a package
-php artisan module:export ModuleName
-
-# Create a module manager dashboard
-php artisan module:make-manager [ModuleName] [--force]
-
-# Create module-specific migrations
-php artisan module:make-migration migration_name ModuleName [--create=table_name] [--table=table_name] [--path=custom/path]
-
-# Run migrations for a specific module
-php artisan module:migrate ModuleName [--force] [--seed] [--step] [--pretend] [--fresh] [--rollback] [--status] [--reset] [--refresh]
-
-# Run migrations for all modules
-php artisan module:migrate-all [--force] [--seed] [--step] [--pretend] [--only-enabled] [--fresh] [--rollback] [--status] [--reset] [--refresh]
-```
-
-### Authentication Scaffolding
-
-```bash
-# Generate a standalone authentication module
-php artisan module:make-auth [ModuleName] [--force]
-```
-
-This command creates a complete standalone authentication module for your Laravel application, including:
-
-- Login and registration controllers
-- Password reset functionality
-- Email verification
-- Authentication middleware
-- Blade templates with Tailwind CSS styling
-- Authentication routes
-- Dashboard page
-
-The generated authentication system uses pure Blade templates (no Livewire) and follows Laravel's best practices. By default, it will create a module named 'Auth' if no name is provided.
-
-When you run this command, it generates the following structure:
-
-```
-modules/Auth/
-├── Http/
-│   ├── Controllers/
-│   │   └── Auth/                       # Authentication controllers
-│   │       ├── LoginController.php
-│   │       ├── RegisterController.php
-│   │       ├── ForgotPasswordController.php
-│   │       ├── ResetPasswordController.php
-│   │       └── VerifyEmailController.php
-│   └── Middleware/                     # Authentication middleware
-│       ├── Authenticate.php
-│       └── RedirectIfAuthenticated.php
-├── Resources/
-│   └── views/
-│       ├── auth/                       # Authentication views
-│           ├── login.blade.php
-│           ├── register.blade.php
-│           ├── forgot-password.blade.php
-│           ├── reset-password.blade.php
-│           └── verify-email.blade.php
-│       ├── dashboard/
-│           └── index.blade.php         # Dashboard view
-│       └── layouts/
-│           └── auth-layout.blade.php   # Authentication layout
-├── Providers/
-│   └── AuthServiceProvider.php         # Service provider with route and middleware registration
-└── Routes/
-    ├── auth.php                        # Authentication routes
-    └── web.php                         # Dashboard routes
-```
-
-#### Sample Generated Code
-
-**Controllers (LoginController.php):**
-
-```php
-namespace Modules\Auth\Http\Controllers\Auth;
-
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-
-class LoginController extends Controller
-{
-    public function showLoginForm()
-    {
-        return view('auth::auth.login');
-    }
-
-    public function login(Request $request)
-    {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
-
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            $request->session()->regenerate();
-            return redirect()->intended(route('auth.dashboard'));
-        }
-
-        return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
-        ])->onlyInput('email');
-    }
-
-    public function logout(Request $request)
-    {
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        return redirect()->route('auth.login');
-    }
-}
-```
-
-**Routes (auth.php):**
-
-```php
-use Illuminate\Support\Facades\Route;
-use Modules\Auth\Http\Controllers\Auth\LoginController;
-use Modules\Auth\Http\Controllers\Auth\RegisterController;
-use Modules\Auth\Http\Controllers\Auth\ForgotPasswordController;
-use Modules\Auth\Http\Controllers\Auth\ResetPasswordController;
-use Modules\Auth\Http\Controllers\Auth\VerifyEmailController;
-
-Route::middleware('web')->group(function () {
-    // Guest routes
-    Route::middleware('auth.guest')->group(function () {
-        // Login routes
-        Route::get('/login', [LoginController::class, 'showLoginForm'])
-            ->name('auth.login');
-        Route::post('/login', [LoginController::class, 'login']);
-
-        // Registration routes
-        Route::get('/register', [RegisterController::class, 'showRegistrationForm'])
-            ->name('auth.register');
-        Route::post('/register', [RegisterController::class, 'register']);
-
-        // Password reset routes
-        Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])
-            ->name('auth.password.request');
-        Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])
-            ->name('auth.password.email');
-        Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showResetForm'])
-            ->name('auth.password.reset');
-        Route::post('/reset-password', [ResetPasswordController::class, 'reset'])
-            ->name('auth.password.update');
-    });
-
-    // Auth routes
-    Route::middleware('auth.auth')->group(function () {
-        Route::post('/logout', [LoginController::class, 'logout'])
-            ->name('auth.logout');
-
-        // Email verification routes
-        Route::get('/email/verify', [VerifyEmailController::class, 'show'])
-            ->name('auth.verification.notice');
-        Route::get('/email/verify/{id}/{hash}', [VerifyEmailController::class, 'verify'])
-            ->name('auth.verification.verify');
-        Route::post('/email/verification-notification', [VerifyEmailController::class, 'send'])
-            ->name('auth.verification.send');
-    });
-});
-```
-
-**View (login.blade.php):**
-
-```php
-@extends('auth::layouts.auth-layout')
-
-@section('content')
-<div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
-    <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
-        <h2 class="text-center text-2xl font-bold text-gray-800 mb-8">{{ __('Login') }}</h2>
-
-        @if (session('status'))
-            <div class="mb-4 font-medium text-sm text-green-600">
-                {{ session('status') }}
-            </div>
-        @endif
-
-        <form method="POST" action="{{ route('auth.login') }}">
-            @csrf
-
-            <!-- Email Address -->
-            <div class="mb-4">
-                <label for="email" class="block text-sm font-medium text-gray-700">{{ __('Email') }}</label>
-                <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-
-                @error('email')
-                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <!-- Password -->
-            <div class="mb-4">
-                <label for="password" class="block text-sm font-medium text-gray-700">{{ __('Password') }}</label>
-                <input id="password" type="password" name="password" required
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-
-                @error('password')
-                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <!-- Remember Me -->
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center">
-                    <input id="remember_me" type="checkbox" name="remember"
-                           class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-                    <label for="remember_me" class="ml-2 block text-sm text-gray-700">
-                        {{ __('Remember me') }}
-                    </label>
-                </div>
-
-                @if (Route::has('auth.password.request'))
-                    <a class="text-sm text-indigo-600 hover:text-indigo-900"
-                       href="{{ route('auth.password.request') }}">
-                        {{ __('Forgot your password?') }}
-                    </a>
-                @endif
-            </div>
-
-            <div class="flex items-center justify-between mt-6">
-                <div>
-                    @if (Route::has('auth.register'))
-                        <a class="text-sm text-indigo-600 hover:text-indigo-900"
-                           href="{{ route('auth.register') }}">
-                            {{ __('Need an account?') }}
-                        </a>
-                    @endif
-                </div>
-
-                <button type="submit"
-                        class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 active:bg-gray-900 focus:outline-none focus:border-gray-900 focus:ring ring-gray-300 disabled:opacity-25 transition ease-in-out duration-150">
-                    {{ __('Log in') }}
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-@endsection
-```
-
-### Component Generation
-
-```bash
-# Add a Livewire component to a module
-php artisan module:make-livewire ModuleName ComponentName [--force] [--subdirectory=Subfolder] [--view-only] [--class-only]
-
-# Create module-specific events
-php artisan module:make-event ModuleName EventName [--force]
-
-# Create module-specific translations
-php artisan module:make-translation ModuleName Language [--force]
-```
-
-### Customization
-
-```bash
-# Publish stubs for customization
-php artisan module:publish-stubs
-```
-
-### Module Migrations
-
-The package provides commands to run migrations specifically for your modules:
-
-```bash
-# Create a migration for a specific module
-php artisan module:make-migration migration_name ModuleName [--create=table_name] [--table=table_name] [--path=custom/path]
-```
-
-This command creates a new migration file in the specified module's `Database/Migrations` directory.
-
-Options:
-
-- `--create=table_name`: Create a new table migration
-- `--table=table_name`: Create a table migration for an existing table
-- `--path=custom/path`: Specify a custom path within the module for the migration
-
-```bash
-# Run migrations for a specific module
-php artisan module:migrate ModuleName [--force] [--seed] [--step] [--pretend]
-```
-
-This command runs the migrations located in the `Database/Migrations` directory of the specified module.
-
-Options:
-
-- `--force`: Force the operation to run in production
-- `--seed`: Run the database seeds after migration
-- `--step`: Run the migrations incrementally
-- `--pretend`: Show the SQL queries that would run without actually executing them
-
-#### Additional Migration Operations
-
-```bash
-# Run fresh migrations (drop all tables and re-run migrations)
-php artisan module:migrate ModuleName --fresh
-
-# Rollback the last batch of migrations
-php artisan module:migrate ModuleName --rollback
-
-# Show migration status
-php artisan module:migrate ModuleName --status
-
-# Reset all migrations (rollback all migrations)
-php artisan module:migrate ModuleName --reset
-
-# Refresh all migrations (reset and re-migrate)
-php artisan module:migrate ModuleName --refresh
-```
-
-```bash
-# Run migrations for all modules
-php artisan module:migrate-all [--force] [--seed] [--step] [--pretend] [--only-enabled]
-```
-
-The `module:migrate-all` command runs migrations for all modules, with an additional option:
-
-- `--only-enabled`: Only run migrations for modules that are enabled
-
-All the migration operations (fresh, rollback, status, reset, refresh) are also available for the `module:migrate-all` command.
-
-This helps you manage your database migrations in a modular way, allowing you to:
-
-- Run migrations for specific modules during development
-- Deploy only certain modules to production
-- Skip migrations for disabled modules
-
-### Module Structure and Configuration
-
-All modules follow a standardized configuration structure:
-
-```php
-// modules/ModuleName/Config/config.php
-return [
-    'name' => 'ModuleName',           // Module display name
-    'description' => 'Description',    // Module description
-    'enabled' => true,                 // Module enabled status
-    'routes' => [
-        'prefix' => 'modulename',      // URL prefix for routes
-        'middleware' => ['web'],       // Default middleware
-    ],
-    'menu' => [
-        'title' => 'ModuleName',       // Menu item title
-        'icon' => 'fa fa-th-large',    // Font Awesome icon class
+protected $listen = [
+    OrderPlaced::class => [
+        SendOrderConfirmation::class,
     ],
 ];
 ```
 
-### Module Manager Dashboard
+---
 
-The Module Manager provides a web interface for managing your modules. To create a module manager:
+## Translations
 
 ```bash
-php artisan module:make-manager
+# Generate translation files
+php artisan module:make-translation --module=Billing --lang=en,fr
+
+# Or include during module creation:
+php artisan module:make Billing --with-translation
 ```
 
-Features:
+Translation files are placed at `modules/Billing/Resources/lang/{locale}/`:
 
-- Beautiful dashboard UI with Tailwind CSS
-- List of all installed modules with their status
-- Enable/disable modules with a single click
-- Module details including description and configuration
-- Integrated with Font Awesome icons
-
-After installation, you can access your module manager at `/modulemanager` and control all your modules from one place.
-
-The generated module manager automatically:
-
-- Scans for all modules in your application
-- Displays status, description and other details from module configs
-- Allows toggling module status (enabled/disabled)
-- Uses the icon defined in each module's config
-
-The module manager is fully customizable - you can extend it with additional functionality or modify its appearance.
-
-## Module Structure
-
-Each module follows a consistent structure:
-
-```
-modules/ModuleName/
-├── Http/
-│   ├── Controllers/            # Web controllers
-│   │   └── API/                # API controllers
-│   ├── Middleware/             # Module-specific middleware
-│   └── Requests/               # Form requests with validation
-├── Livewire/                   # Livewire components
-├── Models/                     # Domain models
-├── Providers/                  # Service providers
-├── Repositories/               # Data access layer
-│   └── Interfaces/             # Repository interfaces
-├── Services/                   # Business logic layer
-│   └── Interfaces/             # Service interfaces
-├── Resources/
-│   ├── views/                  # Module-specific views
-│   │   ├── layouts/            # Module-specific layouts
-│   │   └── livewire/           # Livewire component views
-│   └── lang/                   # Module-specific translations
-├── Routes/
-│   ├── web.php                 # Module web routes
-│   ├── api.php                 # Module API routes
-│   └── livewire.php            # Livewire-specific routes
-├── Config/                     # Module config files
-└── Database/
-    ├── Migrations/             # Module-specific migrations
-    ├── Seeders/                # Module-specific seeders
-    └── Factories/              # Model factories
+```php
+// Use in views or controllers:
+__('billing::general.title')
+trans('billing::validation.required')
 ```
 
-## Module Lifecycle
+---
 
-### Auto-Discovery Process
-
-The package's service provider automatically:
-
-1. Scans the configured modules directory
-2. Registers each module's service provider
-3. Loads routes (web, API, and Livewire)
-4. Registers views, translations, and migrations
-5. Auto-registers Livewire components
-6. Loads module-specific assets and configurations
-
-### Enabling and Disabling Modules
-
-Modules can be enabled or disabled without removing their code:
+## Enabling and Disabling Modules
 
 ```bash
 # Disable a module
-php artisan module:toggle ModuleName --disable
+php artisan module:toggle Billing --disable
 
 # Enable a module
-php artisan module:toggle ModuleName --enable
+php artisan module:toggle Billing --enable
+
+# List all modules and their status
+php artisan module:list
 ```
 
-When a module is disabled:
+The enable/disable state is persisted via a `.disabled` sentinel file inside the module directory. A disabled module is not booted and its routes, views, and migrations are not registered.
 
-- Its routes are not registered
-- Its service provider is not loaded
-- Its views and translations are not available
-- Its Livewire components are not registered
+The `module.json` file's `enabled` field is also updated for human readability.
 
-### Exporting Modules
+---
 
-Modules can be exported as standalone packages:
+## Caching Module Metadata
+
+In production, avoid scanning the filesystem on every request by caching module metadata:
 
 ```bash
-php artisan module:export ModuleName
+# Cache the module list (run as part of deployment)
+php artisan module:cache
+
+# Clear the cache (run before module:cache on re-deploy)
+php artisan module:clear
 ```
 
-This creates a package in the `packages` directory with:
+The cache is stored at `bootstrap/cache/modules.php`. This file should be regenerated during every deployment. Add these commands to your deployment pipeline alongside `config:cache` and `route:cache`.
 
-- A properly structured Laravel package
-- Composer configuration
-- Service provider
-- All module files
+---
 
-## Design Patterns
+## Available Commands
 
-### Repository Pattern
+| Command | Description |
+|---------|-------------|
+| `module:make {name}` | Create a new module |
+| `module:list` | List all modules with status |
+| `module:toggle {name}` | Enable or disable a module |
+| `module:cache` | Cache module metadata for faster boot |
+| `module:clear` | Remove the module metadata cache |
+| `module:make-livewire {name}` | Generate a Livewire component inside a module |
+| `module:make-event {name}` | Generate an event and listener inside a module |
+| `module:make-translation` | Generate translation files for a module |
+| `module:make-migration {name}` | Generate a migration inside a module |
+| `module:migrate {name}` | Run migrations for a specific module |
+| `module:migrate-all` | Run migrations for all enabled modules |
+| `module:make-auth {name}` | Scaffold authentication inside a module |
+| `module:make-manager {name}` | Scaffold a module manager dashboard |
+| `module:export {name}` | Export a module as a standalone Composer package |
+| `module:publish-stubs` | Publish stubs to your application for customization |
 
-The repository pattern separates data access logic from business logic:
+---
+
+## Testing Modules
+
+Place module tests inside the module itself or in the application's `tests/` directory. The package provides no test infrastructure of its own — use Laravel's standard testing tools.
+
+Example feature test for a module:
 
 ```php
-// Interface defines the contract
-interface ProductRepositoryInterface {
-    public function all();
-    public function find($id);
-    public function create(array $data);
-    public function update($id, array $data);
-    public function delete($id);
-    // Added compatibility methods to standardize naming
-    public function getAll();
-    public function findById($id);
-}
+<?php
 
-// Implementation handles actual data access
-class ProductRepository implements ProductRepositoryInterface {
-    protected $model;
+namespace Tests\Feature\Billing;
 
-    public function __construct(Product $model)
+use Tests\TestCase;
+
+class InvoiceTest extends TestCase
+{
+    public function test_authenticated_user_can_create_invoice(): void
     {
-        $this->model = $model;
-    }
+        $user = \App\Models\User::factory()->create();
 
-    public function all()
-    {
-        return $this->model->all();
-    }
+        $response = $this->actingAs($user)->post(route('billing.store'), [
+            'amount' => 100.00,
+        ]);
 
-    public function find($id)
-    {
-        return $this->model->findOrFail($id);
+        $response->assertRedirect(route('billing.index'));
+        $this->assertDatabaseHas('invoices', ['amount' => 100.00]);
     }
-
-    // Compatibility methods to standardize naming
-    public function getAll()
-    {
-        return $this->all();
-    }
-
-    public function findById($id)
-    {
-        return $this->find($id);
-    }
-
-    // Other methods...
 }
 ```
 
-Benefits:
+Run module-specific tests:
 
-- Makes code more testable by allowing mock repositories in tests
-- Centralizes data access logic
-- Enables easy swapping of data sources without affecting business logic
-- Added compatibility methods maintain consistency between repository and service naming conventions
-
-### Service Layer Pattern
-
-The service layer contains business logic:
-
-```php
-// Interface defines the contract
-interface ProductServiceInterface {
-    public function getAllProducts();
-    public function getProductById($id);
-    public function createProduct(array $data);
-    public function updateProduct($id, array $data);
-    public function deleteProduct($id);
-}
-
-// Implementation contains business rules
-class ProductService implements ProductServiceInterface {
-    protected $repository;
-
-    public function __construct(ProductRepositoryInterface $repository)
-    {
-        $this->repository = $repository;
-    }
-
-    public function getAllProducts()
-    {
-        return $this->repository->getAll();
-    }
-
-    public function getProductById($id)
-    {
-        return $this->repository->findById($id);
-    }
-
-    // Other methods...
-}
+```bash
+php artisan test --filter=Billing
 ```
 
-### View & Layout System
+---
 
-The package includes a module-specific view and layout system:
+## Configuration
 
-```
-modules/Products/
-├── Resources/
-│   └── views/
-│       ├── layouts/
-│       │   ├── module-layout.blade.php    # Module-specific layout with consistent structure
-│       │   └── navigation.blade.php       # Module-specific navigation menu
-│       └── products/                      # Module views
-│           ├── index.blade.php
-│           ├── create.blade.php
-│           ├── edit.blade.php
-│           └── show.blade.php
+```bash
+php artisan vendor:publish --tag=modularization-config
 ```
 
-Benefits:
-
-- Each module has its own isolated view structure
-- Module-specific layouts allow for customization
-- Navigation can be tailored to module functionality
-- Views are namespaced to avoid conflicts
-
-To use module views in controllers:
-
-```php
-// Inside a module controller
-return view('products::products.index');  // Uses modules/Products/Resources/views/products/index.blade.php
-```
-
-For layouts:
-
-```php
-// Inside a module view
-@extends('products::layouts.module-layout')
-```
-
-The package's view system ensures each module has its own isolated views while maintaining a consistent structure across your application.
-
-## Facade Usage
-
-The package provides a facade for easier access to the modularization service:
-
-```php
-use NgarakDev\Modularization\Facades\Modularization;
-
-// Get all modules
-$modules = Modularization::getModules();
-
-// Check if a module exists
-if (Modularization::hasModule('Products')) {
-    // ...
-}
-
-// Check if a module is enabled
-if (Modularization::isEnabled('Products')) {
-    // ...
-}
-
-// Enable a module
-Modularization::enable('Products');
-
-// Disable a module
-Modularization::disable('Products');
-```
-
-## Configuration Options
-
-Key options in `config/modularization.php`:
+`config/modularization.php`:
 
 ```php
 return [
-    // Path where modules are stored
+    // Where modules live relative to the application root
     'modules_path' => 'modules',
 
-    // Namespace for all modules
+    // Default namespace root for all modules
     'namespace' => 'Modules',
 
-    // Default directories created in each module
+    // Directory names used when generating a module
     'directories' => [
         'Http/Controllers',
-        'Http/Controllers/API',
-        'Http/Middleware',
-        'Http/Requests',
         'Models',
-        'Repositories',
-        'Repositories/Interfaces',
-        'Services',
-        'Services/Interfaces',
         'Providers',
-        'Database/Migrations',
-        'Database/Seeders',
-        'Database/Factories',
+        'Repositories/Interfaces',
+        'Repositories',
+        'Services/Interfaces',
+        'Services',
+        'Repositories',
+        'Resources/views',
+        'Resources/lang/en',
         'Routes',
         'Config',
-        'Resources/views',
-        'Resources/lang',
-        'Livewire',
-        'Tests/Unit',
-        'Tests/Feature',
+        'database/migrations',
     ],
 
-    // Auto-register controllers with routes
-    'auto_register_controllers' => true,
+    // Set to true to enforce that every module must use the Repository Pattern
+    'enforce_repository_pattern' => false,
 
-    // Auto-register Livewire components
+    // Set to true to auto-register Livewire components found in modules
     'auto_register_livewire' => true,
-
-    // Enforce repository interface implementation
-    'enforce_repository_pattern' => true,
 ];
 ```
 
+---
+
 ## Stub Customization
 
-You can publish and customize the stubs used for code generation:
+Publish the package stubs to your application:
 
 ```bash
 php artisan module:publish-stubs
 ```
 
-This will copy all stubs to `stubs/vendor/modularization/` in your project root, including:
+Stubs are published to `stubs/vendor/modularization/`. Edit them to match your team's conventions. The package uses your custom stubs automatically when it detects them.
 
-- Module layouts and views
-- Controllers (web and API)
-- Repository interfaces and implementations
-- Service interfaces and implementations
-- Livewire components and views
-- Route files
-- And more
+---
 
-You can then edit these stubs to match your coding style and requirements.
+## Upgrade Guide
 
-## Advanced Usage
+### Upgrading from < 1.1.0
 
-### Module-Specific Layouts
+**Breaking changes:**
 
-Each module can have its own layouts:
+- `php:^8.0` minimum has been raised to `php:^8.1`.
+- `ModularizationService` no longer accepts `Filesystem` as its first constructor parameter. If you manually construct this class, remove that argument.
+- Exception classes in `src/Exceptions/` are now `final`. If you extended them, use composition instead.
 
-```php
-// In your controller
-return view('modulename::page')->extends('modulename::layouts.module-layout');
+**New features:**
 
-// Or in your blade file
-@extends('modulename::layouts.module-layout')
-```
+- `module.json` manifest with `requires` dependency support.
+- `module:cache` / `module:clear` commands for production caching.
+- `module:list` command with table and JSON output.
+- `ModuleDiscovery`, `ModuleStatusManager`, `ModuleCache`, `ModuleDependencyResolver` support classes.
+- `Module` value object with `fromManifest()` and `fromDirectory()` constructors.
+- `Modularization::find()`, `findOrFail()`, `getEnabledModules()`, `getDisabledModules()`, `refresh()` facade methods.
+- PHPStan level 5 static analysis in CI.
+- Laravel Pint code style enforcement in CI.
 
-### Sharing Data Between Modules
-
-Use Laravel's event system for cross-module communication:
-
-```php
-// In one module, create an event
-namespace Modules\Orders\Events;
-
-class OrderCreated
-{
-    public $order;
-
-    public function __construct($order)
-    {
-        $this->order = $order;
-    }
-}
-
-// Dispatch the event
-event(new \Modules\Orders\Events\OrderCreated($order));
-
-// In another module's service provider, listen for the event
-$this->app['events']->listen(
-    \Modules\Orders\Events\OrderCreated::class,
-    function ($event) {
-        // Handle event
-    }
-);
-```
-
-### Adding Custom Module Commands
-
-You can create custom commands for your modules:
-
-1. Create a Commands directory in your module
-2. Create your command class
-3. Register it in your module's service provider
-
-```php
-// In your module's service provider
-public function boot()
-{
-    if ($this->app->runningInConsole()) {
-        $this->commands([
-            \Modules\YourModule\Commands\YourCustomCommand::class,
-        ]);
-    }
-}
-```
-
-## Troubleshooting
-
-### Common Issues and Solutions
-
-#### View Not Found Errors
-
-If you encounter "View not found" errors:
-
-1. Make sure your view exists in the module's Resources/views directory
-2. Check that you're using the correct namespace format (`modulename::view`)
-3. Verify that your module's service provider properly loads views
-4. Ensure the module is enabled (no .disabled file in module directory)
-
-##### Example:
-
-```php
-// Correct view reference
-return view('products::products.index');
-
-// Incorrect view reference
-return view('products.index');  // Missing module namespace
-```
-
-#### Route Issues (Double-Prefixing)
-
-If your route names are being double-prefixed (e.g., "products.products.index"):
-
-1. Make sure you're explicitly naming routes in your routes file:
-
-```php
-// In modules/Products/Routes/web.php
-Route::resource('products', 'ProductsController')->names([
-    'index' => 'products.index',
-    'create' => 'products.create',
-    'store' => 'products.store',
-    'show' => 'products.show',
-    'edit' => 'products.edit',
-    'update' => 'products.update',
-    'destroy' => 'products.destroy',
-]);
-```
-
-#### Repository-Service Method Mismatch
-
-If you're getting errors about undefined methods between repositories and services:
-
-1. Make sure your repository implements both standard methods (`all()`, `find()`) and compatibility methods (`getAll()`, `findById()`)
-2. Use appropriate method names in your service classes (`getAll()`, `findById()`)
-
-#### Module Not Being Discovered
-
-If your module is not auto-discovered:
-
-1. Check that your module directory structure follows the expected pattern
-2. Verify that the module's service provider exists and is properly formatted
-3. Make sure there's no `.disabled` file in the module directory
-4. Run `composer dump-autoload` to refresh class autoloading
-
-#### Navigation Not Displaying Correctly
-
-If your module's navigation isn't displaying correctly:
-
-1. Check that your module has a `Resources/views/layouts/navigation.blade.php` file
-2. Verify that your module-layout.blade.php correctly includes this navigation file
-3. Make sure you're using the module's layout in your views with `@extends('modulename::layouts.module-layout')`
-
-#### Missing Navigation File in New Modules
-
-If new modules don't have a navigation.blade.php file:
-
-1. Make sure you're using the latest version of the package (v0.1.5-alpha or later)
-2. Run `php artisan module:publish-stubs` to update your local stubs
-3. Create a new module with the `--with-views` option
-4. Verify that the navigation file is created in `Resources/views/layouts/`
+---
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Fork the repository.
+2. Create a feature branch: `git checkout -b feature/my-improvement`.
+3. Make your changes.
+4. Run the test suite: `vendor/bin/phpunit`.
+5. Run code style checks: `vendor/bin/pint`.
+6. Run static analysis: `vendor/bin/phpstan analyse`.
+7. Submit a pull request.
 
-## Version History
-
-### v1.0.6 (Latest)
-
-- Fixed repository-service method naming mismatch by adding compatibility methods (`getAll()`, `findById()`)
-- Fixed double-prefixing of route names in module routes
-- Resolved "View [layouts.app] not found" errors by adding module-specific navigation file
-- Updated view stubs to use module-specific layouts
-- Created navigation.stub for new modules
-- Fixed type errors in the repository pattern implementation
-- Enhanced route naming convention
-
-### v1.0.5
-
-- Added module:make-migration command for creating module-specific migrations
-- Support for custom migration paths within modules
-- Options for table creation and modification in module migrations
-
-### v1.0.4
-
-- Added module migration commands to run migrations for specific modules
-- Added migrate:fresh, migrate:rollback, and migrate:status functionality
-- Expanded documentation for resource generation
-
-### v1.0.3
-
-- Fixed missing RouteServiceProvider in module:make-manager command
-- Improved module manager routes registration
-
-### v1.0.2
-
-- Added module_path() helper function for easier module path resolution
-- Added standardized config structure and module manager dashboard
-- Created Module Manager UI for enabling/disabling modules
-- Added icon support for module menu items in configuration
-
-### v1.0.1
-
-- Fixed missing Config/config.php file in Auth module
-- Added automatic config file creation for Auth module
-- Ensured Config directory is always created in module structure
-
-### v1.0.0
-
-- First stable release with full feature set
-- Complete authentication module generation
-- Enhanced view styling and module discovery
-
-### v0.1.9-alpha
-
-- Beta release with authentication scaffolding
-- Improved repository and service pattern implementation
-
-### v0.1.4-alpha
-
-- Initial public release with core functionality
-- Added module generation capabilities
-- Implemented repository pattern infrastructure
-- Added service layer implementation
-- Built module discovery and auto-registration
-- Integrated Livewire component support
+---
 
 ## License
 
-The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+The MIT License. See [LICENSE.md](LICENSE.md).

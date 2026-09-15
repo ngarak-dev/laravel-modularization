@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
 class MigrateModuleCommand extends Command
@@ -36,30 +38,30 @@ class MigrateModuleCommand extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int
      */
-    public function handle()
+    public function handle(): int
     {
         $moduleName = $this->argument('name');
         $modulesPath = base_path(config('modularization.modules_path', 'modules'));
-        $modulePath = $modulesPath . '/' . $moduleName;
+        $modulePath = $modulesPath.'/'.$moduleName;
 
         // Check if module exists
-        if (!File::isDirectory($modulePath)) {
+        if (! File::isDirectory($modulePath)) {
             $this->error("Module [{$moduleName}] does not exist.");
+
             return 1;
         }
 
         // Check if module has migrations
-        $migrationsPath = $modulePath . '/Database/Migrations';
-        if (!File::isDirectory($migrationsPath) || count(File::glob($migrationsPath . '/*.php')) === 0) {
+        $migrationsPath = $modulePath.'/Database/Migrations';
+        if (! File::isDirectory($migrationsPath) || count(File::glob($migrationsPath.'/*.php')) === 0) {
             $this->warn("No migrations found for module [{$moduleName}].");
+
             return 0;
         }
 
         // Prepare path parameter (always used)
-        $relativePath = str_replace(base_path() . '/', '', $migrationsPath);
+        $relativePath = str_replace(base_path().'/', '', $migrationsPath);
 
         // Get base options, ensuring --path is always set to scope to this module's migrations
         $options = ['--path' => $relativePath];
@@ -111,6 +113,7 @@ class MigrateModuleCommand extends Command
 
             if (empty($migrationFiles)) {
                 $this->info("No migrations found for module [{$moduleName}]. Nothing to refresh.");
+
                 return 0;
             }
 
@@ -120,7 +123,7 @@ class MigrateModuleCommand extends Command
             // Drop tables if they exist
             $this->dropModuleTables($tables);
 
-            // Run the migrations 
+            // Run the migrations
             $result = Artisan::call('migrate', $options);
             $this->output->write(Artisan::output());
 
@@ -131,17 +134,17 @@ class MigrateModuleCommand extends Command
             }
 
             return $result;
-        } else if ($this->option('rollback')) {
+        } elseif ($this->option('rollback')) {
             $command = 'migrate:rollback';
             $action = 'Rolling back migrations';
             // Add path to ensure we only rollback this module's migrations
             $options['--path'] = $relativePath;
-        } else if ($this->option('reset')) {
+        } elseif ($this->option('reset')) {
             $command = 'migrate:reset';
             $action = 'Resetting all migrations';
             // Add path to ensure we only reset this module's migrations
             $options['--path'] = $relativePath;
-        } else if ($this->option('refresh')) {
+        } elseif ($this->option('refresh')) {
             $command = 'migrate:refresh';
             $action = 'Refreshing all migrations';
             // Add path to ensure we only refresh this module's migrations
@@ -165,15 +168,12 @@ class MigrateModuleCommand extends Command
 
     /**
      * Get migration files from a specific path
-     * 
-     * @param string $relativePath
-     * @return array
      */
-    protected function getMigrationFilesFromPath($relativePath)
+    protected function getMigrationFilesFromPath(string $relativePath): array
     {
         // Get all migrations for this path
         $fullPath = base_path($relativePath);
-        $files = File::glob($fullPath . '/*.php');
+        $files = File::glob($fullPath.'/*.php');
 
         $migrations = [];
         foreach ($files as $file) {
@@ -185,11 +185,8 @@ class MigrateModuleCommand extends Command
 
     /**
      * Get tables from migration files
-     * 
-     * @param array $migrations
-     * @return array
      */
-    protected function getTablesFromMigrations($migrations)
+    protected function getTablesFromMigrations(array $migrations): array
     {
         // Query the migrations table to find matching migrations
         $migrationRecords = DB::table('migrations')
@@ -211,8 +208,8 @@ class MigrateModuleCommand extends Command
 
     /**
      * Drop tables associated with the module
-     * 
-     * @param array $tables
+     *
+     * @param  array  $tables
      * @return void
      */
     protected function dropModuleTables($tables)

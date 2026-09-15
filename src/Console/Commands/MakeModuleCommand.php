@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
+use NgarakDev\Modularization\Support\ModuleDiscovery;
 
 class MakeModuleCommand extends Command
 {
@@ -25,6 +28,9 @@ class MakeModuleCommand extends Command
                         {--with-translations : Generate translation files (en, es, fr, de)}
                         {--languages=* : Specify languages for translation files}';
 
+    /** @var string[] */
+    protected $aliases = ['module:make'];
+
     /**
      * The console command description.
      *
@@ -35,14 +41,13 @@ class MakeModuleCommand extends Command
     /**
      * The filesystem instance.
      *
-     * @var \Illuminate\Filesystem\Filesystem
+     * @var Filesystem
      */
     protected $files;
 
     /**
      * Create a new command instance.
      *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
      * @return void
      */
     public function __construct(Filesystem $files)
@@ -60,9 +65,23 @@ class MakeModuleCommand extends Command
     public function handle()
     {
         $name = $this->argument('name');
+
+        // Validate module name for security (prevent path traversal)
+        $discovery = new ModuleDiscovery(
+            app('files'),
+            base_path(config('modularization.modules_path', 'modules')),
+            config('modularization.namespace', 'Modules'),
+        );
+
+        if (! $discovery->isValidModuleName($name)) {
+            $this->error("Invalid module name [{$name}]. Module names must start with a letter and contain only letters, numbers, underscores, or hyphens.");
+
+            return self::FAILURE;
+        }
+
         $modulesPath = base_path(config('modularization.modules_path', 'modules'));
         $namespace = config('modularization.namespace', 'Modules');
-        $path = $modulesPath . '/' . $name;
+        $path = $modulesPath.'/'.$name;
         $withApi = $this->option('api');
         $withViews = $this->option('with-views');
         $withLivewire = $this->option('with-livewire');
@@ -74,7 +93,7 @@ class MakeModuleCommand extends Command
 
         // Parse multiple resources if provided
         $resources = [];
-        if (!empty($resourceOption)) {
+        if (! empty($resourceOption)) {
             $resources = array_map('trim', explode(',', $resourceOption));
         }
 
@@ -83,8 +102,9 @@ class MakeModuleCommand extends Command
             if ($this->option('force')) {
                 $this->files->deleteDirectory($path);
             } else {
-                if (!$this->confirm("Module [{$name}] already exists. Do you want to overwrite it?")) {
+                if (! $this->confirm("Module [{$name}] already exists. Do you want to overwrite it?")) {
                     $this->error('Module creation aborted!');
+
                     return 1;
                 }
                 $this->files->deleteDirectory($path);
@@ -112,16 +132,14 @@ class MakeModuleCommand extends Command
         $this->outputNextSteps($name);
 
         $this->info("Module [{$name}] created successfully.");
+
         return 0;
     }
 
     /**
      * Create necessary directories for the module.
-     *
-     * @param  string  $path
-     * @return void
      */
-    protected function createModuleDirectories($path)
+    protected function createModuleDirectories(string $path): void
     {
         // Base directories
         $directories = [
@@ -151,8 +169,8 @@ class MakeModuleCommand extends Command
 
         // Create each directory
         foreach ($directories as $directory) {
-            $directoryPath = $path . '/' . $directory;
-            if (!$this->files->isDirectory($directoryPath)) {
+            $directoryPath = $path.'/'.$directory;
+            if (! $this->files->isDirectory($directoryPath)) {
                 $this->files->makeDirectory($directoryPath, 0755, true);
             }
         }
@@ -162,19 +180,8 @@ class MakeModuleCommand extends Command
 
     /**
      * Create necessary files for the module.
-     *
-     * @param  string  $name
-     * @param  string  $path
-     * @param  string  $namespace
-     * @param  bool    $withApi
-     * @param  bool    $withViews
-     * @param  bool    $withLivewire
-     * @param  bool    $withLivewireOnly
-     * @param  array   $resources
-     * @param  bool    $withCrud
-     * @return void
      */
-    protected function createModuleFiles($name, $path, $namespace, $withApi, $withViews, $withLivewire, $withLivewireOnly, $resources, $withCrud)
+    protected function createModuleFiles(string $name, string $path, string $namespace, bool $withApi, bool $withViews, bool $withLivewire, bool $withLivewireOnly, array $resources, bool $withCrud): void
     {
         // Create service provider
         $this->createServiceProvider($name, $path, $namespace);
@@ -183,7 +190,7 @@ class MakeModuleCommand extends Command
         $this->createConfig($name, $path);
 
         // Create base module files if no specific resources defined or if resources exist but we also want base module files
-        if (empty($resources) || (!$withLivewireOnly)) {
+        if (empty($resources) || (! $withLivewireOnly)) {
             // Create model
             $this->createModel($name, $path, $namespace);
 
@@ -195,7 +202,7 @@ class MakeModuleCommand extends Command
             $this->createServiceInterface($name, $path, $namespace);
             $this->createService($name, $path, $namespace);
 
-            if (!$withLivewireOnly) {
+            if (! $withLivewireOnly) {
                 // Create controllers
                 $this->createWebController($name, $path, $namespace);
 
@@ -215,7 +222,7 @@ class MakeModuleCommand extends Command
             $this->createMigration($name, $path);
         }
 
-        if ($withViews && !$withLivewireOnly) {
+        if ($withViews && ! $withLivewireOnly) {
             $this->createViews($name, $path);
         }
 
@@ -224,18 +231,20 @@ class MakeModuleCommand extends Command
             $this->createLivewireRoutes($name, $path, $namespace);
         }
 
-        if ($withCrud && !$withLivewireOnly) {
+        if ($withCrud && ! $withLivewireOnly) {
             $this->createCrudOperations($name, $path, $namespace);
         }
 
         // Create resource-specific files
-        if (!empty($resources)) {
+        if (! empty($resources)) {
             foreach ($resources as $resourceName) {
-                // Create resource-specific files
-                $this->createResourceController($name, $path, $namespace, $resourceName);
+                // Create resource-specific files (skip controllers when --with-livewire-only)
+                if (! $withLivewireOnly) {
+                    $this->createResourceController($name, $path, $namespace, $resourceName);
 
-                if ($withApi) {
-                    $this->createResourceApiController($name, $path, $namespace, $resourceName);
+                    if ($withApi) {
+                        $this->createResourceApiController($name, $path, $namespace, $resourceName);
+                    }
                 }
 
                 // Create resource model, repository and service
@@ -244,7 +253,7 @@ class MakeModuleCommand extends Command
                 $this->createResourceService($name, $path, $namespace, $resourceName);
 
                 // Create resource views if needed
-                if ($withViews && !$withLivewireOnly) {
+                if ($withViews && ! $withLivewireOnly) {
                     $this->createResourceViews($name, $path, $resourceName);
                 }
 
@@ -254,7 +263,7 @@ class MakeModuleCommand extends Command
                 }
 
                 // Create resource CRUD operations if needed
-                if ($withCrud && !$withLivewireOnly) {
+                if ($withCrud && ! $withLivewireOnly) {
                     $this->createResourceCrudOperations($name, $path, $namespace, $resourceName);
                 }
             }
@@ -264,7 +273,7 @@ class MakeModuleCommand extends Command
     /**
      * Create service provider for the module.
      */
-    protected function createServiceProvider($name, $path, $namespace)
+    protected function createServiceProvider(string $name, string $path, string $namespace): void
     {
         $content = $this->getStub('provider', [
             '{{namespace}}' => $namespace,
@@ -272,78 +281,78 @@ class MakeModuleCommand extends Command
             '{{moduleNameLower}}' => strtolower($name),
         ]);
 
-        $this->files->put($path . '/Providers/' . $name . 'ServiceProvider.php', $content);
+        $this->files->put($path.'/Providers/'.$name.'ServiceProvider.php', $content);
     }
 
     /**
      * Create model for the module.
      */
-    protected function createModel($name, $path, $namespace)
+    protected function createModel(string $name, string $path, string $namespace): void
     {
         $content = $this->getStub('model', [
             '{{namespace}}' => $namespace,
             '{{moduleName}}' => $name,
         ]);
 
-        $this->files->put($path . '/Models/' . $name . '.php', $content);
+        $this->files->put($path.'/Models/'.$name.'.php', $content);
     }
 
     /**
      * Create repository interface for the module.
      */
-    protected function createRepositoryInterface($name, $path, $namespace)
+    protected function createRepositoryInterface(string $name, string $path, string $namespace): void
     {
         $content = $this->getStub('repository-interface', [
             '{{namespace}}' => $namespace,
             '{{moduleName}}' => $name,
         ]);
 
-        $this->files->put($path . '/Repositories/Interfaces/' . $name . 'RepositoryInterface.php', $content);
+        $this->files->put($path.'/Repositories/Interfaces/'.$name.'RepositoryInterface.php', $content);
     }
 
     /**
      * Create repository implementation for the module.
      */
-    protected function createRepository($name, $path, $namespace)
+    protected function createRepository(string $name, string $path, string $namespace): void
     {
         $content = $this->getStub('repository', [
             '{{namespace}}' => $namespace,
             '{{moduleName}}' => $name,
         ]);
 
-        $this->files->put($path . '/Repositories/' . $name . 'Repository.php', $content);
+        $this->files->put($path.'/Repositories/'.$name.'Repository.php', $content);
     }
 
     /**
      * Create service interface for the module.
      */
-    protected function createServiceInterface($name, $path, $namespace)
+    protected function createServiceInterface(string $name, string $path, string $namespace): void
     {
         $content = $this->getStub('service-interface', [
             '{{namespace}}' => $namespace,
             '{{moduleName}}' => $name,
         ]);
 
-        $this->files->put($path . '/Services/Interfaces/' . $name . 'ServiceInterface.php', $content);
+        $this->files->put($path.'/Services/Interfaces/'.$name.'ServiceInterface.php', $content);
     }
 
     /**
      * Create service implementation for the module.
      */
-    protected function createService($name, $path, $namespace)
+    protected function createService(string $name, string $path, string $namespace): void
     {
         $content = $this->getStub('service', [
             '{{namespace}}' => $namespace,
             '{{moduleName}}' => $name,
         ]);
 
-        $this->files->put($path . '/Services/' . $name . 'Service.php', $content);
+        $this->files->put($path.'/Services/'.$name.'Service.php', $content);
     }
 
     /**
      * Create web controller for the module.
      */
-    protected function createWebController($name, $path, $namespace)
+    protected function createWebController(string $name, string $path, string $namespace): void
     {
         $content = $this->getStub('web-controller', [
             '{{namespace}}' => $namespace,
@@ -351,39 +360,39 @@ class MakeModuleCommand extends Command
             '{{moduleNameLower}}' => strtolower($name),
         ]);
 
-        $this->files->put($path . '/Http/Controllers/' . $name . 'Controller.php', $content);
+        $this->files->put($path.'/Http/Controllers/'.$name.'Controller.php', $content);
     }
 
     /**
      * Create API controller for the module.
      */
-    protected function createApiController($name, $path, $namespace)
+    protected function createApiController(string $name, string $path, string $namespace): void
     {
         $content = $this->getStub('api-controller', [
             '{{namespace}}' => $namespace,
             '{{moduleName}}' => $name,
         ]);
 
-        $this->files->put($path . '/Http/Controllers/API/' . $name . 'Controller.php', $content);
+        $this->files->put($path.'/Http/Controllers/API/'.$name.'Controller.php', $content);
     }
 
     /**
      * Create request class for the module.
      */
-    protected function createRequest($name, $path, $namespace)
+    protected function createRequest(string $name, string $path, string $namespace): void
     {
         $content = $this->getStub('request', [
             '{{namespace}}' => $namespace,
             '{{moduleName}}' => $name,
         ]);
 
-        $this->files->put($path . '/Http/Requests/' . $name . 'Request.php', $content);
+        $this->files->put($path.'/Http/Requests/'.$name.'Request.php', $content);
     }
 
     /**
      * Create web routes for the module.
      */
-    protected function createWebRoutes($name, $path, $namespace)
+    protected function createWebRoutes(string $name, string $path, string $namespace): void
     {
         $content = $this->getStub('web-routes', [
             '{{namespace}}' => $namespace,
@@ -391,13 +400,13 @@ class MakeModuleCommand extends Command
             '{{moduleNameLower}}' => strtolower($name),
         ]);
 
-        $this->files->put($path . '/Routes/web.php', $content);
+        $this->files->put($path.'/Routes/web.php', $content);
     }
 
     /**
      * Create API routes for the module.
      */
-    protected function createApiRoutes($name, $path, $namespace)
+    protected function createApiRoutes(string $name, string $path, string $namespace): void
     {
         $content = $this->getStub('api-routes', [
             '{{namespace}}' => $namespace,
@@ -405,48 +414,64 @@ class MakeModuleCommand extends Command
             '{{moduleNameLower}}' => strtolower($name),
         ]);
 
-        $this->files->put($path . '/Routes/api.php', $content);
+        $this->files->put($path.'/Routes/api.php', $content);
     }
 
     /**
      * Create migration for the module.
      */
-    protected function createMigration($name, $path)
+    protected function createMigration(string $name, string $path): void
     {
         $tableName = Str::snake(Str::pluralStudly($name));
         $timestamp = now()->format('Y_m_d_His');
-        $filename = $timestamp . '_create_' . $tableName . '_table.php';
+        $filename = $timestamp.'_create_'.$tableName.'_table.php';
 
         $content = $this->getStub('migration', [
             '{{table}}' => $tableName,
         ]);
 
-        $this->files->put($path . '/Database/Migrations/' . $filename, $content);
+        $this->files->put($path.'/Database/Migrations/'.$filename, $content);
+    }
+
+    /**
+     * Create translation files for the module (delegated from --with-translations flag).
+     *
+     * @param  array<string>  $languages
+     */
+    protected function createTranslationFiles(string $name, string $path, array $languages): void
+    {
+        $defaultLanguages = ['en', 'es', 'fr', 'de'];
+        $langs = ! empty($languages) ? $languages : $defaultLanguages;
+
+        $this->call('module:make-translation', [
+            'module' => $name,
+            '--languages' => $langs,
+        ]);
     }
 
     /**
      * Create config file for the module.
      */
-    protected function createConfig($name, $path)
+    protected function createConfig(string $name, string $path): void
     {
         $content = $this->getStub('config', [
             '{{moduleName}}' => $name,
             '{{moduleNameLower}}' => strtolower($name),
         ]);
 
-        $this->files->put($path . '/Config/config.php', $content);
+        $this->files->put($path.'/Config/config.php', $content);
     }
 
     /**
      * Create views for the module.
      */
-    protected function createViews($name, $path)
+    protected function createViews(string $name, string $path): void
     {
-        $viewsPath = $path . '/Resources/views';
-        $moduleViewsPath = $viewsPath . '/' . strtolower($name);
+        $viewsPath = $path.'/Resources/views';
+        $moduleViewsPath = $viewsPath.'/'.strtolower($name);
 
         // Create module views directory
-        if (!$this->files->isDirectory($moduleViewsPath)) {
+        if (! $this->files->isDirectory($moduleViewsPath)) {
             $this->files->makeDirectory($moduleViewsPath, 0755, true);
         }
 
@@ -455,28 +480,28 @@ class MakeModuleCommand extends Command
             '{{moduleName}}' => $name,
             '{{moduleNameLower}}' => strtolower($name),
         ]);
-        $this->files->put($moduleViewsPath . '/index.blade.php', $content);
+        $this->files->put($moduleViewsPath.'/index.blade.php', $content);
 
         // Create show view
         $content = $this->getStub('view-show', [
             '{{moduleName}}' => $name,
             '{{moduleNameLower}}' => strtolower($name),
         ]);
-        $this->files->put($moduleViewsPath . '/show.blade.php', $content);
+        $this->files->put($moduleViewsPath.'/show.blade.php', $content);
 
         // Create create view
         $content = $this->getStub('view-create', [
             '{{moduleName}}' => $name,
             '{{moduleNameLower}}' => strtolower($name),
         ]);
-        $this->files->put($moduleViewsPath . '/create.blade.php', $content);
+        $this->files->put($moduleViewsPath.'/create.blade.php', $content);
 
         // Create edit view
         $content = $this->getStub('view-edit', [
             '{{moduleName}}' => $name,
             '{{moduleNameLower}}' => strtolower($name),
         ]);
-        $this->files->put($moduleViewsPath . '/edit.blade.php', $content);
+        $this->files->put($moduleViewsPath.'/edit.blade.php', $content);
 
         // Create module layout
         $content = $this->getStub('module-layout', [
@@ -485,35 +510,35 @@ class MakeModuleCommand extends Command
         ]);
 
         // Create layouts directory if it doesn't exist
-        $layoutsPath = $viewsPath . '/layouts';
-        if (!$this->files->isDirectory($layoutsPath)) {
+        $layoutsPath = $viewsPath.'/layouts';
+        if (! $this->files->isDirectory($layoutsPath)) {
             $this->files->makeDirectory($layoutsPath, 0755, true);
         }
 
-        $this->files->put($layoutsPath . '/module-layout.blade.php', $content);
+        $this->files->put($layoutsPath.'/module-layout.blade.php', $content);
 
         // Create navigation layout
         $content = $this->getStub('navigation', [
             '{{moduleName}}' => $name,
             '{{moduleNameLower}}' => strtolower($name),
         ]);
-        $this->files->put($layoutsPath . '/navigation.blade.php', $content);
+        $this->files->put($layoutsPath.'/navigation.blade.php', $content);
     }
 
     /**
      * Create Livewire components for the module.
      */
-    protected function createLivewireComponents($name, $path, $namespace, $withLivewireOnly)
+    protected function createLivewireComponents(string $name, string $path, string $namespace, bool $withLivewireOnly): void
     {
-        $livewirePath = $path . '/Livewire';
-        $viewsPath = $path . '/Resources/views/livewire';
+        $livewirePath = $path.'/Livewire';
+        $viewsPath = $path.'/Resources/views/livewire';
 
         // Create directories if they don't exist
-        if (!$this->files->isDirectory($livewirePath)) {
+        if (! $this->files->isDirectory($livewirePath)) {
             $this->files->makeDirectory($livewirePath, 0755, true);
         }
 
-        if (!$this->files->isDirectory($viewsPath)) {
+        if (! $this->files->isDirectory($viewsPath)) {
             $this->files->makeDirectory($viewsPath, 0755, true);
         }
 
@@ -523,14 +548,14 @@ class MakeModuleCommand extends Command
             '{{moduleName}}' => $name,
             '{{moduleNameLower}}' => strtolower($name),
         ]);
-        $this->files->put($livewirePath . '/' . $name . 'Table.php', $content);
+        $this->files->put($livewirePath.'/'.$name.'Table.php', $content);
 
         // Create Table view
         $content = $this->getStub('livewire-table-view', [
             '{{moduleName}}' => $name,
             '{{moduleNameLower}}' => strtolower($name),
         ]);
-        $this->files->put($viewsPath . '/' . Str::kebab($name) . '-table.blade.php', $content);
+        $this->files->put($viewsPath.'/'.Str::kebab($name).'-table.blade.php', $content);
 
         // Create Form component
         $content = $this->getStub('livewire-form', [
@@ -538,26 +563,20 @@ class MakeModuleCommand extends Command
             '{{moduleName}}' => $name,
             '{{moduleNameLower}}' => strtolower($name),
         ]);
-        $this->files->put($livewirePath . '/' . $name . 'Form.php', $content);
+        $this->files->put($livewirePath.'/'.$name.'Form.php', $content);
 
         // Create Form view
         $content = $this->getStub('livewire-form-view', [
             '{{moduleName}}' => $name,
             '{{moduleNameLower}}' => strtolower($name),
         ]);
-        $this->files->put($viewsPath . '/' . Str::kebab($name) . '-form.blade.php', $content);
+        $this->files->put($viewsPath.'/'.Str::kebab($name).'-form.blade.php', $content);
     }
 
     /**
      * Create resource controller for the module.
-     *
-     * @param  string  $moduleName
-     * @param  string  $path
-     * @param  string  $namespace
-     * @param  string  $resourceName
-     * @return void
      */
-    protected function createResourceController($moduleName, $path, $namespace, $resourceName)
+    protected function createResourceController(string $moduleName, string $path, string $namespace, string $resourceName): void
     {
         $content = $this->getStub('web-controller', [
             '{{namespace}}' => $namespace,
@@ -565,7 +584,7 @@ class MakeModuleCommand extends Command
             '{{moduleNameLower}}' => strtolower($resourceName),
         ]);
 
-        $this->files->put($path . '/Http/Controllers/' . $resourceName . 'Controller.php', $content);
+        $this->files->put($path.'/Http/Controllers/'.$resourceName.'Controller.php', $content);
 
         // If API option is enabled, create API controller for the resource
         if ($this->option('api')) {
@@ -574,14 +593,14 @@ class MakeModuleCommand extends Command
                 '{{moduleName}}' => $resourceName,
             ]);
 
-            $this->files->put($path . '/Http/Controllers/API/' . $resourceName . 'Controller.php', $content);
+            $this->files->put($path.'/Http/Controllers/API/'.$resourceName.'Controller.php', $content);
 
             // Update API routes to include the resource
-            $apiRoutesPath = $path . '/routes/api.php';
+            $apiRoutesPath = $path.'/routes/api.php';
             if ($this->files->exists($apiRoutesPath)) {
                 $routesContent = $this->files->get($apiRoutesPath);
-                $resourceRoute = "\nRoute::apiResource('" . strtolower($resourceName) . "', API\\" . $resourceName . "Controller::class);";
-                $this->files->put($apiRoutesPath, $routesContent . $resourceRoute);
+                $resourceRoute = "\nRoute::apiResource('".strtolower($resourceName)."', API\\".$resourceName.'Controller::class);';
+                $this->files->put($apiRoutesPath, $routesContent.$resourceRoute);
             }
         }
 
@@ -593,14 +612,8 @@ class MakeModuleCommand extends Command
 
     /**
      * Create resource repository and services for the module.
-     *
-     * @param  string  $moduleName
-     * @param  string  $path
-     * @param  string  $namespace
-     * @param  string  $resourceName
-     * @return void
      */
-    protected function createResourceRepository($moduleName, $path, $namespace, $resourceName)
+    protected function createResourceRepository(string $moduleName, string $path, string $namespace, string $resourceName): void
     {
         // Create model for the resource
         $content = $this->getStub('model', [
@@ -608,7 +621,7 @@ class MakeModuleCommand extends Command
             '{{moduleName}}' => $resourceName,
         ]);
 
-        $this->files->put($path . '/Models/' . $resourceName . '.php', $content);
+        $this->files->put($path.'/Models/'.$resourceName.'.php', $content);
 
         // Create repository interface for the resource
         $content = $this->getStub('repository-interface', [
@@ -616,7 +629,7 @@ class MakeModuleCommand extends Command
             '{{moduleName}}' => $resourceName,
         ]);
 
-        $this->files->put($path . '/Repositories/Interfaces/' . $resourceName . 'RepositoryInterface.php', $content);
+        $this->files->put($path.'/Repositories/Interfaces/'.$resourceName.'RepositoryInterface.php', $content);
 
         // Create repository implementation for the resource
         $content = $this->getStub('repository', [
@@ -624,7 +637,7 @@ class MakeModuleCommand extends Command
             '{{moduleName}}' => $resourceName,
         ]);
 
-        $this->files->put($path . '/Repositories/' . $resourceName . 'Repository.php', $content);
+        $this->files->put($path.'/Repositories/'.$resourceName.'Repository.php', $content);
 
         // Create service interface for the resource
         $content = $this->getStub('service-interface', [
@@ -632,7 +645,7 @@ class MakeModuleCommand extends Command
             '{{moduleName}}' => $resourceName,
         ]);
 
-        $this->files->put($path . '/Services/Interfaces/' . $resourceName . 'ServiceInterface.php', $content);
+        $this->files->put($path.'/Services/Interfaces/'.$resourceName.'ServiceInterface.php', $content);
 
         // Create service implementation for the resource
         $content = $this->getStub('service', [
@@ -640,7 +653,7 @@ class MakeModuleCommand extends Command
             '{{moduleName}}' => $resourceName,
         ]);
 
-        $this->files->put($path . '/Services/' . $resourceName . 'Service.php', $content);
+        $this->files->put($path.'/Services/'.$resourceName.'Service.php', $content);
 
         // If Livewire option is enabled, create Livewire components for the resource
         if ($this->option('with-livewire') || $this->option('with-livewire-only')) {
@@ -650,19 +663,14 @@ class MakeModuleCommand extends Command
 
     /**
      * Create resource views for the module.
-     *
-     * @param  string  $moduleName
-     * @param  string  $path
-     * @param  string  $resourceName
-     * @return void
      */
-    protected function createResourceViews($moduleName, $path, $resourceName)
+    protected function createResourceViews(string $moduleName, string $path, string $resourceName): void
     {
-        $viewsPath = $path . '/Resources/views';
-        $resourceViewsPath = $viewsPath . '/' . strtolower($resourceName);
+        $viewsPath = $path.'/Resources/views';
+        $resourceViewsPath = $viewsPath.'/'.strtolower($resourceName);
 
         // Create module views directory
-        if (!$this->files->isDirectory($resourceViewsPath)) {
+        if (! $this->files->isDirectory($resourceViewsPath)) {
             $this->files->makeDirectory($resourceViewsPath, 0755, true);
         }
 
@@ -671,48 +679,46 @@ class MakeModuleCommand extends Command
             '{{moduleName}}' => $resourceName,
             '{{moduleNameLower}}' => strtolower($resourceName),
         ]);
-        $this->files->put($resourceViewsPath . '/index.blade.php', $content);
+        $this->files->put($resourceViewsPath.'/index.blade.php', $content);
 
         // Create show view
         $content = $this->getStub('view-show', [
             '{{moduleName}}' => $resourceName,
             '{{moduleNameLower}}' => strtolower($resourceName),
         ]);
-        $this->files->put($resourceViewsPath . '/show.blade.php', $content);
+        $this->files->put($resourceViewsPath.'/show.blade.php', $content);
 
         // Create create view
         $content = $this->getStub('view-create', [
             '{{moduleName}}' => $resourceName,
             '{{moduleNameLower}}' => strtolower($resourceName),
         ]);
-        $this->files->put($resourceViewsPath . '/create.blade.php', $content);
+        $this->files->put($resourceViewsPath.'/create.blade.php', $content);
 
         // Create edit view
         $content = $this->getStub('view-edit', [
             '{{moduleName}}' => $resourceName,
             '{{moduleNameLower}}' => strtolower($resourceName),
         ]);
-        $this->files->put($resourceViewsPath . '/edit.blade.php', $content);
+        $this->files->put($resourceViewsPath.'/edit.blade.php', $content);
     }
 
     /**
      * Create resource Livewire components for the module.
-     *
-     * @param  string  $moduleName
-     * @param  string  $path
-     * @param  string  $namespace
-     * @param  string  $resourceName
-     * @return void
      */
-    protected function createResourceLivewireComponents($moduleName, $path, $namespace, $resourceName)
+    protected function createResourceLivewireComponents(string $moduleName, string $path, string $namespace, string $resourceName): void
     {
-        $livewirePath = $path . '/Livewire';
-        $viewsPath = $path . '/Resources/views/livewire';
+        $livewirePath = $path.'/Livewire';
+        $viewsPath = $path.'/Resources/views/livewire';
         $resourceNameLower = strtolower($resourceName);
 
         // Create directories if they don't exist
-        $this->files->makeDirectory($livewirePath, 0755, true);
-        $this->files->makeDirectory($viewsPath, 0755, true);
+        if (! $this->files->isDirectory($livewirePath)) {
+            $this->files->makeDirectory($livewirePath, 0755, true);
+        }
+        if (! $this->files->isDirectory($viewsPath)) {
+            $this->files->makeDirectory($viewsPath, 0755, true);
+        }
 
         // Create Table component
         $content = $this->getStub('livewire-table', [
@@ -720,14 +726,14 @@ class MakeModuleCommand extends Command
             '{{moduleName}}' => $resourceName,
             '{{moduleNameLower}}' => $resourceNameLower,
         ]);
-        $this->files->put($livewirePath . '/' . $resourceName . 'Table.php', $content);
+        $this->files->put($livewirePath.'/'.$resourceName.'Table.php', $content);
 
         // Create Table view
         $content = $this->getStub('livewire-table-view', [
             '{{moduleName}}' => $resourceName,
             '{{moduleNameLower}}' => $resourceNameLower,
         ]);
-        $this->files->put($viewsPath . '/' . Str::kebab($resourceName) . '-table.blade.php', $content);
+        $this->files->put($viewsPath.'/'.Str::kebab($resourceName).'-table.blade.php', $content);
 
         // Create Form component
         $content = $this->getStub('livewire-form', [
@@ -735,32 +741,27 @@ class MakeModuleCommand extends Command
             '{{moduleName}}' => $resourceName,
             '{{moduleNameLower}}' => $resourceNameLower,
         ]);
-        $this->files->put($livewirePath . '/' . $resourceName . 'Form.php', $content);
+        $this->files->put($livewirePath.'/'.$resourceName.'Form.php', $content);
 
         // Create Form view
         $content = $this->getStub('livewire-form-view', [
             '{{moduleName}}' => $resourceName,
             '{{moduleNameLower}}' => $resourceNameLower,
         ]);
-        $this->files->put($viewsPath . '/' . Str::kebab($resourceName) . '-form.blade.php', $content);
+        $this->files->put($viewsPath.'/'.Str::kebab($resourceName).'-form.blade.php', $content);
     }
 
     /**
      * Create CRUD operations for the module.
-     *
-     * @param  string  $moduleName
-     * @param  string  $path
-     * @param  string  $namespace
-     * @return void
      */
-    protected function createCrudOperations($moduleName, $path, $namespace)
+    protected function createCrudOperations(string $moduleName, string $path, string $namespace): void
     {
         // CRUD operations are already included in the controller stubs
         // This method can be used to enhance CRUD functionality or add specific customizations
 
         // If resource is specified, ensure CRUD methods in resource controller
         if ($resourceName = $this->option('resource')) {
-            $controllerPath = $path . '/Http/Controllers/' . $resourceName . 'Controller.php';
+            $controllerPath = $path.'/Http/Controllers/'.$resourceName.'Controller.php';
             if ($this->files->exists($controllerPath)) {
                 // Already created with CRUD methods
             }
@@ -769,13 +770,8 @@ class MakeModuleCommand extends Command
 
     /**
      * Create Livewire routes for the module.
-     *
-     * @param  string  $name
-     * @param  string  $path
-     * @param  string  $namespace
-     * @return void
      */
-    protected function createLivewireRoutes($name, $path, $namespace)
+    protected function createLivewireRoutes(string $name, string $path, string $namespace): void
     {
         $moduleNameLower = strtolower($name);
 
@@ -808,30 +804,30 @@ Route::get('/{$moduleNameLower}/{id}', {$name}Form::class)
     ->name('{$moduleNameLower}.show');
 EOT;
 
-        $this->files->put($path . '/Routes/livewire.php', $content);
+        $this->files->put($path.'/Routes/livewire.php', $content);
     }
 
     /**
      * Get stub content and replace placeholders.
      */
-    protected function getStub($name, $replacements = [])
+    protected function getStub(string $name, array $replacements = []): string
     {
         // Check for custom stub in application
-        $customStubPath = base_path('stubs/vendor/modularization/' . $name . '.stub');
+        $customStubPath = base_path('stubs/vendor/modularization/'.$name.'.stub');
 
         if (file_exists($customStubPath)) {
             $content = file_get_contents($customStubPath);
         } else {
             // Fall back to package stubs
-            $stubsDir = __DIR__ . '/../../../stubs/';
-            $stubPath = $stubsDir . $name . '.stub';
+            $stubsDir = __DIR__.'/../../../stubs/';
+            $stubPath = $stubsDir.$name.'.stub';
 
             if (file_exists($stubPath)) {
                 $content = file_get_contents($stubPath);
             } else {
                 // If no stub file exists, use the inline stubs
                 $stubs = $this->getStubContents();
-                $content = $stubs[$name] ?? '<?php // Stub for ' . $name;
+                $content = $stubs[$name] ?? '<?php // Stub for '.$name;
             }
         }
 
@@ -846,7 +842,7 @@ EOT;
     /**
      * Contains stub contents for various files.
      */
-    protected function getStubContents()
+    protected function getStubContents(): array
     {
         return [
             'provider' => '<?php
@@ -2324,14 +2320,14 @@ class {{moduleName}}Service implements {{moduleName}}ServiceInterface
             </div>
         </div>
     </nav>
-</div>'
+</div>',
         ];
     }
 
     /**
      * Output next steps to the user.
      *
-     * @param string $name
+     * @param  string  $name
      * @return void
      */
     protected function outputNextSteps($name)
@@ -2343,24 +2339,24 @@ class {{moduleName}}Service implements {{moduleName}}ServiceInterface
         $this->newLine();
         $this->line('Next steps:');
         $this->newLine();
-        $this->line("1. Run composer dump-autoload to update autoloader:");
-        $this->line("   composer dump-autoload");
+        $this->line('1. Run composer dump-autoload to update autoloader:');
+        $this->line('   composer dump-autoload');
         $this->newLine();
         $this->line("2. Add the module to your service providers in 'config/app.php':");
         $this->line("   App\Modules\\{$name}\Providers\\{$name}ServiceProvider::class,");
         $this->newLine();
-        $this->line("3. Access your module at:");
-        $this->line("   " . url($moduleNameLower));
+        $this->line('3. Access your module at:');
+        $this->line('   '.url($moduleNameLower));
         $this->newLine();
-        $this->line("4. Run migrations if needed:");
-        $this->line("   php artisan migrate");
+        $this->line('4. Run migrations if needed:');
+        $this->line('   php artisan migrate');
         $this->newLine();
     }
 
     /**
      * Update the modules configuration.
      *
-     * @param string $name
+     * @param  string  $name
      * @return void
      */
     protected function updateModulesConfig($name)
@@ -2368,10 +2364,11 @@ class {{moduleName}}Service implements {{moduleName}}ServiceInterface
         $configPath = config_path('modules.php');
 
         // Create config if it doesn't exist
-        if (!$this->files->exists($configPath)) {
+        if (! $this->files->exists($configPath)) {
             $stub = $this->modulesConfigStub([$name]);
             $this->files->put($configPath, $stub);
-            $this->info('Modules config file created at: ' . $configPath);
+            $this->info('Modules config file created at: '.$configPath);
+
             return;
         }
 
@@ -2391,16 +2388,13 @@ class {{moduleName}}Service implements {{moduleName}}ServiceInterface
         $stub = $this->modulesConfigStub($modules);
         $this->files->put($configPath, $stub);
 
-        $this->info('Module added to config file: ' . $configPath);
+        $this->info('Module added to config file: '.$configPath);
     }
 
     /**
      * Generate modules config file stub.
-     *
-     * @param array $modules
-     * @return string
      */
-    protected function modulesConfigStub($modules)
+    protected function modulesConfigStub(array $modules): string
     {
         $modulesString = '';
         foreach ($modules as $module) {
@@ -2437,9 +2431,9 @@ EOT;
     /**
      * Create resource API controller.
      */
-    protected function createResourceApiController($moduleName, $path, $namespace, $resourceName)
+    protected function createResourceApiController(string $moduleName, string $path, string $namespace, string $resourceName): void
     {
-        $controllerPath = $path . '/Http/Controllers/API/' . $resourceName . 'Controller.php';
+        $controllerPath = $path.'/Http/Controllers/API/'.$resourceName.'Controller.php';
 
         $content = $this->getStub('resource-api-controller', [
             '{{namespace}}' => $namespace,
@@ -2449,14 +2443,18 @@ EOT;
         ]);
 
         $this->files->put($controllerPath, $content);
+
+        // Create or overwrite the API routes file to reference this resource controller
+        $apiRoutesPath = $path.'/Routes/api.php';
+        $this->createApiRoutes($resourceName, $path, $namespace);
     }
 
     /**
      * Create resource model.
      */
-    protected function createResourceModel($moduleName, $path, $namespace, $resourceName)
+    protected function createResourceModel(string $moduleName, string $path, string $namespace, string $resourceName): void
     {
-        $modelPath = $path . '/Models/' . $resourceName . '.php';
+        $modelPath = $path.'/Models/'.$resourceName.'.php';
 
         $content = $this->getStub('resource-model', [
             '{{namespace}}' => $namespace,
@@ -2470,10 +2468,10 @@ EOT;
     /**
      * Create resource service.
      */
-    protected function createResourceService($moduleName, $path, $namespace, $resourceName)
+    protected function createResourceService(string $moduleName, string $path, string $namespace, string $resourceName): void
     {
         // Create service interface
-        $interfacePath = $path . '/Services/Interfaces/' . $resourceName . 'ServiceInterface.php';
+        $interfacePath = $path.'/Services/Interfaces/'.$resourceName.'ServiceInterface.php';
 
         $interfaceContent = $this->getStub('service-interface', [
             '{{namespace}}' => $namespace,
@@ -2484,7 +2482,7 @@ EOT;
         $this->files->put($interfacePath, $interfaceContent);
 
         // Create service implementation
-        $servicePath = $path . '/Services/' . $resourceName . 'Service.php';
+        $servicePath = $path.'/Services/'.$resourceName.'Service.php';
 
         $serviceContent = $this->getStub('service', [
             '{{namespace}}' => $namespace,
@@ -2498,13 +2496,13 @@ EOT;
     /**
      * Create resource CRUD operations.
      */
-    protected function createResourceCrudOperations($moduleName, $path, $namespace, $resourceName)
+    protected function createResourceCrudOperations(string $moduleName, string $path, string $namespace, string $resourceName): void
     {
         // Update resource controller with CRUD methods
-        $controllerPath = $path . '/Http/Controllers/' . $resourceName . 'Controller.php';
+        $controllerPath = $path.'/Http/Controllers/'.$resourceName.'Controller.php';
 
         if ($this->files->exists($controllerPath)) {
-            $content = $this->getStub('crud-controller', [
+            $content = $this->getStub('resource-crud-controller', [
                 '{{namespace}}' => $namespace,
                 '{{moduleName}}' => $moduleName,
                 '{{className}}' => $resourceName,
@@ -2515,10 +2513,10 @@ EOT;
         }
 
         // Update resource service with CRUD methods
-        $servicePath = $path . '/Services/' . $resourceName . 'Service.php';
+        $servicePath = $path.'/Services/'.$resourceName.'Service.php';
 
         if ($this->files->exists($servicePath)) {
-            $content = $this->getStub('crud-service', [
+            $content = $this->getStub('resource-crud-service', [
                 '{{namespace}}' => $namespace,
                 '{{moduleName}}' => $moduleName,
                 '{{className}}' => $resourceName,
@@ -2528,10 +2526,10 @@ EOT;
         }
 
         // Update resource repository with CRUD methods
-        $repoPath = $path . '/Repositories/' . $resourceName . 'Repository.php';
+        $repoPath = $path.'/Repositories/'.$resourceName.'Repository.php';
 
         if ($this->files->exists($repoPath)) {
-            $content = $this->getStub('crud-repository', [
+            $content = $this->getStub('repository', [
                 '{{namespace}}' => $namespace,
                 '{{moduleName}}' => $moduleName,
                 '{{className}}' => $resourceName,
@@ -2543,17 +2541,18 @@ EOT;
 
     /**
      * Ensure the Modules namespace is added to composer.json
-     * 
-     * @param string $namespace The namespace to add, typically 'Modules'
-     * @param string $path The base path for modules, typically 'modules'
+     *
+     * @param  string  $namespace  The namespace to add, typically 'Modules'
+     * @param  string  $path  The base path for modules, typically 'modules'
      * @return void
      */
     protected function ensureModulesNamespaceInComposer($namespace, $path)
     {
         $composerPath = base_path('composer.json');
 
-        if (!$this->files->exists($composerPath)) {
+        if (! $this->files->exists($composerPath)) {
             $this->warn('composer.json not found. Cannot add namespace automatically.');
+
             return;
         }
 
@@ -2561,6 +2560,7 @@ EOT;
 
         if (json_last_error() !== JSON_ERROR_NONE) {
             $this->warn('Unable to parse composer.json. Cannot add namespace automatically.');
+
             return;
         }
 
@@ -2577,7 +2577,7 @@ EOT;
             }
         } else {
             // Create autoload section if it doesn't exist
-            if (!isset($composerJson['autoload'])) {
+            if (! isset($composerJson['autoload'])) {
                 $composerJson['autoload'] = [];
             }
 
@@ -2585,8 +2585,8 @@ EOT;
         }
 
         // Add the namespace if it doesn't exist
-        if (!$namespaceExists) {
-            $composerJson['autoload']['psr-4'][$namespace . '\\'] = $modulePathName . '/';
+        if (! $namespaceExists) {
+            $composerJson['autoload']['psr-4'][$namespace.'\\'] = $modulePathName.'/';
 
             // Write back to composer.json with proper formatting
             $jsonOptions = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES;

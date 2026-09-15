@@ -3,13 +3,4 @@
 use Illuminate\Support\Facades\Route;
 use {{namespace}}\{{moduleName}}\Http\Controllers\API\{{moduleName}}Controller;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your module.
-|
-*/
-
-Route::apiResource('{{moduleNameLower}}', {{moduleName}}Controller::class); 
+Route::apiResource('{{moduleNameLower}}', {{moduleName}}Controller::class);

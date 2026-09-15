@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization\Console\Commands;
 
 use Illuminate\Console\Command;
@@ -27,14 +29,13 @@ class MakeModuleAuthCommand extends Command
     /**
      * The filesystem instance.
      *
-     * @var \Illuminate\Filesystem\Filesystem
+     * @var Filesystem
      */
     protected $files;
 
     /**
      * Create a new command instance.
      *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
      * @return void
      */
     public function __construct(Filesystem $files)
@@ -54,23 +55,24 @@ class MakeModuleAuthCommand extends Command
         $force = $this->option('force');
 
         $modulesPath = base_path(config('modularization.modules_path', 'modules'));
-        $modulePath = $modulesPath . '/' . $moduleName;
+        $modulePath = $modulesPath.'/'.$moduleName;
 
         // Create module directory if it doesn't exist
-        if (!$this->files->isDirectory($modulePath)) {
+        if (! $this->files->isDirectory($modulePath)) {
             $this->createBaseModuleStructure($moduleName, $modulePath);
-        } else if (!$force) {
-            if (!$this->confirm("Module [{$moduleName}] already exists. Do you want to continue?")) {
-                $this->info("Operation cancelled.");
+        } elseif (! $force) {
+            if (! $this->confirm("Module [{$moduleName}] already exists. Do you want to continue?")) {
+                $this->info('Operation cancelled.');
+
                 return 1;
             }
 
             // Ensure Config directory exists in existing module
-            $configDir = $modulePath . '/Config';
-            if (!$this->files->isDirectory($configDir)) {
+            $configDir = $modulePath.'/Config';
+            if (! $this->files->isDirectory($configDir)) {
                 $this->files->makeDirectory($configDir, 0755, true);
                 $this->createConfigFile($moduleName, $modulePath);
-            } else if (!$this->files->exists($configDir . '/config.php') || $force) {
+            } elseif (! $this->files->exists($configDir.'/config.php')) {
                 $this->createConfigFile($moduleName, $modulePath);
             }
         }
@@ -83,7 +85,7 @@ class MakeModuleAuthCommand extends Command
         $this->updateServiceProvider($moduleName, $modulePath);
 
         $this->info("Authentication module [{$moduleName}] created successfully");
-        $this->info("You can now access your authentication system at: /auth/login");
+        $this->info('You can now access your authentication system at: /auth/login');
 
         return 0;
     }
@@ -91,8 +93,8 @@ class MakeModuleAuthCommand extends Command
     /**
      * Create the base module structure.
      *
-     * @param string $moduleName
-     * @param string $modulePath
+     * @param  string  $moduleName
+     * @param  string  $modulePath
      * @return void
      */
     protected function createBaseModuleStructure($moduleName, $modulePath)
@@ -114,13 +116,13 @@ class MakeModuleAuthCommand extends Command
         ];
 
         foreach ($directories as $directory) {
-            $path = $modulePath . ($directory ? '/' . $directory : '');
+            $path = $modulePath.($directory ? '/'.$directory : '');
             $this->files->makeDirectory($path, 0755, true);
         }
 
         // Create service provider
         $namespace = config('modularization.namespace', 'Modules');
-        $providerPath = $modulePath . '/Providers/' . $moduleName . 'ServiceProvider.php';
+        $providerPath = $modulePath.'/Providers/'.$moduleName.'ServiceProvider.php';
 
         $providerContent = $this->getStub('module-provider', [
             '{{namespace}}' => $namespace,
@@ -138,13 +140,13 @@ class MakeModuleAuthCommand extends Command
     /**
      * Create config file for the module.
      *
-     * @param string $moduleName
-     * @param string $modulePath
+     * @param  string  $moduleName
+     * @param  string  $modulePath
      * @return void
      */
     protected function createConfigFile($moduleName, $modulePath)
     {
-        $configPath = $modulePath . '/Config/config.php';
+        $configPath = $modulePath.'/Config/config.php';
         $moduleNameLower = strtolower($moduleName);
 
         $content = <<<EOT
@@ -166,22 +168,22 @@ return [
 EOT;
 
         $this->files->put($configPath, $content);
-        $this->line("Created: Config/config.php");
+        $this->line('Created: Config/config.php');
     }
 
     /**
      * Create authentication controllers.
      *
-     * @param string $moduleName
-     * @param string $modulePath
-     * @param bool $force
+     * @param  string  $moduleName
+     * @param  string  $modulePath
+     * @param  bool  $force
      * @return void
      */
     protected function createAuthControllers($moduleName, $modulePath, $force)
     {
-        $controllersPath = $modulePath . '/Http/Controllers/Auth';
+        $controllersPath = $modulePath.'/Http/Controllers/Auth';
 
-        if (!$this->files->isDirectory($controllersPath)) {
+        if (! $this->files->isDirectory($controllersPath)) {
             $this->files->makeDirectory($controllersPath, 0755, true);
         }
 
@@ -206,20 +208,20 @@ EOT;
     /**
      * Create authentication controller.
      *
-     * @param string $moduleName
-     * @param string $path
-     * @param string $controller
-     * @param bool $force
+     * @param  string  $moduleName
+     * @param  string  $path
+     * @param  string  $controller
+     * @param  bool  $force
      * @return void
      */
     protected function createController($moduleName, $path, $controller, $force)
     {
-        $controllerPath = $path . '/' . $controller . '.php';
+        $controllerPath = $path.'/'.$controller.'.php';
 
-        if (!$this->files->exists($controllerPath) || $force) {
+        if (! $this->files->exists($controllerPath) || $force) {
             $namespace = config('modularization.namespace', 'Modules');
 
-            $content = $this->getStub('auth-controllers/' . Str::kebab($controller), [
+            $content = $this->getStub('auth-controllers/'.Str::kebab($controller), [
                 '{{namespace}}' => $namespace,
                 '{{moduleName}}' => $moduleName,
                 '{{moduleNameLower}}' => strtolower($moduleName),
@@ -235,16 +237,16 @@ EOT;
     /**
      * Create authentication views.
      *
-     * @param string $moduleName
-     * @param string $modulePath
-     * @param bool $force
+     * @param  string  $moduleName
+     * @param  string  $modulePath
+     * @param  bool  $force
      * @return void
      */
     protected function createAuthViews($moduleName, $modulePath, $force)
     {
-        $viewsPath = $modulePath . '/Resources/views/auth';
+        $viewsPath = $modulePath.'/Resources/views/auth';
 
-        if (!$this->files->isDirectory($viewsPath)) {
+        if (! $this->files->isDirectory($viewsPath)) {
             $this->files->makeDirectory($viewsPath, 0755, true);
         }
 
@@ -264,16 +266,16 @@ EOT;
         $this->createView($moduleName, $viewsPath, 'verify-email', $force);
 
         // Create auth layout
-        $layoutsPath = $modulePath . '/Resources/views/layouts';
-        if (!$this->files->isDirectory($layoutsPath)) {
+        $layoutsPath = $modulePath.'/Resources/views/layouts';
+        if (! $this->files->isDirectory($layoutsPath)) {
             $this->files->makeDirectory($layoutsPath, 0755, true);
         }
 
         $this->createView($moduleName, $layoutsPath, 'auth-layout', $force);
 
         // Create dashboard view
-        $dashboardPath = $modulePath . '/Resources/views/dashboard';
-        if (!$this->files->isDirectory($dashboardPath)) {
+        $dashboardPath = $modulePath.'/Resources/views/dashboard';
+        if (! $this->files->isDirectory($dashboardPath)) {
             $this->files->makeDirectory($dashboardPath, 0755, true);
         }
 
@@ -285,18 +287,18 @@ EOT;
     /**
      * Create authentication view.
      *
-     * @param string $moduleName
-     * @param string $path
-     * @param string $view
-     * @param bool $force
+     * @param  string  $moduleName
+     * @param  string  $path
+     * @param  string  $view
+     * @param  bool  $force
      * @return void
      */
     protected function createView($moduleName, $path, $view, $force)
     {
-        $viewPath = $path . '/' . $view . '.blade.php';
+        $viewPath = $path.'/'.$view.'.blade.php';
 
-        if (!$this->files->exists($viewPath) || $force) {
-            $content = $this->getStub('auth-views/' . $view, [
+        if (! $this->files->exists($viewPath) || $force) {
+            $content = $this->getStub('auth-views/'.$view, [
                 '{{moduleName}}' => $moduleName,
                 '{{moduleNameLower}}' => strtolower($moduleName),
             ]);
@@ -311,17 +313,17 @@ EOT;
     /**
      * Create a dashboard view.
      *
-     * @param string $moduleName
-     * @param string $path
-     * @param bool $force
+     * @param  string  $moduleName
+     * @param  string  $path
+     * @param  bool  $force
      * @return void
      */
     protected function createDashboardView($moduleName, $path, $force)
     {
-        $viewPath = $path . '/index.blade.php';
+        $viewPath = $path.'/index.blade.php';
         $moduleNameLower = strtolower($moduleName);
 
-        if (!$this->files->exists($viewPath) || $force) {
+        if (! $this->files->exists($viewPath) || $force) {
             $content = <<<EOT
 @extends('{$moduleNameLower}::layouts.auth-layout')
 
@@ -349,25 +351,25 @@ EOT;
 EOT;
 
             $this->files->put($viewPath, $content);
-            $this->line("Created: dashboard/index.blade.php");
+            $this->line('Created: dashboard/index.blade.php');
         } else {
-            $this->warn("Skipped: dashboard/index.blade.php (already exists)");
+            $this->warn('Skipped: dashboard/index.blade.php (already exists)');
         }
     }
 
     /**
      * Create authentication routes.
      *
-     * @param string $moduleName
-     * @param string $modulePath
-     * @param bool $force
+     * @param  string  $moduleName
+     * @param  string  $modulePath
+     * @param  bool  $force
      * @return void
      */
     protected function createAuthRoutes($moduleName, $modulePath, $force)
     {
-        $routesPath = $modulePath . '/Routes/auth.php';
+        $routesPath = $modulePath.'/Routes/auth.php';
 
-        if (!$this->files->exists($routesPath) || $force) {
+        if (! $this->files->exists($routesPath) || $force) {
             $namespace = config('modularization.namespace', 'Modules');
 
             $content = $this->getStub('auth-routes', [
@@ -383,9 +385,9 @@ EOT;
         }
 
         // Create dashboard route
-        $dashboardRoutesPath = $modulePath . '/Routes/web.php';
+        $dashboardRoutesPath = $modulePath.'/Routes/web.php';
 
-        if (!$this->files->exists($dashboardRoutesPath) || $force) {
+        if (! $this->files->exists($dashboardRoutesPath) || $force) {
             $namespace = config('modularization.namespace', 'Modules');
             $moduleNameLower = strtolower($moduleName);
 
@@ -411,16 +413,16 @@ EOT;
     /**
      * Create authentication middleware.
      *
-     * @param string $moduleName
-     * @param string $modulePath
-     * @param bool $force
+     * @param  string  $moduleName
+     * @param  string  $modulePath
+     * @param  bool  $force
      * @return void
      */
     protected function createAuthMiddleware($moduleName, $modulePath, $force)
     {
-        $middlewarePath = $modulePath . '/Http/Middleware';
+        $middlewarePath = $modulePath.'/Http/Middleware';
 
-        if (!$this->files->isDirectory($middlewarePath)) {
+        if (! $this->files->isDirectory($middlewarePath)) {
             $this->files->makeDirectory($middlewarePath, 0755, true);
         }
 
@@ -436,20 +438,20 @@ EOT;
     /**
      * Create middleware.
      *
-     * @param string $moduleName
-     * @param string $path
-     * @param string $middleware
-     * @param bool $force
+     * @param  string  $moduleName
+     * @param  string  $path
+     * @param  string  $middleware
+     * @param  bool  $force
      * @return void
      */
     protected function createMiddleware($moduleName, $path, $middleware, $force)
     {
-        $middlewarePath = $path . '/' . $middleware . '.php';
+        $middlewarePath = $path.'/'.$middleware.'.php';
 
-        if (!$this->files->exists($middlewarePath) || $force) {
+        if (! $this->files->exists($middlewarePath) || $force) {
             $namespace = config('modularization.namespace', 'Modules');
 
-            $content = $this->getStub('auth-middleware/' . Str::kebab($middleware), [
+            $content = $this->getStub('auth-middleware/'.Str::kebab($middleware), [
                 '{{namespace}}' => $namespace,
                 '{{moduleName}}' => $moduleName,
                 '{{moduleNameLower}}' => strtolower($moduleName),
@@ -465,13 +467,13 @@ EOT;
     /**
      * Update service provider to register auth routes and middleware.
      *
-     * @param string $moduleName
-     * @param string $modulePath
+     * @param  string  $moduleName
+     * @param  string  $modulePath
      * @return void
      */
     protected function updateServiceProvider($moduleName, $modulePath)
     {
-        $providerPath = $modulePath . '/Providers/' . $moduleName . 'ServiceProvider.php';
+        $providerPath = $modulePath.'/Providers/'.$moduleName.'ServiceProvider.php';
 
         if ($this->files->exists($providerPath)) {
             $content = $this->files->get($providerPath);
@@ -503,7 +505,7 @@ EOT;
                 $bootMethod = str_replace(
                     ['{{moduleName}}', '{{moduleNameLower}}', '{{namespace}}'],
                     [$moduleName, strtolower($moduleName), config('modularization.namespace', 'Modules')],
-                    $bootMethod
+                    $bootMethod,
                 );
 
                 // Replace boot method in service provider
@@ -522,21 +524,17 @@ EOT;
 
     /**
      * Get stub content with replacements.
-     *
-     * @param string $name
-     * @param array $replacements
-     * @return string
      */
-    protected function getStub($name, $replacements = [])
+    protected function getStub(string $name, array $replacements = []): string
     {
         // Check for custom stub in application
-        $stubPath = base_path('stubs/vendor/modularization/auth/' . $name . '.stub');
+        $stubPath = base_path('stubs/vendor/modularization/auth/'.$name.'.stub');
 
         if ($this->files->exists($stubPath)) {
             $content = $this->files->get($stubPath);
         } else {
             // Fall back to package stubs
-            $packageStubsPath = __DIR__ . '/../../../stubs/auth/' . $name . '.stub';
+            $packageStubsPath = __DIR__.'/../../../stubs/auth/'.$name.'.stub';
 
             if ($this->files->exists($packageStubsPath)) {
                 $content = $this->files->get($packageStubsPath);
@@ -557,12 +555,12 @@ EOT;
     /**
      * Get default stub content for authentication files.
      *
-     * @param string $name
+     * @param  string  $name
      * @return string
      */
     protected function getDefaultStubContent($name)
     {
         // Placeholder - we'll implement these stubs in a separate method or file
-        return '<?php // Stub for ' . $name;
+        return '<?php // Stub for '.$name;
     }
 }

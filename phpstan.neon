@@ -1,0 +1,11 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - src
+
+    # Level 6 reports missing array value types, which is impractical for large
+    # legacy command files with string => string replacement arrays. Level 5 gives
+    # good coverage without false-positive noise.
+    level: 5

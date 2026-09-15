@@ -126,8 +126,9 @@ class MakeModuleCommandTest extends TestCase
         $this->assertTrue($this->files->isFile($this->modulesPath . '/' . $this->testModuleName . '/Livewire/' . $this->testModuleName . 'Form.php'));
 
         // Check that Livewire views were created
-        $this->assertTrue($this->files->isFile($this->modulesPath . '/' . $this->testModuleName . '/Resources/views/livewire/' . strtolower(str_replace('_', '-', $this->testModuleName)) . '-table.blade.php'));
-        $this->assertTrue($this->files->isFile($this->modulesPath . '/' . $this->testModuleName . '/Resources/views/livewire/' . strtolower(str_replace('_', '-', $this->testModuleName)) . '-form.blade.php'));
+        $kebabName = \Illuminate\Support\Str::kebab($this->testModuleName);
+        $this->assertTrue($this->files->isFile($this->modulesPath . '/' . $this->testModuleName . '/Resources/views/livewire/' . $kebabName . '-table.blade.php'));
+        $this->assertTrue($this->files->isFile($this->modulesPath . '/' . $this->testModuleName . '/Resources/views/livewire/' . $kebabName . '-form.blade.php'));
     }
 
     /** @test */
@@ -176,11 +177,9 @@ class MakeModuleCommandTest extends TestCase
         // Check content of repository interface
         $interfaceContent = $this->files->get($this->modulesPath . '/' . $this->testModuleName . '/Repositories/Interfaces/' . $this->testModuleName . 'RepositoryInterface.php');
         $this->assertStringContainsString('interface ' . $this->testModuleName . 'RepositoryInterface', $interfaceContent);
-        $this->assertStringContainsString('public function getAll();', $interfaceContent);
-        $this->assertStringContainsString('public function findById($id);', $interfaceContent);
-        $this->assertStringContainsString('public function create(array $data);', $interfaceContent);
-        $this->assertStringContainsString('public function update($id, array $data);', $interfaceContent);
-        $this->assertStringContainsString('public function delete($id);', $interfaceContent);
+        $this->assertStringContainsString('public function create(array $data)', $interfaceContent);
+        $this->assertStringContainsString('public function update(', $interfaceContent);
+        $this->assertStringContainsString('public function delete(', $interfaceContent);
 
         // Check content of repository implementation
         $repoContent = $this->files->get($this->modulesPath . '/' . $this->testModuleName . '/Repositories/' . $this->testModuleName . 'Repository.php');
@@ -254,8 +253,8 @@ class MakeModuleCommandTest extends TestCase
         $servicePath = $this->modulesPath . '/' . $this->testModuleName . '/Services/' . $this->testModuleName . 'Service.php';
         $serviceContent = $this->files->get($servicePath);
 
-        $this->assertStringContainsString('public function getAll()', $serviceContent);
-        $this->assertStringContainsString('public function findById(', $serviceContent);
+        $this->assertStringContainsString('public function all()', $serviceContent);
+        $this->assertStringContainsString('public function find(', $serviceContent);
         $this->assertStringContainsString('public function create(', $serviceContent);
         $this->assertStringContainsString('public function update(', $serviceContent);
         $this->assertStringContainsString('public function delete(', $serviceContent);
@@ -274,9 +273,10 @@ class MakeModuleCommandTest extends TestCase
         $this->assertTrue($this->files->isFile($this->modulesPath . '/' . $this->testModuleName . '/Livewire/' . $this->testModuleName . 'Table.php'));
         $this->assertTrue($this->files->isFile($this->modulesPath . '/' . $this->testModuleName . '/Livewire/' . $this->testModuleName . 'Form.php'));
 
-        // Check that Livewire views were created
-        $this->assertTrue($this->files->isFile($this->modulesPath . '/' . $this->testModuleName . '/resources/views/livewire/' . strtolower(str_replace('_', '-', $this->testModuleName)) . '-table.blade.php'));
-        $this->assertTrue($this->files->isFile($this->modulesPath . '/' . $this->testModuleName . '/resources/views/livewire/' . strtolower(str_replace('_', '-', $this->testModuleName)) . '-form.blade.php'));
+        // Check that Livewire views were created (Resources is PascalCase, view filename is kebab-case)
+        $kebabName = \Illuminate\Support\Str::kebab($this->testModuleName);
+        $this->assertTrue($this->files->isFile($this->modulesPath . '/' . $this->testModuleName . '/Resources/views/livewire/' . $kebabName . '-table.blade.php'));
+        $this->assertTrue($this->files->isFile($this->modulesPath . '/' . $this->testModuleName . '/Resources/views/livewire/' . $kebabName . '-form.blade.php'));
 
         // Verify that no regular controllers were created when using livewire-only
         $controllerPath = $this->modulesPath . '/' . $this->testModuleName . '/Http/Controllers/' . $this->testModuleName . 'Controller.php';

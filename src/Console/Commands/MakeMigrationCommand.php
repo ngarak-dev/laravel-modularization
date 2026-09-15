@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization\Console\Commands;
 
 use Illuminate\Console\Command;
@@ -37,27 +39,28 @@ class MakeMigrationCommand extends Command
         $name = $this->argument('name');
         $moduleName = $this->argument('module');
         $modulesPath = base_path(config('modularization.modules_path', 'modules'));
-        $modulePath = $modulesPath . '/' . $moduleName;
+        $modulePath = $modulesPath.'/'.$moduleName;
 
         // Check if module exists
-        if (!File::isDirectory($modulePath)) {
+        if (! File::isDirectory($modulePath)) {
             $this->error("Module [{$moduleName}] does not exist.");
+
             return 1;
         }
 
         // Make sure the migrations directory exists
         $migrationsPath = $this->option('path')
-            ? $modulePath . '/' . $this->option('path')
-            : $modulePath . '/Database/Migrations';
+            ? $modulePath.'/'.$this->option('path')
+            : $modulePath.'/Database/Migrations';
 
-        if (!File::isDirectory($migrationsPath)) {
+        if (! File::isDirectory($migrationsPath)) {
             File::makeDirectory($migrationsPath, 0755, true);
         }
 
         // Build migration parameters
         $params = [
             'name' => $name,
-            '--path' => str_replace(base_path() . '/', '', $migrationsPath),
+            '--path' => str_replace(base_path().'/', '', $migrationsPath),
         ];
 
         // Add table parameters if provided
@@ -78,17 +81,17 @@ class MakeMigrationCommand extends Command
             $datePrefix = date('Y_m_d_His');
             $migrationName = Str::snake($name);
 
-            $pattern = $migrationsPath . "/*_*_{$migrationName}.php";
+            $pattern = $migrationsPath."/*_*_{$migrationName}.php";
             $files = glob($pattern);
 
-            if (!empty($files)) {
-                $this->info("Migration created successfully: " . basename(end($files)));
+            if (! empty($files)) {
+                $this->info('Migration created successfully: '.basename(end($files)));
 
                 // Show table name if applicable
                 if ($this->option('create')) {
-                    $this->info("Table to be created: " . $this->option('create'));
+                    $this->info('Table to be created: '.$this->option('create'));
                 } elseif ($this->option('table')) {
-                    $this->info("Table to be migrated: " . $this->option('table'));
+                    $this->info('Table to be migrated: '.$this->option('table'));
                 }
             }
         }

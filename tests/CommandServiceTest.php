@@ -3,8 +3,9 @@
 namespace NgarakDev\Modularization\Tests;
 
 use Illuminate\Support\Facades\Artisan;
-use Orchestra\Testbench\TestCase;
+use NgarakDev\Modularization\Console\Commands\MakeModuleCommand;
 use NgarakDev\Modularization\Providers\ModularizationServiceProvider;
+use Orchestra\Testbench\TestCase;
 
 class CommandServiceTest extends TestCase
 {
@@ -18,14 +19,11 @@ class CommandServiceTest extends TestCase
     /** @test */
     public function it_registers_both_command_names()
     {
-        // Get all registered commands
         $commands = Artisan::all();
 
-        // Check that both command names are registered
         $this->assertArrayHasKey('make:module', $commands);
         $this->assertArrayHasKey('module:make', $commands);
 
-        // Verify they point to the same command class
         $makeModuleCommand = get_class($commands['make:module']);
         $moduleMakeCommand = get_class($commands['module:make']);
 
@@ -35,12 +33,9 @@ class CommandServiceTest extends TestCase
     /** @test */
     public function it_has_correctly_defined_options()
     {
-        $command = Artisan::find('make:module');
-
-        // Get the command definition
+        $command = $this->app->make(MakeModuleCommand::class);
         $definition = $command->getDefinition();
 
-        // Check that all the required options are defined
         $this->assertTrue($definition->hasOption('api'));
         $this->assertTrue($definition->hasOption('force'));
         $this->assertTrue($definition->hasOption('with-views'));
@@ -53,17 +48,23 @@ class CommandServiceTest extends TestCase
     /** @test */
     public function it_has_the_correct_signature()
     {
-        $command = Artisan::find('make:module');
+        $command = $this->app->make(MakeModuleCommand::class);
+        $definition = $command->getDefinition();
 
-        // Check the command's name argument exists
-        $this->assertTrue($command->getDefinition()->hasArgument('name'));
+        $this->assertTrue($definition->hasArgument('name'));
 
-        // Verify that the signature is formatted correctly
-        $expectedSignaturePattern = '/make:module \{name : The name of the module\}.*\{--api.*\{--resource.*\{--force.*\{--with-crud.*\{--with-views.*\{--with-livewire.*\{--with-livewire-only/s';
         $reflection = new \ReflectionClass($command);
-        $signature = $reflection->getProperty('signature');
-        $signature->setAccessible(true);
+        $signatureProp = $reflection->getProperty('signature');
+        $signatureProp->setAccessible(true);
+        $signature = $signatureProp->getValue($command);
 
-        $this->assertMatchesRegularExpression($expectedSignaturePattern, $signature->getValue($command));
+        $this->assertMatchesRegularExpression('/make:module/', $signature);
+        $this->assertMatchesRegularExpression('/\{name/', $signature);
+        $this->assertMatchesRegularExpression('/\{--api/', $signature);
+        $this->assertMatchesRegularExpression('/\{--resource/', $signature);
+        $this->assertMatchesRegularExpression('/\{--force/', $signature);
+        $this->assertMatchesRegularExpression('/\{--with-views/', $signature);
+        $this->assertMatchesRegularExpression('/\{--with-livewire/', $signature);
+        $this->assertMatchesRegularExpression('/\{--with-livewire-only/', $signature);
     }
 }

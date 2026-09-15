@@ -1,383 +1,373 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
-use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
+use Livewire\Component;
 use Livewire\Livewire;
-use ReflectionClass;
+use NgarakDev\Modularization\Console\Commands\MakeMigrationCommand;
+use NgarakDev\Modularization\Console\Commands\MakeModuleAuthCommand;
 use NgarakDev\Modularization\Console\Commands\MakeModuleCommand;
-use NgarakDev\Modularization\Console\Commands\MakeModuleLivewireCommand;
 use NgarakDev\Modularization\Console\Commands\MakeModuleEventCommand;
+use NgarakDev\Modularization\Console\Commands\MakeModuleLivewireCommand;
+use NgarakDev\Modularization\Console\Commands\MakeModuleManagerCommand;
 use NgarakDev\Modularization\Console\Commands\MakeModuleTranslationCommand;
-use NgarakDev\Modularization\Console\Commands\ModuleExportCommand;
-use NgarakDev\Modularization\Console\Commands\ModuleToggleCommand;
-use NgarakDev\Modularization\Console\Commands\PublishStubsCommand;
 use NgarakDev\Modularization\Console\Commands\MigrateModuleCommand;
 use NgarakDev\Modularization\Console\Commands\MigrateModulesCommand;
-use NgarakDev\Modularization\Console\Commands\MakeMigrationCommand;
+use NgarakDev\Modularization\Console\Commands\ModuleCacheCommand;
+use NgarakDev\Modularization\Console\Commands\ModuleClearCommand;
+use NgarakDev\Modularization\Console\Commands\ModuleExportCommand;
+use NgarakDev\Modularization\Console\Commands\ModuleListCommand;
+use NgarakDev\Modularization\Console\Commands\ModuleToggleCommand;
+use NgarakDev\Modularization\Console\Commands\PublishStubsCommand;
+use NgarakDev\Modularization\Facades\Modularization;
 use NgarakDev\Modularization\ModularizationService;
+use NgarakDev\Modularization\Module;
+use NgarakDev\Modularization\Support\ModuleCache;
+use NgarakDev\Modularization\Support\ModuleDiscovery;
+use NgarakDev\Modularization\Support\ModuleStatusManager;
 
 class ModularizationServiceProvider extends ServiceProvider
 {
     /**
-     * Bootstrap the application services.
+     * Register package services and bindings.
      */
-    public function boot()
+    public function register(): void
     {
-        // Load modules
-        $this->loadModules();
-
-        // Publish configuration
-        $this->publishes([
-            __DIR__ . '/../../config/modularization.php' => config_path('modularization.php'),
-        ], 'modularization-config');
-
-        // Publish stubs
-        $this->publishes([
-            __DIR__ . '/../../stubs' => base_path('stubs/vendor/modularization'),
-        ], 'modularization-stubs');
-
-        // Register commands
-        if ($this->app->runningInConsole()) {
-            $this->commands([
-                'command.module.make',
-                'command.make.module',
-                'command.module.make-livewire',
-                'command.module.publish-stubs',
-                'command.module.toggle',
-                'command.module.make-event',
-                'command.module.make-translation',
-                'command.module.export',
-                'command.module.make-auth',
-                'command.module.make-manager',
-                'command.module.migrate',
-                'command.module.migrate-all',
-                'command.module.make-migration',
-            ]);
-        }
-    }
-
-    /**
-     * Register the application services.
-     */
-    public function register()
-    {
-        // Merge configuration
         $this->mergeConfigFrom(
-            __DIR__ . '/../../config/modularization.php',
-            'modularization'
+            __DIR__.'/../../config/modularization.php',
+            'modularization',
         );
 
-        // Helper functions are autoloaded via composer.json "files" directive
-        // Make sure to run "composer dump-autoload" after installing the package
-
-        // Register the ModularizationService
-        $this->app->singleton('modularization', function ($app) {
-            return new ModularizationService($app['files']);
+        $this->app->singleton(ModuleDiscovery::class, function ($app) {
+            return new ModuleDiscovery(
+                files: $app[Filesystem::class],
+                modulesPath: base_path($app['config']->get('modularization.modules_path', 'modules')),
+                defaultNamespace: $app['config']->get('modularization.namespace', 'Modules'),
+            );
         });
 
-        // Register Facade alias
-        $this->app->alias('modularization', ModularizationService::class);
-
-        // Register commands
-        $this->app->singleton('command.module.make', function ($app) {
-            return new MakeModuleCommand($app['files']);
+        $this->app->singleton(ModuleStatusManager::class, function ($app) {
+            return new ModuleStatusManager($app[Filesystem::class]);
         });
 
-        // Register command with alias
-        $this->app->singleton('command.make.module', function ($app) {
-            return $app['command.module.make'];
+        $this->app->singleton(ModuleCache::class, function ($app) {
+            return new ModuleCache(
+                files: $app[Filesystem::class],
+                bootstrapPath: $app->bootstrapPath(),
+            );
         });
 
-        // Register Livewire command
-        $this->app->singleton('command.module.make-livewire', function ($app) {
-            return new MakeModuleLivewireCommand();
+        $this->app->singleton(ModularizationService::class, function ($app) {
+            return new ModularizationService(
+                discovery: $app[ModuleDiscovery::class],
+                statusManager: $app[ModuleStatusManager::class],
+                cache: $app[ModuleCache::class],
+            );
         });
 
-        // Register publish-stubs command
-        $this->app->singleton('command.module.publish-stubs', function ($app) {
-            return new PublishStubsCommand($app['files']);
-        });
+        // Register the 'modularization' alias for backwards compatibility with Facade and direct binding
+        $this->app->alias(ModularizationService::class, 'modularization');
 
-        // Register module:toggle command
-        $this->app->singleton('command.module.toggle', function ($app) {
-            return new ModuleToggleCommand($app['files']);
-        });
-
-        // Register module:make-event command
-        $this->app->singleton('command.module.make-event', function ($app) {
-            return new MakeModuleEventCommand($app['files']);
-        });
-
-        // Register module:make-translation command
-        $this->app->singleton('command.module.make-translation', function ($app) {
-            return new MakeModuleTranslationCommand($app['files']);
-        });
-
-        // Register module:export command
-        $this->app->singleton('command.module.export', function ($app) {
-            return new ModuleExportCommand($app['files']);
-        });
-
-        // Register module:make-auth command
-        $this->app->singleton('command.module.make-auth', function ($app) {
-            return new \NgarakDev\Modularization\Console\Commands\MakeModuleAuthCommand($app['files']);
-        });
-
-        // Register module:make-manager command
-        $this->app->singleton('command.module.make-manager', function ($app) {
-            return new \NgarakDev\Modularization\Console\Commands\MakeModuleManagerCommand($app['files']);
-        });
-
-        // Register module:migrate command
-        $this->app->singleton('command.module.migrate', function ($app) {
-            return new MigrateModuleCommand();
-        });
-
-        // Register module:migrate-all command
-        $this->app->singleton('command.module.migrate-all', function ($app) {
-            return new MigrateModulesCommand();
-        });
-
-        // Register module:make-migration command
-        $this->app->singleton('command.module.make-migration', function ($app) {
-            return new MakeMigrationCommand();
-        });
+        $this->registerCommands();
     }
 
     /**
-     * Load all modules.
+     * Bootstrap the package.
      */
-    private function loadModules()
+    public function boot(): void
     {
-        $modulesPath = base_path(config('modularization.modules_path', 'modules'));
+        $this->publishAssets();
+        $this->loadModules();
+    }
 
-        if (!File::isDirectory($modulesPath)) {
+    /**
+     * Register all Artisan commands.
+     */
+    protected function registerCommands(): void
+    {
+        if (! $this->app->runningInConsole()) {
             return;
         }
 
-        $modules = File::directories($modulesPath);
+        $this->commands([
+            MakeModuleCommand::class,
+            MakeModuleLivewireCommand::class,
+            MakeModuleEventCommand::class,
+            MakeModuleTranslationCommand::class,
+            ModuleExportCommand::class,
+            ModuleToggleCommand::class,
+            PublishStubsCommand::class,
+            MigrateModuleCommand::class,
+            MigrateModulesCommand::class,
+            MakeMigrationCommand::class,
+            MakeModuleAuthCommand::class,
+            MakeModuleManagerCommand::class,
+            ModuleListCommand::class,
+            ModuleCacheCommand::class,
+            ModuleClearCommand::class,
+        ]);
+    }
+
+    /**
+     * Publish package assets.
+     */
+    protected function publishAssets(): void
+    {
+        $this->publishes([
+            __DIR__.'/../../config/modularization.php' => config_path('modularization.php'),
+        ], 'modularization-config');
+
+        $this->publishes([
+            __DIR__.'/../../stubs' => base_path('stubs/vendor/modularization'),
+        ], 'modularization-stubs');
+    }
+
+    /**
+     * Discover and boot all enabled modules.
+     *
+     * Note: Boot-time discovery uses ModuleDiscovery directly so that the
+     * ModularizationService (which is lazily initialized on first access) does
+     * not pre-warm with a stale module list. This matters in tests where
+     * modules are created after the service provider has been booted.
+     */
+    protected function loadModules(): void
+    {
+        /** @var ModuleDiscovery $discovery */
+        $discovery = $this->app->make(ModuleDiscovery::class);
+
+        $modules = $discovery->discover();
 
         foreach ($modules as $module) {
-            $moduleName = basename($module);
-
-            // Skip disabled modules
-            if (File::exists($module . '/.disabled')) {
-                continue;
-            }
-
-            // Register Service Provider from module
-            $this->registerModuleServiceProvider($module, $moduleName);
-
-            // Register Routes
-            $this->registerRoutes($module, $moduleName);
-
-            // Register Views
-            $this->registerViews($module, $moduleName);
-
-            // Register Translations
-            $this->registerTranslations($module, $moduleName);
-
-            // Register Migrations
-            $this->registerMigrations($module, $moduleName);
-
-            // Register Assets
-            $this->registerAssets($module, $moduleName);
-
-            // Register Livewire Components
-            $this->registerLivewireComponents($module, $moduleName);
-
-            // Register Config
-            $this->registerConfig($module, $moduleName);
-        }
-    }
-
-    /**
-     * Register module service provider.
-     */
-    protected function registerModuleServiceProvider($module, $moduleName): void
-    {
-        $namespace = config('modularization.namespace', 'Modules');
-        $providerPath = "$module/Providers/{$moduleName}ServiceProvider.php";
-
-        if (File::exists($providerPath)) {
-            $providerClass = "{$namespace}\\{$moduleName}\\Providers\\{$moduleName}ServiceProvider";
-            if (class_exists($providerClass)) {
-                $this->app->register($providerClass);
+            if ($module->isEnabled()) {
+                $this->bootModule($module);
             }
         }
     }
 
     /**
-     * Register routes for the module.
+     * Boot a single module: register its provider, routes, views, translations, migrations, etc.
      */
-    protected function registerRoutes($module, $moduleName): void
+    protected function bootModule(Module $module): void
     {
-        $moduleNameLower = strtolower($moduleName);
-        $namespace = config('modularization.namespace', 'Modules');
+        $this->registerModuleServiceProvider($module);
+        $this->registerRoutes($module);
+        $this->registerViews($module);
+        $this->registerTranslations($module);
+        $this->registerMigrations($module);
+        $this->registerAssets($module);
+        $this->registerLivewireComponents($module);
+        $this->registerConfig($module);
+    }
 
-        // Web Routes
-        $webRoutesPath = "$module/Routes/web.php";
-        if (File::exists($webRoutesPath)) {
-            Route::middleware('web')
-                ->namespace("{$namespace}\\{$moduleName}\\Http\\Controllers")
-                ->group($webRoutesPath);
+    /**
+     * Register the module's service provider if it exists and the class is loadable.
+     */
+    protected function registerModuleServiceProvider(Module $module): void
+    {
+        $providerPath = $module->providerPath();
+
+        if (! File::exists($providerPath)) {
+            return;
         }
 
-        // API Routes
-        $apiRoutesPath = "$module/Routes/api.php";
-        if (File::exists($apiRoutesPath)) {
+        $providerClass = $module->providerClass();
+
+        if (class_exists($providerClass)) {
+            $this->app->register($providerClass);
+        }
+    }
+
+    /**
+     * Register web, API, and Livewire route files for the module.
+     */
+    protected function registerRoutes(Module $module): void
+    {
+        $modulePath = $module->path;
+
+        $webRoutes = $modulePath.'/Routes/web.php';
+        if (File::exists($webRoutes)) {
+            Route::middleware('web')->group($webRoutes);
+        }
+
+        $apiRoutes = $modulePath.'/Routes/api.php';
+        if (File::exists($apiRoutes)) {
             Route::prefix('api')
                 ->middleware('api')
                 ->name('api.')
-                ->namespace("{$namespace}\\{$moduleName}\\Http\\Controllers")
-                ->group($apiRoutesPath);
+                ->group($apiRoutes);
         }
 
-        // Livewire Routes
-        $livewireRoutesPath = "$module/Routes/livewire.php";
-        if (File::exists($livewireRoutesPath)) {
-            Route::middleware('web')
-                ->group($livewireRoutesPath);
+        $livewireRoutes = $modulePath.'/Routes/livewire.php';
+        if (File::exists($livewireRoutes)) {
+            Route::middleware('web')->group($livewireRoutes);
         }
     }
 
     /**
-     * Register views for the module.
+     * Register and publish the module's views.
      */
-    protected function registerViews($module, $moduleName): void
+    protected function registerViews(Module $module): void
     {
-        $viewsPath = "$module/Resources/views";
-        if (File::isDirectory($viewsPath)) {
-            $this->loadViewsFrom($viewsPath, strtolower($moduleName));
+        $viewsPath = $module->path.'/Resources/views';
 
-            // Allow publishing view files
-            $this->publishes([
-                $viewsPath => resource_path("views/vendor/" . strtolower($moduleName)),
-            ], [strtolower($moduleName) . '-views', 'laravel-assets']);
+        if (! File::isDirectory($viewsPath)) {
+            return;
         }
+
+        $alias = strtolower($module->name);
+        $this->loadViewsFrom($viewsPath, $alias);
+
+        $this->publishes([
+            $viewsPath => resource_path("views/vendor/{$alias}"),
+        ], ["{$alias}-views", 'laravel-assets']);
     }
 
     /**
-     * Register translations for the module.
+     * Register and publish the module's translations.
      */
-    protected function registerTranslations($module, $moduleName): void
+    protected function registerTranslations(Module $module): void
     {
-        $translationsPath = "$module/Resources/lang";
-        if (File::isDirectory($translationsPath)) {
-            $this->loadTranslationsFrom($translationsPath, strtolower($moduleName));
+        $langPath = $module->path.'/Resources/lang';
 
-            // Allow publishing language files
-            $this->publishes([
-                $translationsPath => lang_path("vendor/" . strtolower($moduleName)),
-            ], [strtolower($moduleName) . '-translations', 'laravel-assets']);
+        if (! File::isDirectory($langPath)) {
+            return;
         }
+
+        $alias = strtolower($module->name);
+        $this->loadTranslationsFrom($langPath, $alias);
+
+        $this->publishes([
+            $langPath => lang_path("vendor/{$alias}"),
+        ], ["{$alias}-translations", 'laravel-assets']);
     }
 
     /**
-     * Register migrations for the module.
+     * Register the module's database migrations.
      */
-    protected function registerMigrations($module, $moduleName): void
+    protected function registerMigrations(Module $module): void
     {
-        $migrationsPath = "$module/Database/Migrations";
+        $migrationsPath = $module->path.'/Database/Migrations';
+
         if (File::isDirectory($migrationsPath)) {
             $this->loadMigrationsFrom($migrationsPath);
         }
     }
 
     /**
-     * Register assets for the module.
+     * Publish the module's public assets.
      */
-    protected function registerAssets($module, $moduleName): void
+    protected function registerAssets(Module $module): void
     {
-        $assetsPath = "$module/Resources/assets";
-        if (File::isDirectory($assetsPath)) {
-            $this->publishes([
-                $assetsPath => public_path("modules/" . strtolower($moduleName)),
-            ], [strtolower($moduleName) . '-assets', 'laravel-assets']);
-        }
-    }
+        $assetsPath = $module->path.'/Resources/assets';
 
-    /**
-     * Register configuration for the module.
-     */
-    protected function registerConfig($module, $moduleName): void
-    {
-        $configPath = "$module/Config";
-        if (File::isDirectory($configPath)) {
-            $configFiles = File::files($configPath);
-            foreach ($configFiles as $configFile) {
-                $configName = pathinfo($configFile, PATHINFO_FILENAME);
-                $this->mergeConfigFrom($configFile, "modules.{$moduleName}.{$configName}");
-            }
-
-            // Allow publishing config files
-            $this->publishes([
-                $configPath => config_path("modules/" . strtolower($moduleName)),
-            ], [strtolower($moduleName) . '-config', 'laravel-assets']);
-        }
-    }
-
-    /**
-     * Register Livewire components for the module.
-     */
-    protected function registerLivewireComponents($module, $moduleName): void
-    {
-        $livewirePath = "$module/Livewire";
-        if (!File::isDirectory($livewirePath)) {
+        if (! File::isDirectory($assetsPath)) {
             return;
         }
 
-        $namespace = config('modularization.namespace', 'Modules');
-        $fullNamespace = "{$namespace}\\{$moduleName}\\Livewire";
-        $prefix = strtolower($moduleName);
+        $alias = strtolower($module->name);
+        $this->publishes([
+            $assetsPath => public_path("modules/{$alias}"),
+        ], ["{$alias}-assets", 'laravel-assets']);
+    }
 
-        // Find all PHP files in the Livewire directory
-        $files = File::glob("$livewirePath/*.php");
+    /**
+     * Merge and publish the module's configuration files.
+     */
+    protected function registerConfig(Module $module): void
+    {
+        $configPath = $module->path.'/Config';
 
-        foreach ($files as $file) {
-            $fileName = pathinfo($file, PATHINFO_FILENAME);
-            $componentClass = "{$fullNamespace}\\{$fileName}";
-
-            // Make sure the class exists and is a Livewire component
-            if (class_exists($componentClass)) {
-                $reflection = new ReflectionClass($componentClass);
-                if ($reflection->isSubclassOf(\Livewire\Component::class)) {
-                    $alias = "{$prefix}.{$this->kebabCase($fileName)}";
-                    Livewire::component($alias, $componentClass);
-                }
-            }
+        if (! File::isDirectory($configPath)) {
+            return;
         }
 
-        // Check for subdirectories
-        $directories = File::directories($livewirePath);
-        foreach ($directories as $directory) {
-            $directoryName = basename($directory);
-            $subFiles = File::glob("$directory/*.php");
+        $alias = strtolower($module->name);
 
-            foreach ($subFiles as $file) {
-                $fileName = pathinfo($file, PATHINFO_FILENAME);
-                $componentClass = "{$fullNamespace}\\{$directoryName}\\{$fileName}";
+        foreach (File::files($configPath) as $configFile) {
+            $configName = pathinfo((string) $configFile, PATHINFO_FILENAME);
+            $this->mergeConfigFrom((string) $configFile, "modules.{$module->name}.{$configName}");
+        }
 
-                if (class_exists($componentClass)) {
-                    $reflection = new ReflectionClass($componentClass);
-                    if ($reflection->isSubclassOf(\Livewire\Component::class)) {
-                        $alias = "{$prefix}.{$this->kebabCase($directoryName)}.{$this->kebabCase($fileName)}";
-                        Livewire::component($alias, $componentClass);
-                    }
-                }
+        $this->publishes([
+            $configPath => config_path("modules/{$alias}"),
+        ], ["{$alias}-config", 'laravel-assets']);
+    }
+
+    /**
+     * Auto-register Livewire components for the module.
+     *
+     * Gracefully skipped when Livewire is not installed.
+     */
+    protected function registerLivewireComponents(Module $module): void
+    {
+        if (! $this->app['config']->get('modularization.auto_register_livewire', true)) {
+            return;
+        }
+
+        if (! class_exists(Livewire::class)) {
+            return;
+        }
+
+        $livewirePath = $module->path.'/Livewire';
+
+        if (! File::isDirectory($livewirePath)) {
+            return;
+        }
+
+        $prefix = strtolower($module->name);
+        $namespace = $module->namespace.'\\Livewire';
+
+        $this->registerLivewireDirectory($livewirePath, $namespace, $prefix);
+    }
+
+    /**
+     * Register Livewire components from a directory (recursive, one level deep).
+     */
+    private function registerLivewireDirectory(string $directory, string $namespace, string $prefix): void
+    {
+        foreach (File::glob("{$directory}/*.php") as $file) {
+            $className = pathinfo($file, PATHINFO_FILENAME);
+            $componentClass = "{$namespace}\\{$className}";
+            $alias = "{$prefix}.".Str::kebab($className);
+
+            $this->registerLivewireComponent($componentClass, $alias);
+        }
+
+        foreach (File::directories($directory) as $subDir) {
+            $subDirName = basename($subDir);
+            $subNamespace = "{$namespace}\\{$subDirName}";
+            $subPrefix = "{$prefix}.".Str::kebab($subDirName);
+
+            foreach (File::glob("{$subDir}/*.php") as $file) {
+                $className = pathinfo($file, PATHINFO_FILENAME);
+                $componentClass = "{$subNamespace}\\{$className}";
+                $alias = "{$subPrefix}.".Str::kebab($className);
+
+                $this->registerLivewireComponent($componentClass, $alias);
             }
         }
     }
 
     /**
-     * Convert a string to kebab case.
+     * Register a single Livewire component if it is a valid Livewire component class.
      */
-    protected function kebabCase($string): string
+    private function registerLivewireComponent(string $componentClass, string $alias): void
     {
-        return strtolower(preg_replace('/([a-z])([A-Z])/', '$1-$2', $string));
+        if (! class_exists($componentClass)) {
+            return;
+        }
+
+        if (! is_subclass_of($componentClass, Component::class)) {
+            return;
+        }
+
+        Livewire::component($alias, $componentClass);
     }
 }

@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - Unreleased
+
+### Added
+
+- **`Module` value object** (`src/Module.php`): typed readonly properties, `fromManifest()` / `fromDirectory()` constructors, `withEnabled()`, `toArray()`, `providerClass()`, `providerPath()`.
+- **`module.json` manifest** support: each module can declare `name`, `namespace`, `version`, `description`, `enabled`, `requires`.
+- **`ModuleDiscovery`** class: focused filesystem scanning with module name validation (rejects path traversal, slashes, special characters, names starting with numbers).
+- **`ModuleStatusManager`** class: persistent enable/disable via `.disabled` sentinel file; also updates `module.json`.
+- **`ModuleCache`** class: write/read/clear a PHP bootstrap cache at `bootstrap/cache/modules.php`.
+- **`ModuleDependencyResolver`** class: topological sort of modules; detects circular and missing dependencies.
+- **`module:list` command**: table and JSON output (`--format=json`) showing all modules with status, version, description, dependencies.
+- **`module:cache` command**: builds the bootstrap cache.
+- **`module:clear` command**: removes the bootstrap cache.
+- **Package-specific exceptions**: `ModuleException`, `ModuleNotFoundException`, `InvalidModuleException`, `ModuleDependencyException`, `ModuleGenerationException` — all `final`, with descriptive factory methods.
+- **GitHub Actions CI**: tests matrix across PHP 8.1/8.2/8.3 × Laravel 10/11/12; separate Pint and PHPStan jobs.
+- **Laravel Pint** configuration (`pint.json`) enforcing Laravel preset with `declare_strict_types`, ordered imports, trailing commas.
+- **PHPStan/Larastan** configuration (`phpstan.neon`) at level 5.
+- **41 new tests**: `ModuleCacheTest`, `ModuleDependencyResolverTest`, `ModuleStatusManagerTest`, `ModuleSecurityTest`, `ModuleDiscoveryTest`.
+
+### Changed
+
+- `ModularizationService` is now `final`, uses constructor DI for `ModuleDiscovery`, `ModuleStatusManager`, `ModuleCache`; removed unused `Filesystem` dependency.
+- `ModularizationServiceProvider::register()` binds all new support classes as singletons.
+- Exception classes are now `final`.
+- All command methods have complete parameter and return type annotations.
+- All core `src/` files pass Pint (Laravel preset) and PHPStan level 5.
+- Stubs modernized: `declare(strict_types=1)`, `readonly` constructor promotion, typed return types.
+- Minimum PHP bumped to **8.1** (was 8.0).
+
+### Fixed
+
+- Removed redundant `Filesystem $files` parameter from `ModularizationService` constructor.
+- Fixed `booleanOr.rightAlwaysFalse` in `MakeModuleAuthCommand` and `MakeModuleManagerCommand` where `$force` was always `false` inside an `else if (!$force)` block.
+- `Route::namespace()` deprecation removed from service provider.
+- Livewire registration gracefully skips when Livewire is not installed.
+
+### Security
+
+- Module names are validated against a strict regex; names with `..`, `/`, `\`, special characters, or numeric starts are rejected.
+- `ModuleDiscovery` ignores dot-prefixed directories.
+- Path traversal via malicious module names is blocked at the `module:make` command level.
+
 ## [1.0.6] - 2024-05-31
 
 ### Added

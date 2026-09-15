@@ -2,25 +2,28 @@
 
 namespace NgarakDev\Modularization\Tests;
 
-use PHPUnit\Framework\TestCase;
+use Orchestra\Testbench\TestCase;
+use NgarakDev\Modularization\ModularizationService;
 use NgarakDev\Modularization\Providers\ModularizationServiceProvider;
 
 class ModularizationTest extends TestCase
 {
+    protected function getPackageProviders($app)
+    {
+        return [ModularizationServiceProvider::class];
+    }
+
     /** @test */
     public function true_is_true()
     {
         $this->assertTrue(true);
     }
 
-    // Test loading service provider
     /** @test */
     public function test_can_load_service_provider()
     {
-        $provider = new ModularizationServiceProvider(app());
-        $this->assertInstanceOf(
-            \NgarakDev\Modularization\ModularizationService::class,
-            app(config('modularization.service_class', \NgarakDev\Modularization\ModularizationService::class))
-        );
+        $service = $this->app->make(ModularizationService::class);
+
+        $this->assertInstanceOf(ModularizationService::class, $service);
     }
 }

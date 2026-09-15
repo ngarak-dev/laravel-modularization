@@ -1,123 +1,168 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization;
 
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Str;
+use NgarakDev\Modularization\Exceptions\ModuleNotFoundException;
+use NgarakDev\Modularization\Support\ModuleCache;
+use NgarakDev\Modularization\Support\ModuleDiscovery;
+use NgarakDev\Modularization\Support\ModuleStatusManager;
 
-class ModularizationService
+/**
+ * Central access point for module metadata and status.
+ *
+ * This service is registered as a singleton and is used by the service provider,
+ * Artisan commands, and the Modularization facade.
+ *
+ * Module discovery runs once per request (or is loaded from cache in production).
+ * To rebuild the cache, run: php artisan module:cache
+ */
+final class ModularizationService
 {
-    /**
-     * @var Filesystem
-     */
-    protected $files;
+    /** @var array<string, Module>|null */
+    private ?array $modules = null;
+
+    public function __construct(
+        private readonly ModuleDiscovery $discovery,
+        private readonly ModuleStatusManager $statusManager,
+        private readonly ModuleCache $cache,
+    ) {}
 
     /**
-     * @var string
-     */
-    protected $basePath;
-
-    /**
-     * @var array
-     */
-    protected $modules = [];
-
-    /**
-     * Create a new ModularizationService instance.
+     * Get all discovered modules (enabled and disabled).
      *
-     * @param Filesystem $files
+     * @return array<string, Module>
      */
-    public function __construct(Filesystem $files)
+    public function getModules(): array
     {
-        $this->files = $files;
-        $this->basePath = base_path(config('modularization.modules_path'));
-        $this->scanModules();
+        return $this->loadModules();
     }
 
     /**
-     * Scan for all available modules.
+     * Get only enabled modules.
      *
-     * @return void
+     * @return array<string, Module>
      */
-    public function scanModules()
+    public function getEnabledModules(): array
     {
-        if (!$this->files->isDirectory($this->basePath)) {
-            return;
-        }
-
-        $modules = $this->files->directories($this->basePath);
-
-        foreach ($modules as $module) {
-            $name = basename($module);
-            $this->modules[$name] = [
-                'name' => $name,
-                'path' => $module,
-                'enabled' => true, // By default, all modules are enabled
-            ];
-        }
+        return array_filter($this->loadModules(), fn (Module $m) => $m->isEnabled());
     }
 
     /**
-     * Get all modules.
+     * Get only disabled modules.
      *
-     * @return array
+     * @return array<string, Module>
      */
-    public function getModules()
+    public function getDisabledModules(): array
     {
-        return $this->modules;
+        return array_filter($this->loadModules(), fn (Module $m) => $m->isDisabled());
+    }
+
+    /**
+     * Find a module by name.
+     *
+     * @throws ModuleNotFoundException
+     */
+    public function findOrFail(string $name): Module
+    {
+        $modules = $this->loadModules();
+
+        if (! isset($modules[$name])) {
+            throw ModuleNotFoundException::forModule($name);
+        }
+
+        return $modules[$name];
+    }
+
+    /**
+     * Find a module by name or return null.
+     */
+    public function find(string $name): ?Module
+    {
+        return $this->loadModules()[$name] ?? null;
     }
 
     /**
      * Determine whether the given module exists.
-     *
-     * @param string $name
-     * @return bool
      */
-    public function hasModule($name)
+    public function hasModule(string $name): bool
     {
-        return isset($this->modules[$name]);
+        return isset($this->loadModules()[$name]);
     }
 
     /**
      * Determine whether the given module is enabled.
-     *
-     * @param string $name
-     * @return bool
      */
-    public function isEnabled($name)
+    public function isEnabled(string $name): bool
     {
-        return $this->hasModule($name) && $this->modules[$name]['enabled'];
+        $module = $this->find($name);
+
+        return $module !== null && $module->isEnabled();
     }
 
     /**
-     * Enable a module.
+     * Enable a module persistently.
      *
-     * @param string $name
-     * @return bool
+     * @throws ModuleNotFoundException
      */
-    public function enable($name)
+    public function enable(string $name): void
     {
-        if ($this->hasModule($name)) {
-            $this->modules[$name]['enabled'] = true;
-            return true;
-        }
-
-        return false;
+        $module = $this->findOrFail($name);
+        $this->statusManager->enable($module);
+        $this->invalidateMemoryCache();
     }
 
     /**
-     * Disable a module.
+     * Disable a module persistently.
      *
-     * @param string $name
-     * @return bool
+     * @throws ModuleNotFoundException
      */
-    public function disable($name)
+    public function disable(string $name): void
     {
-        if ($this->hasModule($name)) {
-            $this->modules[$name]['enabled'] = false;
-            return true;
+        $module = $this->findOrFail($name);
+        $this->statusManager->disable($module);
+        $this->invalidateMemoryCache();
+    }
+
+    /**
+     * Force a re-scan of the modules directory, bypassing cache.
+     */
+    public function refresh(): void
+    {
+        $this->modules = null;
+        $this->loadModules(forceDiscover: true);
+    }
+
+    /**
+     * @return array<string, Module>
+     */
+    private function loadModules(bool $forceDiscover = false): array
+    {
+        if ($this->modules !== null && ! $forceDiscover) {
+            return $this->modules;
         }
 
-        return false;
+        // Try loading from file cache first (production)
+        if (! $forceDiscover && $this->cache->isCached()) {
+            $cached = $this->cache->load();
+            if ($cached !== null) {
+                $this->modules = $cached;
+
+                return $this->modules;
+            }
+        }
+
+        $this->modules = $this->discovery->discover();
+
+        return $this->modules;
+    }
+
+    /**
+     * Invalidate the in-memory module cache so the next access re-reads from disk.
+     */
+    private function invalidateMemoryCache(): void
+    {
+        $this->modules = null;
     }
 }

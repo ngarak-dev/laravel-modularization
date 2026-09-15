@@ -3,21 +3,14 @@
 use Illuminate\Support\Facades\Route;
 use {{namespace}}\{{moduleName}}\Http\Controllers\{{moduleName}}Controller;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your module.
-|
-*/
-
-Route::resource('{{moduleNameLower}}', {{moduleName}}Controller::class)->names([
-    'index' => '{{moduleNameLower}}.index',
-    'create' => '{{moduleNameLower}}.create',
-    'store' => '{{moduleNameLower}}.store',
-    'show' => '{{moduleNameLower}}.show',
-    'edit' => '{{moduleNameLower}}.edit',
-    'update' => '{{moduleNameLower}}.update',
-    'destroy' => '{{moduleNameLower}}.destroy',
-]); 
+Route::prefix('{{moduleNameLower}}')
+    ->name('{{moduleNameLower}}.')
+    ->group(function () {
+        Route::get('/', [{{moduleName}}Controller::class, 'index'])->name('index');
+        Route::get('/create', [{{moduleName}}Controller::class, 'create'])->name('create');
+        Route::post('/', [{{moduleName}}Controller::class, 'store'])->name('store');
+        Route::get('/{id}', [{{moduleName}}Controller::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [{{moduleName}}Controller::class, 'edit'])->name('edit');
+        Route::put('/{id}', [{{moduleName}}Controller::class, 'update'])->name('update');
+        Route::delete('/{id}', [{{moduleName}}Controller::class, 'destroy'])->name('destroy');
+    });

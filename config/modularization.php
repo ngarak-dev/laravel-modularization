@@ -1,13 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 return [
+
     /*
     |--------------------------------------------------------------------------
     | Modules Directory
     |--------------------------------------------------------------------------
     |
-    | This is the path where all modules will be stored. This path is relative
-    | to the application base path.
+    | The path where all modules will be stored. This is relative to the
+    | application base path (i.e. the directory containing artisan).
     |
     */
     'modules_path' => 'modules',
@@ -17,18 +20,19 @@ return [
     | Module Namespace
     |--------------------------------------------------------------------------
     |
-    | Define the namespace for your modules. All modules will be created under
-    | this namespace. Default is "Modules".
+    | The root namespace applied to all modules. By default this is "Modules",
+    | meaning a module called "Orders" will have the namespace Modules\Orders.
     |
     */
     'namespace' => 'Modules',
 
     /*
     |--------------------------------------------------------------------------
-    | Module Directories
+    | Default Module Directories
     |--------------------------------------------------------------------------
     |
-    | These are the default directories that will be created within each module.
+    | Directories created automatically when generating a new module.
+    | Paths are relative to the module root.
     |
     */
     'directories' => [
@@ -42,13 +46,13 @@ return [
         'Services',
         'Services/Interfaces',
         'Providers',
-        'database/migrations',
-        'database/seeders',
-        'database/factories',
-        'routes',
-        'config',
-        'resources/views',
-        'resources/lang',
+        'Database/Migrations',
+        'Database/Seeders',
+        'Database/Factories',
+        'Routes',
+        'Config',
+        'Resources/views',
+        'Resources/lang',
         'Livewire',
         'Tests/Unit',
         'Tests/Feature',
@@ -56,33 +60,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Auto-register Controllers
-    |--------------------------------------------------------------------------
-    |
-    | If set to true, controllers will be automatically registered with Laravel's
-    | route system using the appropriate middleware and namespaces.
-    |
-    */
-    'auto_register_controllers' => true,
-
-    /*
-    |--------------------------------------------------------------------------
     | Auto-register Livewire Components
     |--------------------------------------------------------------------------
     |
-    | If set to true, Livewire components will be automatically registered.
+    | When true and Livewire is installed, components in each module's Livewire/
+    | directory are registered automatically. Set to false to manage component
+    | registration manually in your module's service provider.
     |
     */
     'auto_register_livewire' => true,
 
     /*
     |--------------------------------------------------------------------------
-    | Repository Pattern Implementation
+    | Repository Pattern Enforcement
     |--------------------------------------------------------------------------
     |
-    | Controls whether to force the use of repository interfaces. If true,
-    | all repositories must implement their corresponding interface.
+    | When true, the module generator will always create repository interfaces
+    | alongside implementations. This is a generator hint, not a runtime check.
     |
     */
     'enforce_repository_pattern' => true,
+
 ];

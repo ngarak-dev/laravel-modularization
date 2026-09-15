@@ -1,86 +1,69 @@
 <?php
 
+declare(strict_types=1);
+
 namespace {{namespace}}\{{moduleName}}\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
+use Illuminate\View\View;
 use {{namespace}}\{{moduleName}}\Services\Interfaces\{{moduleName}}ServiceInterface;
-use {{namespace}}\{{moduleName}}\Http\Requests\{{moduleName}}Request;
 
 class {{moduleName}}Controller extends Controller
 {
-    /**
-     * @var {{moduleName}}ServiceInterface
-     */
-    protected $service;
-
-    /**
-     * Constructor
-     */
-    public function __construct({{moduleName}}ServiceInterface $service)
-    {
-        $this->service = $service;
+    public function __construct(
+        protected {{moduleName}}ServiceInterface $service,
+    ) {
     }
 
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(): View
     {
-        ${{moduleNameLower}}s = $this->service->getAll();
-        return view('{{moduleNameLower}}::{{moduleNameLower}}.index', compact('{{moduleNameLower}}s'));
+        $items = $this->service->all();
+
+        return view('{{moduleNameLower}}::{{moduleNameLower}}.index', compact('items'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function create(): View
     {
         return view('{{moduleNameLower}}::{{moduleNameLower}}.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store({{moduleName}}Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $this->service->create($request->validated());
-        return redirect()->route('{{moduleNameLower}}.index')->with('success', '{{moduleName}} created successfully');
+
+        return redirect()->route('{{moduleNameLower}}.index')
+            ->with('success', '{{moduleName}} created successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(int $id): View
     {
-        ${{moduleNameLower}} = $this->service->findById($id);
-        return view('{{moduleNameLower}}::{{moduleNameLower}}.show', compact('{{moduleNameLower}}'));
+        $item = $this->service->find($id);
+
+        return view('{{moduleNameLower}}::{{moduleNameLower}}.show', compact('item'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function edit(int $id): View
     {
-        ${{moduleNameLower}} = $this->service->findById($id);
-        return view('{{moduleNameLower}}::{{moduleNameLower}}.edit', compact('{{moduleNameLower}}'));
+        $item = $this->service->find($id);
+
+        return view('{{moduleNameLower}}::{{moduleNameLower}}.edit', compact('item'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update({{moduleName}}Request $request, string $id)
+    public function update(Request $request, int $id): RedirectResponse
     {
         $this->service->update($id, $request->validated());
-        return redirect()->route('{{moduleNameLower}}.index')->with('success', '{{moduleName}} updated successfully');
+
+        return redirect()->route('{{moduleNameLower}}.index')
+            ->with('success', '{{moduleName}} updated successfully.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy(int $id): RedirectResponse
     {
         $this->service->delete($id);
-        return redirect()->route('{{moduleNameLower}}.index')->with('success', '{{moduleName}} deleted successfully');
+
+        return redirect()->route('{{moduleNameLower}}.index')
+            ->with('success', '{{moduleName}} deleted successfully.');
     }
-} 
+}

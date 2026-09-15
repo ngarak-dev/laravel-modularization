@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization\Console\Commands;
 
 use Illuminate\Console\Command;
@@ -24,14 +26,13 @@ class PublishStubsCommand extends Command
     /**
      * The filesystem instance.
      *
-     * @var \Illuminate\Filesystem\Filesystem
+     * @var Filesystem
      */
     protected $files;
 
     /**
      * Create a new command instance.
      *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
      * @return void
      */
     public function __construct(Filesystem $files)
@@ -42,24 +43,23 @@ class PublishStubsCommand extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int
      */
-    public function handle()
+    public function handle(): int
     {
         // Source directory in package
-        $sourcePath = __DIR__ . '/../../../stubs';
+        $sourcePath = __DIR__.'/../../../stubs';
 
         // Destination directory in application
         $targetPath = base_path('stubs/vendor/modularization');
 
-        if (!$this->files->isDirectory($sourcePath)) {
+        if (! $this->files->isDirectory($sourcePath)) {
             $this->error('Stubs directory not found in package!');
+
             return 1;
         }
 
         // Create directory if it doesn't exist
-        if (!$this->files->isDirectory($targetPath)) {
+        if (! $this->files->isDirectory($targetPath)) {
             $this->files->makeDirectory($targetPath, 0755, true);
         }
 
@@ -67,7 +67,7 @@ class PublishStubsCommand extends Command
         $stubs = [];
         foreach ($this->files->files($sourcePath) as $file) {
             $filename = $file->getFilename();
-            $destination = $targetPath . '/' . $filename;
+            $destination = $targetPath.'/'.$filename;
 
             $this->files->copy($file->getPathname(), $destination);
             $stubs[] = $filename;
@@ -79,12 +79,12 @@ class PublishStubsCommand extends Command
             $stubs = $this->extractInlineStubs($makeModuleCommand);
 
             foreach ($stubs as $stubName => $content) {
-                $this->files->put($targetPath . '/' . $stubName . '.stub', $content);
+                $this->files->put($targetPath.'/'.$stubName.'.stub', $content);
             }
         }
 
         $this->info('Stubs published successfully!');
-        $this->info('You can now customize stubs at: ' . $targetPath);
+        $this->info('You can now customize stubs at: '.$targetPath);
 
         return 0;
     }

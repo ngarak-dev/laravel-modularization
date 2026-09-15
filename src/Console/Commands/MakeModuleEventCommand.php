@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization\Console\Commands;
 
 use Illuminate\Console\Command;
@@ -30,14 +32,13 @@ class MakeModuleEventCommand extends Command
     /**
      * The filesystem instance.
      *
-     * @var \Illuminate\Filesystem\Filesystem
+     * @var Filesystem
      */
     protected $files;
 
     /**
      * Create a new command instance.
      *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
      * @return void
      */
     public function __construct(Filesystem $files)
@@ -48,10 +49,8 @@ class MakeModuleEventCommand extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int
      */
-    public function handle()
+    public function handle(): int
     {
         $module = $this->argument('module');
         $name = $this->argument('name');
@@ -60,32 +59,34 @@ class MakeModuleEventCommand extends Command
         $force = $this->option('force');
 
         $modulesPath = base_path(config('modularization.modules_path', 'modules'));
-        $modulePath = $modulesPath . '/' . $module;
+        $modulePath = $modulesPath.'/'.$module;
 
         // Check if module exists
-        if (!$this->files->isDirectory($modulePath)) {
+        if (! $this->files->isDirectory($modulePath)) {
             $this->error("Module [{$module}] does not exist!");
+
             return 1;
         }
 
         // Create necessary directories
-        $eventsDir = $modulePath . '/Events';
-        $listenersDir = $modulePath . '/Listeners';
+        $eventsDir = $modulePath.'/Events';
+        $listenersDir = $modulePath.'/Listeners';
 
-        if (!$this->files->isDirectory($eventsDir)) {
+        if (! $this->files->isDirectory($eventsDir)) {
             $this->files->makeDirectory($eventsDir, 0755, true);
         }
 
-        if (!$this->files->isDirectory($listenersDir)) {
+        if (! $this->files->isDirectory($listenersDir)) {
             $this->files->makeDirectory($listenersDir, 0755, true);
         }
 
         // Create Event class
-        $eventClass = $name . (Str::endsWith($name, 'Event') ? '' : 'Event');
-        $eventPath = $eventsDir . '/' . $eventClass . '.php';
+        $eventClass = $name.(Str::endsWith($name, 'Event') ? '' : 'Event');
+        $eventPath = $eventsDir.'/'.$eventClass.'.php';
 
-        if ($this->files->exists($eventPath) && !$force) {
+        if ($this->files->exists($eventPath) && ! $force) {
             $this->error("Event [{$eventClass}] already exists!");
+
             return 1;
         }
 
@@ -106,7 +107,7 @@ class MakeModuleEventCommand extends Command
         }
 
         // Create multiple listeners if specified with --listeners
-        if (!empty($listeners)) {
+        if (! empty($listeners)) {
             foreach ($listeners as $listener) {
                 $this->createListener($module, $namespace, $listenersDir, $eventClass, $listener, $force);
             }
@@ -120,22 +121,15 @@ class MakeModuleEventCommand extends Command
 
     /**
      * Create a new event listener.
-     *
-     * @param string $module
-     * @param string $namespace
-     * @param string $listenersDir
-     * @param string $eventClass
-     * @param string $listener
-     * @param bool $force
-     * @return void
      */
-    protected function createListener($module, $namespace, $listenersDir, $eventClass, $listener, $force)
+    protected function createListener(string $module, string $namespace, string $listenersDir, string $eventClass, string $listener, bool $force): void
     {
-        $listenerClass = $listener . (Str::endsWith($listener, 'Listener') ? '' : 'Listener');
-        $listenerPath = $listenersDir . '/' . $listenerClass . '.php';
+        $listenerClass = $listener.(Str::endsWith($listener, 'Listener') ? '' : 'Listener');
+        $listenerPath = $listenersDir.'/'.$listenerClass.'.php';
 
-        if ($this->files->exists($listenerPath) && !$force) {
+        if ($this->files->exists($listenerPath) && ! $force) {
             $this->error("Listener [{$listenerClass}] already exists!");
+
             return;
         }
 
@@ -153,28 +147,30 @@ class MakeModuleEventCommand extends Command
     /**
      * Update the module service provider to register the event and listeners.
      *
-     * @param string $module
-     * @param string $modulePath
-     * @param string $namespace
-     * @param string $eventClass
-     * @param string|null $listener
-     * @param array $listeners
+     * @param  string  $module
+     * @param  string  $modulePath
+     * @param  string  $namespace
+     * @param  string  $eventClass
+     * @param  string|null  $listener
+     * @param  array  $listeners
      * @return void
      */
     protected function updateServiceProvider($module, $modulePath, $namespace, $eventClass, $listener, $listeners)
     {
-        $providerPath = $modulePath . '/Providers/' . $module . 'ServiceProvider.php';
+        $providerPath = $modulePath.'/Providers/'.$module.'ServiceProvider.php';
 
-        if (!$this->files->exists($providerPath)) {
-            $this->warn("Service provider not found, skipping registration.");
+        if (! $this->files->exists($providerPath)) {
+            $this->warn('Service provider not found, skipping registration.');
+
             return;
         }
 
         $content = $this->files->get($providerPath);
 
         // Check if the file contains boot method
-        if (!Str::contains($content, 'boot()')) {
-            $this->warn("Could not locate boot method in service provider, skipping registration.");
+        if (! Str::contains($content, 'boot()')) {
+            $this->warn('Could not locate boot method in service provider, skipping registration.');
+
             return;
         }
 
@@ -184,14 +180,14 @@ class MakeModuleEventCommand extends Command
 
         // Add single listener if specified
         if ($listener) {
-            $listenerClass = $listener . (Str::endsWith($listener, 'Listener') ? '' : 'Listener');
+            $listenerClass = $listener.(Str::endsWith($listener, 'Listener') ? '' : 'Listener');
             $eventMapping .= "            \\{$namespace}\\{$module}\\Listeners\\{$listenerClass}::class\n";
         }
         // Or add multiple listeners if specified
-        elseif (!empty($listeners)) {
+        elseif (! empty($listeners)) {
             $eventMapping .= "            [\n";
             foreach ($listeners as $index => $listener) {
-                $listenerClass = $listener . (Str::endsWith($listener, 'Listener') ? '' : 'Listener');
+                $listenerClass = $listener.(Str::endsWith($listener, 'Listener') ? '' : 'Listener');
                 $eventMapping .= "                \\{$namespace}\\{$module}\\Listeners\\{$listenerClass}::class";
                 $eventMapping .= ($index < count($listeners) - 1) ? ",\n" : "\n";
             }
@@ -201,7 +197,7 @@ class MakeModuleEventCommand extends Command
             $eventMapping .= "            // Add your listener classes here\n";
         }
 
-        $eventMapping .= "        );";
+        $eventMapping .= '        );';
 
         // Find the position to insert the event mapping code
         $bootMethod = $this->findBootMethod($content);
@@ -212,37 +208,35 @@ class MakeModuleEventCommand extends Command
                 Str::replaceLast(
                     '}',
                     "    // Register Events\n        {$eventMapping}\n    }",
-                    $bootMethod
+                    $bootMethod,
                 ),
-                $content
+                $content,
             );
 
             $this->files->put($providerPath, $newContent);
-            $this->info("Event and listeners registered in service provider.");
+            $this->info('Event and listeners registered in service provider.');
         } else {
-            $this->warn("Could not update service provider, please register the event manually.");
+            $this->warn('Could not update service provider, please register the event manually.');
         }
     }
 
     /**
      * Find the boot method in the service provider content.
      *
-     * @param string $content
+     * @param  string  $content
      * @return string|null
      */
     protected function findBootMethod($content)
     {
         preg_match('/public function boot\(\).*?{.*?}/s', $content, $matches);
+
         return $matches[0] ?? null;
     }
 
     /**
      * Get the event stub content.
-     *
-     * @param array $replacements
-     * @return string
      */
-    protected function getEventStub($replacements = [])
+    protected function getEventStub(array $replacements = []): string
     {
         $stub = <<<'EOT'
 <?php
@@ -292,11 +286,8 @@ EOT;
 
     /**
      * Get the listener stub content.
-     *
-     * @param array $replacements
-     * @return string
      */
-    protected function getListenerStub($replacements = [])
+    protected function getListenerStub(array $replacements = []): string
     {
         $stub = <<<'EOT'
 <?php

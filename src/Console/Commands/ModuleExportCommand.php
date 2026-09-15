@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization\Console\Commands;
 
 use Illuminate\Console\Command;
@@ -32,14 +34,13 @@ class ModuleExportCommand extends Command
     /**
      * The filesystem instance.
      *
-     * @var \Illuminate\Filesystem\Filesystem
+     * @var Filesystem
      */
     protected $files;
 
     /**
      * Create a new command instance.
      *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
      * @return void
      */
     public function __construct(Filesystem $files)
@@ -64,7 +65,7 @@ class ModuleExportCommand extends Command
         $license = $this->option('license') ?: 'MIT';
 
         // Prompt for vendor name if not provided
-        if (!$vendorName) {
+        if (! $vendorName) {
             $vendorName = $this->ask('Please provide a vendor name for the package', 'NgarakDev');
         }
 
@@ -79,21 +80,23 @@ class ModuleExportCommand extends Command
 
         // Get the module path
         $modulesPath = base_path(config('modularization.modules_path', 'modules'));
-        $modulePath = $modulesPath . '/' . $moduleName;
+        $modulePath = $modulesPath.'/'.$moduleName;
 
         // Check if module exists
-        if (!$this->files->isDirectory($modulePath)) {
+        if (! $this->files->isDirectory($modulePath)) {
             $this->error("Module [{$moduleName}] does not exist!");
+
             return 1;
         }
 
         // Create the export directory structure
-        $exportPath = base_path($outputDir . '/' . $moduleNameLower);
+        $exportPath = base_path($outputDir.'/'.$moduleNameLower);
 
         if ($this->files->isDirectory($exportPath)) {
             $this->warn("Export directory already exists: {$exportPath}");
-            if (!$this->confirm('Do you want to overwrite it?', true)) {
+            if (! $this->confirm('Do you want to overwrite it?', true)) {
                 $this->info('Export aborted.');
+
                 return 0;
             }
             $this->files->deleteDirectory($exportPath);
@@ -118,40 +121,41 @@ class ModuleExportCommand extends Command
         $this->createServiceProvider($exportPath, $moduleName, $vendorName);
 
         $this->info("Module [{$moduleName}] exported successfully to: {$exportPath}");
+
         return 0;
     }
 
     /**
      * Export module files to the output directory.
      *
-     * @param string $sourcePath Source module path
-     * @param string $exportPath Export path
-     * @param string $moduleName Module name
-     * @param string $vendorName Vendor name
+     * @param  string  $sourcePath  Source module path
+     * @param  string  $exportPath  Export path
+     * @param  string  $moduleName  Module name
+     * @param  string  $vendorName  Vendor name
      * @return void
      */
     protected function exportModuleFiles($sourcePath, $exportPath, $moduleName, $vendorName)
     {
         // Create the src directory
-        $srcPath = $exportPath . '/src';
+        $srcPath = $exportPath.'/src';
         $this->files->makeDirectory($srcPath, 0755, true);
 
         // Get all module files and directories
         $files = $this->files->allFiles($sourcePath);
 
         $namespace = config('modularization.namespace', 'Modules');
-        $newNamespace = $vendorName . '\\' . $moduleName;
+        $newNamespace = $vendorName.'\\'.$moduleName;
 
         foreach ($files as $file) {
             // Get the relative path from the module root
             $relativePath = str_replace($sourcePath, '', $file->getPathname());
 
             // Create the export file path
-            $exportFilePath = $srcPath . $relativePath;
+            $exportFilePath = $srcPath.$relativePath;
 
             // Create the directory if it doesn't exist
             $exportFileDir = dirname($exportFilePath);
-            if (!$this->files->isDirectory($exportFileDir)) {
+            if (! $this->files->isDirectory($exportFileDir)) {
                 $this->files->makeDirectory($exportFileDir, 0755, true);
             }
 
@@ -164,14 +168,14 @@ class ModuleExportCommand extends Command
                 $content = str_replace(
                     "namespace {$namespace}\\{$moduleName}",
                     "namespace {$newNamespace}",
-                    $content
+                    $content,
                 );
 
                 // Replace use statements for module classes
                 $content = preg_replace(
                     "/(use\\s+){$namespace}\\\\{$moduleName}\\\\([^;]+);/",
                     "$1{$newNamespace}\\\\$2;",
-                    $content
+                    $content,
                 );
             }
 
@@ -185,14 +189,14 @@ class ModuleExportCommand extends Command
     /**
      * Create the composer.json file.
      *
-     * @param string $exportPath Export path
-     * @param string $packageName Package name
-     * @param string $moduleName Module name
-     * @param string $vendorName Vendor name
-     * @param string $description Package description
-     * @param string $author Package author
-     * @param string $email Author email
-     * @param string $license Package license
+     * @param  string  $exportPath  Export path
+     * @param  string  $packageName  Package name
+     * @param  string  $moduleName  Module name
+     * @param  string  $vendorName  Vendor name
+     * @param  string  $description  Package description
+     * @param  string  $author  Package author
+     * @param  string  $email  Author email
+     * @param  string  $license  Package license
      * @return void
      */
     protected function createComposerJson($exportPath, $packageName, $moduleName, $vendorName, $description, $author, $email, $license)
@@ -205,41 +209,41 @@ class ModuleExportCommand extends Command
             'authors' => [
                 [
                     'name' => $author,
-                    'email' => $email
-                ]
+                    'email' => $email,
+                ],
             ],
             'require' => [
                 'php' => '^8.1',
-                'illuminate/support' => '^10.0'
+                'illuminate/support' => '^10.0',
             ],
             'require-dev' => [
                 'orchestra/testbench' => '^8.0',
-                'phpunit/phpunit' => '^10.0'
+                'phpunit/phpunit' => '^10.0',
             ],
             'autoload' => [
                 'psr-4' => [
-                    $vendorName . '\\' . $moduleName . '\\' => 'src/'
-                ]
+                    $vendorName.'\\'.$moduleName.'\\' => 'src/',
+                ],
             ],
             'autoload-dev' => [
                 'psr-4' => [
-                    $vendorName . '\\' . $moduleName . '\\Tests\\' => 'tests/'
-                ]
+                    $vendorName.'\\'.$moduleName.'\\Tests\\' => 'tests/',
+                ],
             ],
             'extra' => [
                 'laravel' => [
                     'providers' => [
-                        $vendorName . '\\' . $moduleName . '\\' . $moduleName . 'ServiceProvider'
-                    ]
-                ]
+                        $vendorName.'\\'.$moduleName.'\\'.$moduleName.'ServiceProvider',
+                    ],
+                ],
             ],
             'minimum-stability' => 'dev',
-            'prefer-stable' => true
+            'prefer-stable' => true,
         ];
 
         $this->files->put(
-            $exportPath . '/composer.json',
-            json_encode($composerJsonContent, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
+            $exportPath.'/composer.json',
+            json_encode($composerJsonContent, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
         );
 
         $this->info('Created composer.json file.');
@@ -248,9 +252,9 @@ class ModuleExportCommand extends Command
     /**
      * Create the LICENSE file.
      *
-     * @param string $exportPath Export path
-     * @param string $license License type
-     * @param string $author Author name
+     * @param  string  $exportPath  Export path
+     * @param  string  $license  License type
+     * @param  string  $author  Author name
      * @return void
      */
     protected function createLicenseFile($exportPath, $license, $author)
@@ -285,17 +289,17 @@ EOT;
             $licenseContent = "License: {$license}\n\nCopyright (c) {$year} {$author}\n";
         }
 
-        $this->files->put($exportPath . '/LICENSE', $licenseContent);
+        $this->files->put($exportPath.'/LICENSE', $licenseContent);
         $this->info('Created LICENSE file.');
     }
 
     /**
      * Create the README.md file.
      *
-     * @param string $exportPath Export path
-     * @param string $moduleName Module name
-     * @param string $packageName Package name
-     * @param string $description Description
+     * @param  string  $exportPath  Export path
+     * @param  string  $moduleName  Module name
+     * @param  string  $packageName  Package name
+     * @param  string  $description  Description
      * @return void
      */
     protected function createReadmeFile($exportPath, $moduleName, $packageName, $description)
@@ -324,16 +328,16 @@ composer require {$packageName}
 Please see the LICENSE file for more information.
 EOT;
 
-        $this->files->put($exportPath . '/README.md', $readmeContent);
+        $this->files->put($exportPath.'/README.md', $readmeContent);
         $this->info('Created README.md file.');
     }
 
     /**
      * Create the ServiceProvider for the package.
      *
-     * @param string $exportPath Export path
-     * @param string $moduleName Module name
-     * @param string $vendorName Vendor name
+     * @param  string  $exportPath  Export path
+     * @param  string  $moduleName  Module name
+     * @param  string  $vendorName  Vendor name
      * @return void
      */
     protected function createServiceProvider($exportPath, $moduleName, $vendorName)
@@ -410,7 +414,7 @@ class {$moduleName}ServiceProvider extends ServiceProvider
 }
 EOT;
 
-        $this->files->put($exportPath . '/src/' . $moduleName . 'ServiceProvider.php', $providerContent);
+        $this->files->put($exportPath.'/src/'.$moduleName.'ServiceProvider.php', $providerContent);
         $this->info('Created ServiceProvider file.');
     }
 }
