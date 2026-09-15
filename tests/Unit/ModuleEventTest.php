@@ -3,16 +3,18 @@
 namespace NgarakDev\Modularization\Tests\Unit;
 
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Artisan;
-use Orchestra\Testbench\TestCase;
 use NgarakDev\Modularization\Console\Commands\MakeModuleCommand;
 use NgarakDev\Modularization\Console\Commands\MakeModuleEventCommand;
 use NgarakDev\Modularization\Providers\ModularizationServiceProvider;
+use Orchestra\Testbench\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class ModuleEventTest extends TestCase
 {
     protected $files;
+
     protected $testModuleName = 'EventTest';
+
     protected $modulesPath;
 
     protected function getPackageProviders($app)
@@ -26,16 +28,16 @@ class ModuleEventTest extends TestCase
     {
         parent::setUp();
 
-        $this->files = new Filesystem();
+        $this->files = new Filesystem;
         $this->modulesPath = base_path('modules');
 
         // Make sure we have a clean test environment
-        if ($this->files->isDirectory($this->modulesPath . '/' . $this->testModuleName)) {
-            $this->files->deleteDirectory($this->modulesPath . '/' . $this->testModuleName);
+        if ($this->files->isDirectory($this->modulesPath.'/'.$this->testModuleName)) {
+            $this->files->deleteDirectory($this->modulesPath.'/'.$this->testModuleName);
         }
 
         // Ensure modules directory exists
-        if (!$this->files->isDirectory($this->modulesPath)) {
+        if (! $this->files->isDirectory($this->modulesPath)) {
             $this->files->makeDirectory($this->modulesPath, 0755, true);
         }
 
@@ -55,14 +57,14 @@ class ModuleEventTest extends TestCase
     protected function tearDown(): void
     {
         // Clean up the test module
-        if ($this->files->isDirectory($this->modulesPath . '/' . $this->testModuleName)) {
-            $this->files->deleteDirectory($this->modulesPath . '/' . $this->testModuleName);
+        if ($this->files->isDirectory($this->modulesPath.'/'.$this->testModuleName)) {
+            $this->files->deleteDirectory($this->modulesPath.'/'.$this->testModuleName);
         }
 
         parent::tearDown();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_create_an_event()
     {
         $eventName = 'UserRegistered';
@@ -70,13 +72,13 @@ class ModuleEventTest extends TestCase
         // Execute the command
         $this->artisan('module:make-event', [
             'module' => $this->testModuleName,
-            'name' => $eventName
+            'name' => $eventName,
         ])
             ->expectsOutput("Event [{$eventName}Event] created successfully.")
             ->assertExitCode(0);
 
         // Check that the event file was created
-        $eventPath = $this->modulesPath . '/' . $this->testModuleName . '/Events/' . $eventName . 'Event.php';
+        $eventPath = $this->modulesPath.'/'.$this->testModuleName.'/Events/'.$eventName.'Event.php';
         $this->assertTrue($this->files->exists($eventPath));
 
         // Check event content
@@ -85,7 +87,7 @@ class ModuleEventTest extends TestCase
         $this->assertStringContainsString('use Dispatchable, InteractsWithSockets, SerializesModels;', $eventContent);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_create_an_event_with_a_listener()
     {
         $eventName = 'ItemCreated';
@@ -95,28 +97,28 @@ class ModuleEventTest extends TestCase
         $this->artisan('module:make-event', [
             'module' => $this->testModuleName,
             'name' => $eventName,
-            '--listener' => $listenerName
+            '--listener' => $listenerName,
         ])
             ->expectsOutput("Event [{$eventName}Event] created successfully.")
             ->expectsOutput("Listener [{$listenerName}Listener] created successfully.")
             ->assertExitCode(0);
 
         // Check that the event file was created
-        $eventPath = $this->modulesPath . '/' . $this->testModuleName . '/Events/' . $eventName . 'Event.php';
+        $eventPath = $this->modulesPath.'/'.$this->testModuleName.'/Events/'.$eventName.'Event.php';
         $this->assertTrue($this->files->exists($eventPath));
 
         // Check that the listener file was created
-        $listenerPath = $this->modulesPath . '/' . $this->testModuleName . '/Listeners/' . $listenerName . 'Listener.php';
+        $listenerPath = $this->modulesPath.'/'.$this->testModuleName.'/Listeners/'.$listenerName.'Listener.php';
         $this->assertTrue($this->files->exists($listenerPath));
 
         // Check listener content
         $listenerContent = $this->files->get($listenerPath);
         $this->assertStringContainsString("class {$listenerName}Listener", $listenerContent);
-        $this->assertStringContainsString("use " . config('modularization.namespace', 'Modules') . "\\{$this->testModuleName}\\Events\\{$eventName}Event;", $listenerContent);
+        $this->assertStringContainsString('use '.config('modularization.namespace', 'Modules')."\\{$this->testModuleName}\\Events\\{$eventName}Event;", $listenerContent);
         $this->assertStringContainsString("public function handle({$eventName}Event \$event)", $listenerContent);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_create_an_event_with_multiple_listeners()
     {
         $eventName = 'OrderPlaced';
@@ -126,18 +128,18 @@ class ModuleEventTest extends TestCase
         $this->artisan('module:make-event', [
             'module' => $this->testModuleName,
             'name' => $eventName,
-            '--listeners' => $listeners
+            '--listeners' => $listeners,
         ])
             ->expectsOutput("Event [{$eventName}Event] created successfully.")
             ->assertExitCode(0);
 
         // Check that the event file was created
-        $eventPath = $this->modulesPath . '/' . $this->testModuleName . '/Events/' . $eventName . 'Event.php';
+        $eventPath = $this->modulesPath.'/'.$this->testModuleName.'/Events/'.$eventName.'Event.php';
         $this->assertTrue($this->files->exists($eventPath));
 
         // Check that each listener file was created
         foreach ($listeners as $listener) {
-            $listenerPath = $this->modulesPath . '/' . $this->testModuleName . '/Listeners/' . $listener . 'Listener.php';
+            $listenerPath = $this->modulesPath.'/'.$this->testModuleName.'/Listeners/'.$listener.'Listener.php';
             $this->assertTrue($this->files->exists($listenerPath));
 
             // Check listener content
@@ -146,7 +148,7 @@ class ModuleEventTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function it_registers_events_in_module_service_provider()
     {
         $eventName = 'UserSubscribed';
@@ -156,11 +158,11 @@ class ModuleEventTest extends TestCase
         $this->artisan('module:make-event', [
             'module' => $this->testModuleName,
             'name' => $eventName,
-            '--listener' => $listenerName
+            '--listener' => $listenerName,
         ])->assertExitCode(0);
 
         // Check service provider for event registration
-        $providerPath = $this->modulesPath . '/' . $this->testModuleName . '/Providers/' . $this->testModuleName . 'ServiceProvider.php';
+        $providerPath = $this->modulesPath.'/'.$this->testModuleName.'/Providers/'.$this->testModuleName.'ServiceProvider.php';
         $this->assertTrue($this->files->exists($providerPath));
 
         $providerContent = $this->files->get($providerPath);

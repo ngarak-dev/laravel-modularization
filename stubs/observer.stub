@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{namespace}}\{{moduleName}}\Observers;
+
+use {{namespace}}\{{moduleName}}\Models\{{className}};
+
+class {{class}}
+{
+    public function created({{className}} $model): void
+    {
+        //
+    }
+
+    public function updated({{className}} $model): void
+    {
+        //
+    }
+
+    public function deleted({{className}} $model): void
+    {
+        //
+    }
+}

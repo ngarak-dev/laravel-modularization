@@ -1,46 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace {{namespace}}\{{moduleName}}\Services\Interfaces;
 
-interface {{moduleName}}ServiceInterface
+use Illuminate\Database\Eloquent\Collection;
+use {{namespace}}\{{moduleName}}\Models\{{className}};
+
+interface {{className}}ServiceInterface
 {
     /**
-     * Get all records
-     * 
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection<int, {{className}}>
      */
-    public function getAll();
+    public function getAll(): Collection;
 
-    /**
-     * Find record by ID
-     * 
-     * @param int $id
-     * @return {{namespace}}\{{moduleName}}\Models\{{moduleName}}|null
-     */
-    public function findById($id);
+    public function findById(int|string $id): {{className}};
 
-    /**
-     * Create a new record
-     * 
-     * @param array $data
-     * @return {{namespace}}\{{moduleName}}\Models\{{moduleName}}
-     */
-    public function create(array $data);
+    public function create(array $data): {{className}};
 
-    /**
-     * Update existing record
-     * 
-     * @param int $id
-     * @param array $data
-     * @return {{namespace}}\{{moduleName}}\Models\{{moduleName}}
-     */
-    public function update($id, array $data);
+    public function update(int|string $id, array $data): {{className}};
 
-    /**
-     * Delete record
-     * 
-     * @param int $id
-     * @return bool
-     */
-    public function delete($id);
-} 
+    public function delete(int|string $id): bool;
+}

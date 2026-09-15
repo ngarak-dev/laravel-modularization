@@ -1,0 +1,21 @@
+parameters:
+    level: 6
+    paths:
+        - src
+    excludePaths:
+        - src/Console/Commands/MakeModuleAuthCommand.php
+        - src/Console/Commands/MakeModuleManagerCommand.php
+        - src/Console/Commands/MakeModuleEventCommand.php
+        - src/Console/Commands/MakeModuleTranslationCommand.php
+        - src/Console/Commands/MakeModuleLivewireCommand.php
+        - src/Console/Commands/MigrateModuleCommand.php
+        - src/Console/Commands/ModuleExportCommand.php
+    tmpDir: build/phpstan
+    treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        -
+            identifier: constructor.unusedParameter
+            path: src/Console/Commands/*
+        -
+            identifier: function.alreadyNarrowedType
+            message: '#optimizes#'

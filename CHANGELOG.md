@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-09-15
+
+### Added
+
+- `module.json` module contract (`name`, `namespace`, `provider`, `version`, `description`, `enabled`, `requires`)
+- Module dependency detection, circular-dependency errors, and deterministic load order
+- Metadata cache with `module:cache`, `module:clear`, and `module:discover`
+- `module:list` status table (enabled, disabled, invalid, missing dependencies, cached)
+- Generators for controller, model, repository, service, request, resource, seeder, factory, policy, job, notification, command, test, and listener classes inside a module
+- Optional `--no-repository` / `--no-service` module scaffolding
+- `--requires` on `module:make`
+- Package-specific exceptions with actionable messages
+- Laravel Pint, PHPStan, and GitHub Actions CI for PHP 8.1–8.3 and Laravel 10–12
+- `modules_path()` helper and a typed `ModuleManager` API behind the existing facade
+
+### Changed
+
+- Split discovery, registration, caching, status, and generation out of the service provider and `MakeModuleCommand`
+- `enable()` / `disable()` persist through `.disabled` and invalidate the module cache
+- Livewire is a suggested dependency instead of a hard requirement
+- Generated stubs are typed PHP 8.1+ and keep module vs class namespaces distinct
+- `directories` and auto-register config keys are actually honored
+- Module names and generator paths are validated so they cannot leave the modules directory
+- Module cache ignores stored paths and reconstructs them from the module name; missing directories are dropped
+
+### Fixed
+
+- Resource classes generated inside the parent module namespace
+- Enable/disable only updating in-memory state
+- Missing `createTranslationFiles` path on module creation
+- Livewire view paths using mixed `resources` / `Resources` directories
+- `module:make` / `make:module` aliases not both being registered
+
+### Upgrade
+
+See the README upgrade notes. Existing modules without `module.json` continue to load from `Config/config.php`.
+
 ## [1.0.6] - 2024-05-31
 
 ### Added

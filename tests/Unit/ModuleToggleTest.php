@@ -3,16 +3,18 @@
 namespace NgarakDev\Modularization\Tests\Unit;
 
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Artisan;
-use Orchestra\Testbench\TestCase;
-use NgarakDev\Modularization\Console\Commands\ModuleToggleCommand;
 use NgarakDev\Modularization\Console\Commands\MakeModuleCommand;
+use NgarakDev\Modularization\Console\Commands\ModuleToggleCommand;
 use NgarakDev\Modularization\Providers\ModularizationServiceProvider;
+use Orchestra\Testbench\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class ModuleToggleTest extends TestCase
 {
     protected $files;
+
     protected $testModuleName = 'TestToggleModule';
+
     protected $modulesPath;
 
     protected function getPackageProviders($app)
@@ -26,11 +28,11 @@ class ModuleToggleTest extends TestCase
     {
         parent::setUp();
 
-        $this->files = new Filesystem();
+        $this->files = new Filesystem;
         $this->modulesPath = base_path('modules');
 
         // Ensure modules directory exists
-        if (!$this->files->isDirectory($this->modulesPath)) {
+        if (! $this->files->isDirectory($this->modulesPath)) {
             $this->files->makeDirectory($this->modulesPath, 0755, true);
         }
 
@@ -50,26 +52,26 @@ class ModuleToggleTest extends TestCase
     protected function tearDown(): void
     {
         // Clean up the test module
-        if ($this->files->isDirectory($this->modulesPath . '/' . $this->testModuleName)) {
-            $this->files->deleteDirectory($this->modulesPath . '/' . $this->testModuleName);
+        if ($this->files->isDirectory($this->modulesPath.'/'.$this->testModuleName)) {
+            $this->files->deleteDirectory($this->modulesPath.'/'.$this->testModuleName);
         }
 
         parent::tearDown();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_disable_a_module()
     {
         // Execute the toggle command with disable option
         $this->artisan('module:toggle', [
             'name' => $this->testModuleName,
-            '--disable' => true
+            '--disable' => true,
         ])
             ->expectsOutput("Module [{$this->testModuleName}] has been disabled.")
             ->assertExitCode(0);
 
         // Check that the disabled file was created
-        $disabledPath = $this->modulesPath . '/' . $this->testModuleName . '/.disabled';
+        $disabledPath = $this->modulesPath.'/'.$this->testModuleName.'/.disabled';
         $this->assertTrue($this->files->exists($disabledPath));
 
         // Check that the file contains proper JSON data
@@ -78,19 +80,19 @@ class ModuleToggleTest extends TestCase
         $this->assertArrayHasKey('disabled_by', $disabledContent);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_enable_a_disabled_module()
     {
         // First, disable the module
-        $disabledPath = $this->modulesPath . '/' . $this->testModuleName . '/.disabled';
+        $disabledPath = $this->modulesPath.'/'.$this->testModuleName.'/.disabled';
         $this->files->put($disabledPath, json_encode([
             'disabled_at' => now()->toDateTimeString(),
-            'disabled_by' => 'test'
+            'disabled_by' => 'test',
         ]));
 
         // Now enable it
         $this->artisan('module:toggle', [
-            'name' => $this->testModuleName
+            'name' => $this->testModuleName,
         ])
             ->expectsOutput("Module [{$this->testModuleName}] has been enabled.")
             ->assertExitCode(0);
@@ -99,46 +101,46 @@ class ModuleToggleTest extends TestCase
         $this->assertFalse($this->files->exists($disabledPath));
     }
 
-    /** @test */
+    #[Test]
     public function it_shows_proper_message_when_module_is_already_disabled()
     {
         // First, disable the module
-        $disabledPath = $this->modulesPath . '/' . $this->testModuleName . '/.disabled';
+        $disabledPath = $this->modulesPath.'/'.$this->testModuleName.'/.disabled';
         $this->files->put($disabledPath, json_encode([
             'disabled_at' => now()->toDateTimeString(),
-            'disabled_by' => 'test'
+            'disabled_by' => 'test',
         ]));
 
         // Try to disable it again
         $this->artisan('module:toggle', [
             'name' => $this->testModuleName,
-            '--disable' => true
+            '--disable' => true,
         ])
             ->expectsOutput("Module [{$this->testModuleName}] is already disabled.")
             ->assertExitCode(0);
     }
 
-    /** @test */
+    #[Test]
     public function it_shows_proper_message_when_module_is_already_enabled()
     {
         // Module is enabled by default
 
         // Try to enable it again
         $this->artisan('module:toggle', [
-            'name' => $this->testModuleName
+            'name' => $this->testModuleName,
         ])
             ->expectsOutput("Module [{$this->testModuleName}] is already enabled.")
             ->assertExitCode(0);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_error_when_module_does_not_exist()
     {
         $nonExistentModule = 'NonExistentModule';
 
         $this->artisan('module:toggle', [
             'name' => $nonExistentModule,
-            '--disable' => true
+            '--disable' => true,
         ])
             ->expectsOutput("Module [$nonExistentModule] does not exist!")
             ->assertExitCode(1);

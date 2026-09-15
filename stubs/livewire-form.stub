@@ -1,67 +1,67 @@
 <?php
 
+declare(strict_types=1);
+
 namespace {{namespace}}\{{moduleName}}\Livewire;
 
 use Livewire\Component;
-use {{namespace}}\{{moduleName}}\Services\Interfaces\{{moduleName}}ServiceInterface;
+use {{namespace}}\{{moduleName}}\Services\Interfaces\{{className}}ServiceInterface;
 
-class {{moduleName}}Form extends Component
+class {{className}}Form extends Component
 {
-    public ${{moduleNameLower}};
-    public ${{moduleNameLower}}Id;
-    public $isEditing = false;
-    
-    // Define form properties here
-    public $name;
-    
+    public mixed ${{classNameLower}} = null;
+
+    public mixed ${{classNameLower}}Id = null;
+
+    public bool $isEditing = false;
+
+    public string $name = '';
+
+    /**
+     * @var array<string, string>
+     */
     protected $rules = [
         'name' => 'required|min:3',
-        // Add additional validation rules
     ];
-    
-    public function mount(${{moduleNameLower}}Id = null)
+
+    public function mount(mixed ${{classNameLower}}Id = null): void
     {
-        if (${{moduleNameLower}}Id) {
-            $this->{{moduleNameLower}}Id = ${{moduleNameLower}}Id;
+        if (${{classNameLower}}Id) {
+            $this->{{classNameLower}}Id = ${{classNameLower}}Id;
             $this->isEditing = true;
             $this->loadModel();
         }
     }
-    
-    public function loadModel()
+
+    public function loadModel(): void
     {
-        $service = app({{moduleName}}ServiceInterface::class);
-        $this->{{moduleNameLower}} = $service->findById($this->{{moduleNameLower}}Id);
-        
-        // Fill form data from model
-        $this->name = $this->{{moduleNameLower}}->name;
-        // Fill other form properties
+        $this->{{classNameLower}} = app({{className}}ServiceInterface::class)->findById($this->{{classNameLower}}Id);
+        $this->name = (string) $this->{{classNameLower}}->name;
     }
-    
-    public function save()
+
+    public function save(): void
     {
         $this->validate();
-        
-        $service = app({{moduleName}}ServiceInterface::class);
-        $data = [
-            'name' => $this->name,
-            // Add other form fields
-        ];
-        
+
+        $service = app({{className}}ServiceInterface::class);
+        $data = ['name' => $this->name];
+
         if ($this->isEditing) {
-            $service->update($this->{{moduleNameLower}}Id, $data);
-            $this->dispatch('{{moduleNameLower}}Updated');
-            session()->flash('message', '{{moduleName}} updated successfully');
-        } else {
-            $service->create($data);
-            $this->dispatch('{{moduleNameLower}}Created');
-            session()->flash('message', '{{moduleName}} created successfully');
-            $this->reset(['name']); // Reset form fields
+            $service->update($this->{{classNameLower}}Id, $data);
+            $this->dispatch('{{classNameLower}}Updated');
+            session()->flash('message', '{{className}} updated successfully');
+
+            return;
         }
+
+        $service->create($data);
+        $this->dispatch('{{classNameLower}}Created');
+        session()->flash('message', '{{className}} created successfully');
+        $this->reset(['name']);
     }
-    
+
     public function render()
     {
-        return view('{{moduleNameLower}}.livewire.{{moduleNameLower}}-form');
+        return view('{{moduleNameLower}}::livewire.{{classNameLower}}-form');
     }
-} 
+}

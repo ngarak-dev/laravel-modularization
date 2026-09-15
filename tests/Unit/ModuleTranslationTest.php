@@ -3,16 +3,18 @@
 namespace NgarakDev\Modularization\Tests\Unit;
 
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Artisan;
-use Orchestra\Testbench\TestCase;
 use NgarakDev\Modularization\Console\Commands\MakeModuleCommand;
 use NgarakDev\Modularization\Console\Commands\MakeModuleTranslationCommand;
 use NgarakDev\Modularization\Providers\ModularizationServiceProvider;
+use Orchestra\Testbench\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class ModuleTranslationTest extends TestCase
 {
     protected $files;
+
     protected $testModuleName = 'TranslationTest';
+
     protected $modulesPath;
 
     protected function getPackageProviders($app)
@@ -26,16 +28,16 @@ class ModuleTranslationTest extends TestCase
     {
         parent::setUp();
 
-        $this->files = new Filesystem();
+        $this->files = new Filesystem;
         $this->modulesPath = base_path('modules');
 
         // Make sure we have a clean test environment
-        if ($this->files->isDirectory($this->modulesPath . '/' . $this->testModuleName)) {
-            $this->files->deleteDirectory($this->modulesPath . '/' . $this->testModuleName);
+        if ($this->files->isDirectory($this->modulesPath.'/'.$this->testModuleName)) {
+            $this->files->deleteDirectory($this->modulesPath.'/'.$this->testModuleName);
         }
 
         // Ensure modules directory exists
-        if (!$this->files->isDirectory($this->modulesPath)) {
+        if (! $this->files->isDirectory($this->modulesPath)) {
             $this->files->makeDirectory($this->modulesPath, 0755, true);
         }
 
@@ -55,39 +57,39 @@ class ModuleTranslationTest extends TestCase
     protected function tearDown(): void
     {
         // Clean up the test module
-        if ($this->files->isDirectory($this->modulesPath . '/' . $this->testModuleName)) {
-            $this->files->deleteDirectory($this->modulesPath . '/' . $this->testModuleName);
+        if ($this->files->isDirectory($this->modulesPath.'/'.$this->testModuleName)) {
+            $this->files->deleteDirectory($this->modulesPath.'/'.$this->testModuleName);
         }
 
         parent::tearDown();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_generate_translation_files()
     {
         // Execute the command
         $this->artisan('module:make-translation', [
-            'module' => $this->testModuleName
+            'module' => $this->testModuleName,
         ])
             ->expectsOutput("Translation files created successfully for module [{$this->testModuleName}]")
             ->assertExitCode(0);
 
         // Check that the translation directories were created for default languages
-        $langPath = $this->modulesPath . '/' . $this->testModuleName . '/Resources/lang';
+        $langPath = $this->modulesPath.'/'.$this->testModuleName.'/Resources/lang';
         $this->assertTrue($this->files->isDirectory($langPath));
 
         foreach (['en', 'es', 'fr', 'de'] as $lang) {
-            $langDir = $langPath . '/' . $lang;
+            $langDir = $langPath.'/'.$lang;
             $this->assertTrue($this->files->isDirectory($langDir));
 
             // Check for translation files
-            $this->assertTrue($this->files->exists($langDir . '/general.php'));
-            $this->assertTrue($this->files->exists($langDir . '/validation.php'));
-            $this->assertTrue($this->files->exists($langDir . '/' . strtolower($this->testModuleName) . '.php'));
+            $this->assertTrue($this->files->exists($langDir.'/general.php'));
+            $this->assertTrue($this->files->exists($langDir.'/validation.php'));
+            $this->assertTrue($this->files->exists($langDir.'/'.strtolower($this->testModuleName).'.php'));
         }
     }
 
-    /** @test */
+    #[Test]
     public function it_can_generate_specific_languages()
     {
         $languages = ['en', 'ar', 'ja'];
@@ -95,28 +97,28 @@ class ModuleTranslationTest extends TestCase
         // Execute the command with specific languages
         $this->artisan('module:make-translation', [
             'module' => $this->testModuleName,
-            '--languages' => $languages
+            '--languages' => $languages,
         ])
             ->assertExitCode(0);
 
         // Check that only the specified language directories were created
-        $langPath = $this->modulesPath . '/' . $this->testModuleName . '/Resources/lang';
+        $langPath = $this->modulesPath.'/'.$this->testModuleName.'/Resources/lang';
 
         foreach ($languages as $lang) {
-            $langDir = $langPath . '/' . $lang;
+            $langDir = $langPath.'/'.$lang;
             $this->assertTrue($this->files->isDirectory($langDir));
         }
 
         // Check that other languages were not created
-        $this->assertFalse($this->files->isDirectory($langPath . '/de'));
-        $this->assertFalse($this->files->isDirectory($langPath . '/es'));
+        $this->assertFalse($this->files->isDirectory($langPath.'/de'));
+        $this->assertFalse($this->files->isDirectory($langPath.'/es'));
     }
 
-    /** @test */
+    #[Test]
     public function it_can_create_translations_with_module_creation()
     {
         $moduleName = 'TransWithModule';
-        $modulePath = $this->modulesPath . '/' . $moduleName;
+        $modulePath = $this->modulesPath.'/'.$moduleName;
 
         // Clean up any existing module
         if ($this->files->isDirectory($modulePath)) {
@@ -126,21 +128,21 @@ class ModuleTranslationTest extends TestCase
         // Create module with translations
         $this->artisan('make:module', [
             'name' => $moduleName,
-            '--with-translations' => true
+            '--with-translations' => true,
         ])->assertExitCode(0);
 
         // Check that the translation directories were created
-        $langPath = $modulePath . '/Resources/lang';
+        $langPath = $modulePath.'/Resources/lang';
         $this->assertTrue($this->files->isDirectory($langPath));
 
         foreach (['en', 'es', 'fr', 'de'] as $lang) {
-            $langDir = $langPath . '/' . $lang;
+            $langDir = $langPath.'/'.$lang;
             $this->assertTrue($this->files->isDirectory($langDir));
 
             // Check for translation files
-            $this->assertTrue($this->files->exists($langDir . '/general.php'));
-            $this->assertTrue($this->files->exists($langDir . '/validation.php'));
-            $this->assertTrue($this->files->exists($langDir . '/' . strtolower($moduleName) . '.php'));
+            $this->assertTrue($this->files->exists($langDir.'/general.php'));
+            $this->assertTrue($this->files->exists($langDir.'/validation.php'));
+            $this->assertTrue($this->files->exists($langDir.'/'.strtolower($moduleName).'.php'));
         }
 
         // Clean up
@@ -149,19 +151,19 @@ class ModuleTranslationTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function it_contains_correct_translation_content()
     {
         // Execute the command
         $this->artisan('module:make-translation', [
             'module' => $this->testModuleName,
-            '--languages' => ['en']
+            '--languages' => ['en'],
         ])->assertExitCode(0);
 
-        $langPath = $this->modulesPath . '/' . $this->testModuleName . '/Resources/lang/en';
+        $langPath = $this->modulesPath.'/'.$this->testModuleName.'/Resources/lang/en';
 
         // Check general translations
-        $generalContent = include $langPath . '/general.php';
+        $generalContent = include $langPath.'/general.php';
         $this->assertIsArray($generalContent);
         $this->assertArrayHasKey('created', $generalContent);
         $this->assertArrayHasKey('updated', $generalContent);
@@ -169,7 +171,7 @@ class ModuleTranslationTest extends TestCase
         $this->assertArrayHasKey('actions', $generalContent);
 
         // Check validation translations
-        $validationContent = include $langPath . '/validation.php';
+        $validationContent = include $langPath.'/validation.php';
         $this->assertIsArray($validationContent);
         $this->assertArrayHasKey('required', $validationContent);
         $this->assertArrayHasKey('email', $validationContent);
@@ -177,7 +179,7 @@ class ModuleTranslationTest extends TestCase
         $this->assertArrayHasKey('max', $validationContent);
 
         // Check module-specific translations
-        $moduleContent = include $langPath . '/' . strtolower($this->testModuleName) . '.php';
+        $moduleContent = include $langPath.'/'.strtolower($this->testModuleName).'.php';
         $this->assertIsArray($moduleContent);
         $this->assertArrayHasKey('details', $moduleContent);
         $this->assertArrayHasKey('name', $moduleContent);
@@ -186,7 +188,7 @@ class ModuleTranslationTest extends TestCase
         // Check that the module name is in the translations
         $moduleNameLower = strtolower($this->testModuleName);
         $this->assertArrayHasKey($moduleNameLower, $moduleContent);
-        $this->assertArrayHasKey('create_' . $moduleNameLower, $moduleContent);
-        $this->assertArrayHasKey('edit_' . $moduleNameLower, $moduleContent);
+        $this->assertArrayHasKey('create_'.$moduleNameLower, $moduleContent);
+        $this->assertArrayHasKey('edit_'.$moduleNameLower, $moduleContent);
     }
 }

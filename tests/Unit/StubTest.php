@@ -3,12 +3,14 @@
 namespace NgarakDev\Modularization\Tests\Unit;
 
 use Illuminate\Filesystem\Filesystem;
-use Orchestra\Testbench\TestCase;
 use NgarakDev\Modularization\Providers\ModularizationServiceProvider;
+use Orchestra\Testbench\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class StubTest extends TestCase
 {
     protected $files;
+
     protected $stubsDirectory;
 
     protected function getPackageProviders($app)
@@ -22,11 +24,11 @@ class StubTest extends TestCase
     {
         parent::setUp();
 
-        $this->files = new Filesystem();
-        $this->stubsDirectory = dirname(__DIR__, 2) . '/stubs';
+        $this->files = new Filesystem;
+        $this->stubsDirectory = dirname(__DIR__, 2).'/stubs';
     }
 
-    /** @test */
+    #[Test]
     public function it_has_required_stub_files()
     {
         // Check if stubs directory exists
@@ -48,68 +50,68 @@ class StubTest extends TestCase
             'view-edit.stub',
             'livewire-table.stub',
             'livewire-form.stub',
-            'module-layout.stub'
+            'module-layout.stub',
         ];
 
         // Check that each required stub exists
         foreach ($requiredStubs as $stub) {
             $this->assertTrue(
-                $this->files->exists($this->stubsDirectory . '/' . $stub),
+                $this->files->exists($this->stubsDirectory.'/'.$stub),
                 "Required stub file '{$stub}' does not exist"
             );
         }
     }
 
-    /** @test */
+    #[Test]
     public function repository_stubs_follow_pattern_correctly()
     {
         // Check repository interface stub
-        $repoInterfaceContent = $this->files->get($this->stubsDirectory . '/repository-interface.stub');
+        $repoInterfaceContent = $this->files->get($this->stubsDirectory.'/repository-interface.stub');
 
-        $this->assertStringContainsString('interface {{moduleName}}RepositoryInterface', $repoInterfaceContent);
+        $this->assertStringContainsString('interface {{className}}RepositoryInterface', $repoInterfaceContent);
         $this->assertStringContainsString('public function getAll()', $repoInterfaceContent);
-        $this->assertStringContainsString('public function findById($id)', $repoInterfaceContent);
+        $this->assertStringContainsString('public function findById(', $repoInterfaceContent);
         $this->assertStringContainsString('public function create(array $data)', $repoInterfaceContent);
-        $this->assertStringContainsString('public function update($id, array $data)', $repoInterfaceContent);
-        $this->assertStringContainsString('public function delete($id)', $repoInterfaceContent);
+        $this->assertStringContainsString('public function update(', $repoInterfaceContent);
+        $this->assertStringContainsString('public function delete(', $repoInterfaceContent);
 
         // Check repository implementation stub
-        $repoContent = $this->files->get($this->stubsDirectory . '/repository.stub');
+        $repoContent = $this->files->get($this->stubsDirectory.'/repository.stub');
 
-        $this->assertStringContainsString('class {{moduleName}}Repository implements {{moduleName}}RepositoryInterface', $repoContent);
-        $this->assertStringContainsString('protected $model', $repoContent);
-        $this->assertStringContainsString('public function __construct({{moduleName}} $model)', $repoContent);
+        $this->assertStringContainsString('class {{className}}Repository implements {{className}}RepositoryInterface', $repoContent);
+        $this->assertStringContainsString('protected {{className}} $model', $repoContent);
+        $this->assertStringContainsString('public function __construct(', $repoContent);
     }
 
-    /** @test */
+    #[Test]
     public function service_stubs_follow_pattern_correctly()
     {
         // Check service interface stub
-        $serviceInterfaceContent = $this->files->get($this->stubsDirectory . '/service-interface.stub');
+        $serviceInterfaceContent = $this->files->get($this->stubsDirectory.'/service-interface.stub');
 
-        $this->assertStringContainsString('interface {{moduleName}}ServiceInterface', $serviceInterfaceContent);
+        $this->assertStringContainsString('interface {{className}}ServiceInterface', $serviceInterfaceContent);
         $this->assertStringContainsString('public function getAll()', $serviceInterfaceContent);
-        $this->assertStringContainsString('public function findById($id)', $serviceInterfaceContent);
+        $this->assertStringContainsString('public function findById(', $serviceInterfaceContent);
         $this->assertStringContainsString('public function create(array $data)', $serviceInterfaceContent);
-        $this->assertStringContainsString('public function update($id, array $data)', $serviceInterfaceContent);
-        $this->assertStringContainsString('public function delete($id)', $serviceInterfaceContent);
+        $this->assertStringContainsString('public function update(', $serviceInterfaceContent);
+        $this->assertStringContainsString('public function delete(', $serviceInterfaceContent);
 
         // Check service implementation stub
-        $serviceContent = $this->files->get($this->stubsDirectory . '/service.stub');
+        $serviceContent = $this->files->get($this->stubsDirectory.'/service.stub');
 
-        $this->assertStringContainsString('class {{moduleName}}Service implements {{moduleName}}ServiceInterface', $serviceContent);
-        $this->assertStringContainsString('protected $repository', $serviceContent);
-        $this->assertStringContainsString('public function __construct({{moduleName}}RepositoryInterface $repository)', $serviceContent);
+        $this->assertStringContainsString('class {{className}}Service implements {{className}}ServiceInterface', $serviceContent);
+        $this->assertStringContainsString('protected {{className}}RepositoryInterface $repository', $serviceContent);
+        $this->assertStringContainsString('public function __construct(', $serviceContent);
     }
 
-    /** @test */
+    #[Test]
     public function controller_stubs_follow_laravel_conventions()
     {
         // Check web controller stub
-        $webControllerContent = $this->files->get($this->stubsDirectory . '/web-controller.stub');
+        $webControllerContent = $this->files->get($this->stubsDirectory.'/web-controller.stub');
 
-        $this->assertStringContainsString('class {{moduleName}}Controller extends Controller', $webControllerContent);
-        $this->assertStringContainsString('{{moduleName}}ServiceInterface', $webControllerContent);
+        $this->assertStringContainsString('class {{className}}Controller extends Controller', $webControllerContent);
+        $this->assertStringContainsString('{{className}}ServiceInterface', $webControllerContent);
         $this->assertStringContainsString('public function index()', $webControllerContent);
         $this->assertStringContainsString('public function create()', $webControllerContent);
         $this->assertStringContainsString('public function store(', $webControllerContent);
@@ -119,69 +121,69 @@ class StubTest extends TestCase
         $this->assertStringContainsString('public function destroy(', $webControllerContent);
 
         // Check API controller stub
-        $apiControllerContent = $this->files->get($this->stubsDirectory . '/api-controller.stub');
+        $apiControllerContent = $this->files->get($this->stubsDirectory.'/api-controller.stub');
 
         $this->assertStringContainsString('namespace {{namespace}}\{{moduleName}}\Http\Controllers\API', $apiControllerContent);
-        $this->assertStringContainsString('class {{moduleName}}Controller extends Controller', $apiControllerContent);
+        $this->assertStringContainsString('class {{className}}Controller extends Controller', $apiControllerContent);
         $this->assertStringContainsString('return response()->json', $apiControllerContent);
     }
 
-    /** @test */
+    #[Test]
     public function route_stubs_follow_laravel_conventions()
     {
         // Check web routes stub
-        $webRoutesContent = $this->files->get($this->stubsDirectory . '/web-routes.stub');
+        $webRoutesContent = $this->files->get($this->stubsDirectory.'/web-routes.stub');
 
         $this->assertStringContainsString('use Illuminate\Support\Facades\Route', $webRoutesContent);
-        $this->assertStringContainsString('Route::resource(\'{{moduleNameLower}}\', {{moduleName}}Controller::class)', $webRoutesContent);
+        $this->assertStringContainsString('Route::resource(\'{{classNameLower}}\', {{className}}Controller::class)', $webRoutesContent);
 
         // Check API routes stub
-        $apiRoutesContent = $this->files->get($this->stubsDirectory . '/api-routes.stub');
+        $apiRoutesContent = $this->files->get($this->stubsDirectory.'/api-routes.stub');
 
         $this->assertStringContainsString('use Illuminate\Support\Facades\Route', $apiRoutesContent);
-        $this->assertStringContainsString('Route::apiResource(\'{{moduleNameLower}}\', {{moduleName}}Controller::class)', $apiRoutesContent);
+        $this->assertStringContainsString('Route::apiResource(\'{{classNameLower}}\', {{className}}Controller::class)', $apiRoutesContent);
     }
 
-    /** @test */
+    #[Test]
     public function view_stubs_follow_laravel_conventions()
     {
         // Check index view stub
-        $indexViewContent = $this->files->get($this->stubsDirectory . '/view-index.stub');
+        $indexViewContent = $this->files->get($this->stubsDirectory.'/view-index.stub');
 
         $this->assertStringContainsString('@extends', $indexViewContent);
         $this->assertStringContainsString('@section', $indexViewContent);
-        $this->assertStringContainsString('{{moduleName}}', $indexViewContent);
+        $this->assertStringContainsString('{{className}}', $indexViewContent);
 
         // Check other view stubs
-        $this->assertStringContainsString('form', $this->files->get($this->stubsDirectory . '/view-create.stub'));
-        $this->assertStringContainsString('form', $this->files->get($this->stubsDirectory . '/view-edit.stub'));
-        $this->assertStringContainsString('Details', $this->files->get($this->stubsDirectory . '/view-show.stub'));
+        $this->assertStringContainsString('form', $this->files->get($this->stubsDirectory.'/view-create.stub'));
+        $this->assertStringContainsString('form', $this->files->get($this->stubsDirectory.'/view-edit.stub'));
+        $this->assertStringContainsString('Details', $this->files->get($this->stubsDirectory.'/view-show.stub'));
     }
 
-    /** @test */
+    #[Test]
     public function livewire_stubs_follow_livewire_conventions()
     {
         // Check Livewire table component
-        $tableContent = $this->files->get($this->stubsDirectory . '/livewire-table.stub');
+        $tableContent = $this->files->get($this->stubsDirectory.'/livewire-table.stub');
 
         $this->assertStringContainsString('namespace {{namespace}}\{{moduleName}}\Livewire', $tableContent);
-        $this->assertStringContainsString('class {{moduleName}}Table extends Component', $tableContent);
+        $this->assertStringContainsString('class {{className}}Table extends Component', $tableContent);
         $this->assertStringContainsString('use WithPagination', $tableContent);
         $this->assertStringContainsString('public function render()', $tableContent);
 
         // Check Livewire form component
-        $formContent = $this->files->get($this->stubsDirectory . '/livewire-form.stub');
+        $formContent = $this->files->get($this->stubsDirectory.'/livewire-form.stub');
 
         $this->assertStringContainsString('namespace {{namespace}}\{{moduleName}}\Livewire', $formContent);
-        $this->assertStringContainsString('class {{moduleName}}Form extends Component', $formContent);
+        $this->assertStringContainsString('class {{className}}Form extends Component', $formContent);
         $this->assertStringContainsString('public function save()', $formContent);
         $this->assertStringContainsString('protected $rules', $formContent);
     }
 
-    /** @test */
+    #[Test]
     public function module_layout_stub_follows_modern_practices()
     {
-        $layoutContent = $this->files->get($this->stubsDirectory . '/module-layout.stub');
+        $layoutContent = $this->files->get($this->stubsDirectory.'/module-layout.stub');
 
         $this->assertStringContainsString('<!DOCTYPE html>', $layoutContent);
         $this->assertStringContainsString('<html lang="{{ str_replace(\'_\', \'-\', app()->getLocale()) }}">', $layoutContent);

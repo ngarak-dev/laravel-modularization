@@ -3,17 +3,20 @@
 namespace NgarakDev\Modularization\Tests\Unit;
 
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Artisan;
-use Orchestra\Testbench\TestCase;
 use NgarakDev\Modularization\Console\Commands\MakeModuleCommand;
 use NgarakDev\Modularization\Console\Commands\ModuleExportCommand;
 use NgarakDev\Modularization\Providers\ModularizationServiceProvider;
+use Orchestra\Testbench\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class ModuleExportTest extends TestCase
 {
     protected $files;
+
     protected $testModuleName = 'ExportTest';
+
     protected $modulesPath;
+
     protected $exportPath;
 
     protected function getPackageProviders($app)
@@ -27,13 +30,13 @@ class ModuleExportTest extends TestCase
     {
         parent::setUp();
 
-        $this->files = new Filesystem();
+        $this->files = new Filesystem;
         $this->modulesPath = base_path('modules');
-        $this->exportPath = base_path('build/' . strtolower($this->testModuleName));
+        $this->exportPath = base_path('build/'.strtolower($this->testModuleName));
 
         // Make sure we have a clean test environment
-        if ($this->files->isDirectory($this->modulesPath . '/' . $this->testModuleName)) {
-            $this->files->deleteDirectory($this->modulesPath . '/' . $this->testModuleName);
+        if ($this->files->isDirectory($this->modulesPath.'/'.$this->testModuleName)) {
+            $this->files->deleteDirectory($this->modulesPath.'/'.$this->testModuleName);
         }
 
         if ($this->files->isDirectory($this->exportPath)) {
@@ -41,7 +44,7 @@ class ModuleExportTest extends TestCase
         }
 
         // Ensure modules directory exists
-        if (!$this->files->isDirectory($this->modulesPath)) {
+        if (! $this->files->isDirectory($this->modulesPath)) {
             $this->files->makeDirectory($this->modulesPath, 0755, true);
         }
 
@@ -58,15 +61,15 @@ class ModuleExportTest extends TestCase
         $this->artisan('make:module', [
             'name' => $this->testModuleName,
             '--api' => true,
-            '--with-views' => true
+            '--with-views' => true,
         ])->run();
     }
 
     protected function tearDown(): void
     {
         // Clean up the test module
-        if ($this->files->isDirectory($this->modulesPath . '/' . $this->testModuleName)) {
-            $this->files->deleteDirectory($this->modulesPath . '/' . $this->testModuleName);
+        if ($this->files->isDirectory($this->modulesPath.'/'.$this->testModuleName)) {
+            $this->files->deleteDirectory($this->modulesPath.'/'.$this->testModuleName);
         }
 
         // Clean up export directory
@@ -77,7 +80,7 @@ class ModuleExportTest extends TestCase
         parent::tearDown();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_export_a_module()
     {
         $vendorName = 'NgarakDev';
@@ -87,7 +90,7 @@ class ModuleExportTest extends TestCase
             'module' => $this->testModuleName,
             '--vendor' => $vendorName,
             '--author' => 'Ngara K',
-            '--email' => 'ngarakiringo@gmail.com'
+            '--email' => 'ngarakiringo@gmail.com',
         ])
             ->expectsOutput("Module [{$this->testModuleName}] exported successfully to: {$this->exportPath}")
             ->assertExitCode(0);
@@ -96,35 +99,35 @@ class ModuleExportTest extends TestCase
         $this->assertTrue($this->files->isDirectory($this->exportPath));
 
         // Check for core package files
-        $this->assertTrue($this->files->exists($this->exportPath . '/composer.json'));
-        $this->assertTrue($this->files->exists($this->exportPath . '/LICENSE'));
-        $this->assertTrue($this->files->exists($this->exportPath . '/README.md'));
+        $this->assertTrue($this->files->exists($this->exportPath.'/composer.json'));
+        $this->assertTrue($this->files->exists($this->exportPath.'/LICENSE'));
+        $this->assertTrue($this->files->exists($this->exportPath.'/README.md'));
 
         // Check for the new service provider
-        $this->assertTrue($this->files->exists($this->exportPath . '/src/' . $this->testModuleName . 'ServiceProvider.php'));
+        $this->assertTrue($this->files->exists($this->exportPath.'/src/'.$this->testModuleName.'ServiceProvider.php'));
 
         // Check for src directory with module contents
-        $this->assertTrue($this->files->isDirectory($this->exportPath . '/src'));
-        $this->assertTrue($this->files->isDirectory($this->exportPath . '/src/Models'));
-        $this->assertTrue($this->files->isDirectory($this->exportPath . '/src/Http/Controllers'));
-        $this->assertTrue($this->files->isDirectory($this->exportPath . '/src/Repositories'));
-        $this->assertTrue($this->files->isDirectory($this->exportPath . '/src/Services'));
+        $this->assertTrue($this->files->isDirectory($this->exportPath.'/src'));
+        $this->assertTrue($this->files->isDirectory($this->exportPath.'/src/Models'));
+        $this->assertTrue($this->files->isDirectory($this->exportPath.'/src/Http/Controllers'));
+        $this->assertTrue($this->files->isDirectory($this->exportPath.'/src/Repositories'));
+        $this->assertTrue($this->files->isDirectory($this->exportPath.'/src/Services'));
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_correct_composer_json()
     {
         $vendorName = 'NgarakDev';
-        $packageName = strtolower($vendorName) . '/' . strtolower($this->testModuleName);
+        $packageName = strtolower($vendorName).'/'.strtolower($this->testModuleName);
 
         // Execute the command
         $this->artisan('module:export', [
             'module' => $this->testModuleName,
-            '--vendor' => $vendorName
+            '--vendor' => $vendorName,
         ])->assertExitCode(0);
 
         // Check composer.json contents
-        $composerJsonPath = $this->exportPath . '/composer.json';
+        $composerJsonPath = $this->exportPath.'/composer.json';
         $this->assertTrue($this->files->exists($composerJsonPath));
 
         $composerJson = json_decode($this->files->get($composerJsonPath), true);
@@ -132,31 +135,31 @@ class ModuleExportTest extends TestCase
         $this->assertEquals($packageName, $composerJson['name']);
         $this->assertArrayHasKey('autoload', $composerJson);
         $this->assertArrayHasKey('psr-4', $composerJson['autoload']);
-        $this->assertArrayHasKey($vendorName . '\\' . $this->testModuleName . '\\', $composerJson['autoload']['psr-4']);
-        $this->assertEquals('src/', $composerJson['autoload']['psr-4'][$vendorName . '\\' . $this->testModuleName . '\\']);
+        $this->assertArrayHasKey($vendorName.'\\'.$this->testModuleName.'\\', $composerJson['autoload']['psr-4']);
+        $this->assertEquals('src/', $composerJson['autoload']['psr-4'][$vendorName.'\\'.$this->testModuleName.'\\']);
 
         // Check for service provider registration
         $this->assertArrayHasKey('extra', $composerJson);
         $this->assertArrayHasKey('laravel', $composerJson['extra']);
         $this->assertArrayHasKey('providers', $composerJson['extra']['laravel']);
-        $this->assertContains($vendorName . '\\' . $this->testModuleName . '\\' . $this->testModuleName . 'ServiceProvider', $composerJson['extra']['laravel']['providers']);
+        $this->assertContains($vendorName.'\\'.$this->testModuleName.'\\'.$this->testModuleName.'ServiceProvider', $composerJson['extra']['laravel']['providers']);
     }
 
-    /** @test */
+    #[Test]
     public function it_rewrites_namespaces_in_exported_files()
     {
         $vendorName = 'NgarakDev';
-        $oldNamespace = config('modularization.namespace', 'Modules') . '\\' . $this->testModuleName;
-        $newNamespace = $vendorName . '\\' . $this->testModuleName;
+        $oldNamespace = config('modularization.namespace', 'Modules').'\\'.$this->testModuleName;
+        $newNamespace = $vendorName.'\\'.$this->testModuleName;
 
         // Execute the command
         $this->artisan('module:export', [
             'module' => $this->testModuleName,
-            '--vendor' => $vendorName
+            '--vendor' => $vendorName,
         ])->assertExitCode(0);
 
         // Check a few key files for namespace changes
-        $modelPath = $this->exportPath . '/src/Models/' . $this->testModuleName . '.php';
+        $modelPath = $this->exportPath.'/src/Models/'.$this->testModuleName.'.php';
         $this->assertTrue($this->files->exists($modelPath));
 
         $modelContent = $this->files->get($modelPath);
@@ -164,7 +167,7 @@ class ModuleExportTest extends TestCase
         $this->assertStringNotContainsString("namespace {$oldNamespace}\\Models;", $modelContent);
 
         // Check controller
-        $controllerPath = $this->exportPath . '/src/Http/Controllers/' . $this->testModuleName . 'Controller.php';
+        $controllerPath = $this->exportPath.'/src/Http/Controllers/'.$this->testModuleName.'Controller.php';
         $this->assertTrue($this->files->exists($controllerPath));
 
         $controllerContent = $this->files->get($controllerPath);
@@ -172,7 +175,7 @@ class ModuleExportTest extends TestCase
         $this->assertStringNotContainsString("namespace {$oldNamespace}\\Http\\Controllers;", $controllerContent);
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_proper_service_provider()
     {
         $vendorName = 'NgarakDev';
@@ -180,11 +183,11 @@ class ModuleExportTest extends TestCase
         // Execute the command
         $this->artisan('module:export', [
             'module' => $this->testModuleName,
-            '--vendor' => $vendorName
+            '--vendor' => $vendorName,
         ])->assertExitCode(0);
 
         // Check service provider
-        $providerPath = $this->exportPath . '/src/' . $this->testModuleName . 'ServiceProvider.php';
+        $providerPath = $this->exportPath.'/src/'.$this->testModuleName.'ServiceProvider.php';
         $this->assertTrue($this->files->exists($providerPath));
 
         $providerContent = $this->files->get($providerPath);

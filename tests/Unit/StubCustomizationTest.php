@@ -3,14 +3,16 @@
 namespace NgarakDev\Modularization\Tests\Unit;
 
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Artisan;
-use Orchestra\Testbench\TestCase;
+use NgarakDev\Modularization\Console\Commands\MakeModuleCommand;
 use NgarakDev\Modularization\Console\Commands\PublishStubsCommand;
 use NgarakDev\Modularization\Providers\ModularizationServiceProvider;
+use Orchestra\Testbench\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class StubCustomizationTest extends TestCase
 {
     protected $files;
+
     protected $stubsPath;
 
     protected function getPackageProviders($app)
@@ -24,7 +26,7 @@ class StubCustomizationTest extends TestCase
     {
         parent::setUp();
 
-        $this->files = new Filesystem();
+        $this->files = new Filesystem;
         $this->stubsPath = base_path('stubs/vendor/modularization');
 
         // Clean up any existing stubs
@@ -43,7 +45,7 @@ class StubCustomizationTest extends TestCase
         parent::tearDown();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_publish_stubs()
     {
         // Register the command
@@ -64,7 +66,7 @@ class StubCustomizationTest extends TestCase
         $this->assertNotEmpty($stubFiles);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_use_custom_stubs_when_creating_modules()
     {
         // First publish the stubs
@@ -75,7 +77,7 @@ class StubCustomizationTest extends TestCase
         $this->artisan('module:publish-stubs')->assertExitCode(0);
 
         // Modify a stub with custom content
-        $modelStubPath = $this->stubsPath . '/model.stub';
+        $modelStubPath = $this->stubsPath.'/model.stub';
         if ($this->files->exists($modelStubPath)) {
             $customContent = $this->files->get($modelStubPath);
             $customContent .= "\n    // Custom model implementation";
@@ -108,7 +110,7 @@ class {{moduleName}} extends Model
 
         // Register the make:module command
         $this->app->singleton('command.module.make', function ($app) {
-            return new \NgarakDev\Modularization\Console\Commands\MakeModuleCommand($app['files']);
+            return new MakeModuleCommand($app['files']);
         });
 
         // Create a module
@@ -116,12 +118,12 @@ class {{moduleName}} extends Model
         $modulesPath = base_path('modules');
 
         // Make sure we have a clean test environment
-        if ($this->files->isDirectory($modulesPath . '/' . $testModuleName)) {
-            $this->files->deleteDirectory($modulesPath . '/' . $testModuleName);
+        if ($this->files->isDirectory($modulesPath.'/'.$testModuleName)) {
+            $this->files->deleteDirectory($modulesPath.'/'.$testModuleName);
         }
 
         // Create modules directory if it doesn't exist
-        if (!$this->files->isDirectory($modulesPath)) {
+        if (! $this->files->isDirectory($modulesPath)) {
             $this->files->makeDirectory($modulesPath, 0755, true);
         }
 
@@ -130,14 +132,14 @@ class {{moduleName}} extends Model
             ->assertExitCode(0);
 
         // Check if the model contains our custom code
-        $modelPath = $modulesPath . '/' . $testModuleName . '/Models/' . $testModuleName . '.php';
+        $modelPath = $modulesPath.'/'.$testModuleName.'/Models/'.$testModuleName.'.php';
         $this->assertTrue($this->files->exists($modelPath));
         $modelContent = $this->files->get($modelPath);
         $this->assertStringContainsString('// Custom model implementation', $modelContent);
 
         // Clean up
-        if ($this->files->isDirectory($modulesPath . '/' . $testModuleName)) {
-            $this->files->deleteDirectory($modulesPath . '/' . $testModuleName);
+        if ($this->files->isDirectory($modulesPath.'/'.$testModuleName)) {
+            $this->files->deleteDirectory($modulesPath.'/'.$testModuleName);
         }
     }
 }

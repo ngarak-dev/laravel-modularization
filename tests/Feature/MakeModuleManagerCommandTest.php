@@ -3,15 +3,17 @@
 namespace NgarakDev\Modularization\Tests\Feature;
 
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Artisan;
-use Orchestra\Testbench\TestCase;
 use NgarakDev\Modularization\Console\Commands\MakeModuleManagerCommand;
 use NgarakDev\Modularization\Providers\ModularizationServiceProvider;
+use Orchestra\Testbench\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class MakeModuleManagerCommandTest extends TestCase
 {
     protected $files;
+
     protected $testModuleName = 'ModuleManagerTest';
+
     protected $modulesPath;
 
     protected function getPackageProviders($app)
@@ -25,16 +27,16 @@ class MakeModuleManagerCommandTest extends TestCase
     {
         parent::setUp();
 
-        $this->files = new Filesystem();
+        $this->files = new Filesystem;
         $this->modulesPath = base_path('modules');
 
         // Make sure we have a clean test environment
-        if ($this->files->isDirectory($this->modulesPath . '/' . $this->testModuleName)) {
-            $this->files->deleteDirectory($this->modulesPath . '/' . $this->testModuleName);
+        if ($this->files->isDirectory($this->modulesPath.'/'.$this->testModuleName)) {
+            $this->files->deleteDirectory($this->modulesPath.'/'.$this->testModuleName);
         }
 
         // Ensure modules directory exists
-        if (!$this->files->isDirectory($this->modulesPath)) {
+        if (! $this->files->isDirectory($this->modulesPath)) {
             $this->files->makeDirectory($this->modulesPath, 0755, true);
         }
 
@@ -47,44 +49,44 @@ class MakeModuleManagerCommandTest extends TestCase
     protected function tearDown(): void
     {
         // Clean up the test module
-        if ($this->files->isDirectory($this->modulesPath . '/' . $this->testModuleName)) {
-            $this->files->deleteDirectory($this->modulesPath . '/' . $this->testModuleName);
+        if ($this->files->isDirectory($this->modulesPath.'/'.$this->testModuleName)) {
+            $this->files->deleteDirectory($this->modulesPath.'/'.$this->testModuleName);
         }
 
         parent::tearDown();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_generate_module_manager_scaffolding()
     {
         // Execute the command
         $this->artisan('module:make-manager', [
-            'name' => $this->testModuleName
+            'name' => $this->testModuleName,
         ])
             ->expectsOutput("Module Manager [{$this->testModuleName}] created successfully")
             ->assertExitCode(0);
 
         // Check that controllers were created
-        $controllersPath = $this->modulesPath . '/' . $this->testModuleName . '/Http/Controllers';
+        $controllersPath = $this->modulesPath.'/'.$this->testModuleName.'/Http/Controllers';
         $this->assertTrue($this->files->isDirectory($controllersPath));
-        $this->assertTrue($this->files->exists($controllersPath . '/ModuleManagerController.php'));
+        $this->assertTrue($this->files->exists($controllersPath.'/ModuleManagerController.php'));
 
         // Check that views were created
-        $viewsPath = $this->modulesPath . '/' . $this->testModuleName . '/Resources/views';
+        $viewsPath = $this->modulesPath.'/'.$this->testModuleName.'/Resources/views';
         $this->assertTrue($this->files->isDirectory($viewsPath));
 
         // Check for dashboard view
-        $dashboardPath = $viewsPath . '/dashboard';
+        $dashboardPath = $viewsPath.'/dashboard';
         $this->assertTrue($this->files->isDirectory($dashboardPath));
-        $this->assertTrue($this->files->exists($dashboardPath . '/index.blade.php'));
+        $this->assertTrue($this->files->exists($dashboardPath.'/index.blade.php'));
 
         // Check for layout view
-        $layoutsPath = $viewsPath . '/layouts';
+        $layoutsPath = $viewsPath.'/layouts';
         $this->assertTrue($this->files->isDirectory($layoutsPath));
-        $this->assertTrue($this->files->exists($layoutsPath . '/master.blade.php'));
+        $this->assertTrue($this->files->exists($layoutsPath.'/master.blade.php'));
 
         // Check that routes were created
-        $routesPath = $this->modulesPath . '/' . $this->testModuleName . '/Routes/web.php';
+        $routesPath = $this->modulesPath.'/'.$this->testModuleName.'/Routes/web.php';
         $this->assertTrue($this->files->exists($routesPath));
 
         // Check web route contains expected routes
@@ -93,7 +95,7 @@ class MakeModuleManagerCommandTest extends TestCase
         $this->assertStringContainsString("Route::post('/toggle', [ModuleManagerController::class, 'toggleModule'])", $routeContent);
 
         // Check that config was created
-        $configPath = $this->modulesPath . '/' . $this->testModuleName . '/Config/config.php';
+        $configPath = $this->modulesPath.'/'.$this->testModuleName.'/Config/config.php';
         $this->assertTrue($this->files->exists($configPath));
 
         // Check config contains expected structure
@@ -105,48 +107,48 @@ class MakeModuleManagerCommandTest extends TestCase
         $this->assertStringContainsString("'menu' =>", $configContent);
     }
 
-    /** @test */
+    #[Test]
     public function it_uses_default_name_when_no_name_provided()
     {
         // Execute the command without a name parameter
         $this->artisan('module:make-manager')
-            ->expectsOutput("Module Manager [ModuleManager] created successfully")
+            ->expectsOutput('Module Manager [ModuleManager] created successfully')
             ->assertExitCode(0);
 
         // Check that the default ModuleManager module was created
-        $this->assertTrue($this->files->isDirectory($this->modulesPath . '/ModuleManager'));
-        $this->assertTrue($this->files->exists($this->modulesPath . '/ModuleManager/Providers/ModuleManagerServiceProvider.php'));
+        $this->assertTrue($this->files->isDirectory($this->modulesPath.'/ModuleManager'));
+        $this->assertTrue($this->files->exists($this->modulesPath.'/ModuleManager/Providers/ModuleManagerServiceProvider.php'));
 
         // Clean up default module
-        $this->files->deleteDirectory($this->modulesPath . '/ModuleManager');
+        $this->files->deleteDirectory($this->modulesPath.'/ModuleManager');
     }
 
-    /** @test */
+    #[Test]
     public function it_asks_for_confirmation_when_module_already_exists()
     {
         // Create the module first
-        $this->files->makeDirectory($this->modulesPath . '/ExistingModule', 0755, true);
+        $this->files->makeDirectory($this->modulesPath.'/ExistingModule', 0755, true);
 
         // Execute the command with existing module and answer "no" to confirmation
         $this->artisan('module:make-manager', ['name' => 'ExistingModule'])
-            ->expectsQuestion("Module [ExistingModule] already exists. Do you want to continue?", false)
-            ->expectsOutput("Operation cancelled.")
+            ->expectsQuestion('Module [ExistingModule] already exists. Do you want to continue?', false)
+            ->expectsOutput('Operation cancelled.')
             ->assertExitCode(1);
 
         // Clean up
-        $this->files->deleteDirectory($this->modulesPath . '/ExistingModule');
+        $this->files->deleteDirectory($this->modulesPath.'/ExistingModule');
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_config_file_with_proper_structure()
     {
         // Execute the command
         $this->artisan('module:make-manager', [
-            'name' => $this->testModuleName
+            'name' => $this->testModuleName,
         ])->run();
 
         // Check config file
-        $configPath = $this->modulesPath . '/' . $this->testModuleName . '/Config/config.php';
+        $configPath = $this->modulesPath.'/'.$this->testModuleName.'/Config/config.php';
         $this->assertTrue($this->files->exists($configPath));
 
         // Include the config file to check its structure

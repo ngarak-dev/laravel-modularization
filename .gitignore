@@ -3,3 +3,7 @@ vendor/
 .env
 node_modules/
 composer.lock
+build/
+.phpunit.cache
+.phpstan.cache
+

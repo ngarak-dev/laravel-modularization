@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{namespace}}\{{moduleName}}\Providers;
+
+use Illuminate\Support\ServiceProvider;
+use {{namespace}}\{{moduleName}}\Repositories\Interfaces\{{className}}RepositoryInterface;
+use {{namespace}}\{{moduleName}}\Repositories\{{className}}Repository;
+use {{namespace}}\{{moduleName}}\Services\Interfaces\{{className}}ServiceInterface;
+use {{namespace}}\{{moduleName}}\Services\{{className}}Service;
+
+class {{moduleName}}ServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        $this->app->bind({{className}}RepositoryInterface::class, {{className}}Repository::class);
+        $this->app->bind({{className}}ServiceInterface::class, {{className}}Service::class);
+    }
+
+    public function boot(): void
+    {
+        //
+    }
+}

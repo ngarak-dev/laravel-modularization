@@ -1,0 +1,16 @@
+<?php
+
+return [
+    'name' => '{{moduleName}}',
+    'description' => '{{moduleName}} module',
+    'enabled' => true,
+    'version' => '1.0.0',
+    'routes' => [
+        'prefix' => '{{moduleNameLower}}',
+        'middleware' => ['web'],
+    ],
+    'menu' => [
+        'title' => '{{moduleName}}',
+        'icon' => 'fa fa-th-large',
+    ],
+];

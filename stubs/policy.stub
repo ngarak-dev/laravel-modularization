@@ -1,0 +1,35 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{namespace}}\{{moduleName}}\Policies;
+
+use {{namespace}}\{{moduleName}}\Models\{{className}};
+
+class {{class}}
+{
+    public function viewAny(object $user): bool
+    {
+        return true;
+    }
+
+    public function view(object $user, {{className}} $model): bool
+    {
+        return true;
+    }
+
+    public function create(object $user): bool
+    {
+        return true;
+    }
+
+    public function update(object $user, {{className}} $model): bool
+    {
+        return true;
+    }
+
+    public function delete(object $user, {{className}} $model): bool
+    {
+        return true;
+    }
+}

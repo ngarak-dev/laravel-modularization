@@ -5,6 +5,8 @@ namespace NgarakDev\Modularization\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use NgarakDev\Modularization\Exceptions\InvalidModuleException;
+use NgarakDev\Modularization\Support\ModuleName;
 
 class MakeModuleLivewireCommand extends Command
 {
@@ -36,8 +38,14 @@ class MakeModuleLivewireCommand extends Command
         $namespace = config('modularization.namespace', 'Modules');
         $moduleBasePath = base_path(config('modularization.modules_path', 'modules'));
 
-        $module = Str::studly($this->argument('module'));
-        $name = Str::studly($this->argument('name'));
+        try {
+            $module = ModuleName::parse((string) $this->argument('module'))->studly();
+            $name = ModuleName::parseClass((string) $this->argument('name'))->basename();
+        } catch (InvalidModuleException $exception) {
+            $this->error($exception->getMessage());
+
+            return self::FAILURE;
+        }
         $subdirectory = $this->option('subdirectory') ? Str::studly($this->option('subdirectory')) : null;
         $viewOnly = $this->option('view-only');
         $classOnly = $this->option('class-only');
@@ -45,14 +53,15 @@ class MakeModuleLivewireCommand extends Command
 
         // Check if module exists
         $modulePath = "{$moduleBasePath}/{$module}";
-        if (!File::isDirectory($modulePath)) {
+        if (! File::isDirectory($modulePath)) {
             $this->error("Module '{$module}' does not exist.");
+
             return 1;
         }
 
         // Create directories if they don't exist
         $livewireDir = "{$modulePath}/Livewire";
-        if (!File::isDirectory($livewireDir)) {
+        if (! File::isDirectory($livewireDir)) {
             File::makeDirectory($livewireDir, 0755, true);
         }
 
@@ -66,7 +75,7 @@ class MakeModuleLivewireCommand extends Command
             $componentNamespace = "{$componentNamespace}\\{$subdirectory}";
             $viewPrefix = "{$viewPrefix}.livewire.{$this->kebabCase($subdirectory)}";
 
-            if (!File::isDirectory($componentDir)) {
+            if (! File::isDirectory($componentDir)) {
                 File::makeDirectory($componentDir, 0755, true);
             }
         } else {
@@ -74,29 +83,30 @@ class MakeModuleLivewireCommand extends Command
         }
 
         // Create view directory if it doesn't exist
-        $viewsDir = "{$modulePath}/resources/views/livewire";
-        if (!File::isDirectory($viewsDir)) {
+        $viewsDir = "{$modulePath}/Resources/views/livewire";
+        if (! File::isDirectory($viewsDir)) {
             File::makeDirectory($viewsDir, 0755, true);
         }
 
         if ($subdirectory) {
             $viewsDir = "{$viewsDir}/{$this->kebabCase($subdirectory)}";
-            if (!File::isDirectory($viewsDir)) {
+            if (! File::isDirectory($viewsDir)) {
                 File::makeDirectory($viewsDir, 0755, true);
             }
         }
 
         // Create component class unless view-only flag is set
-        if (!$viewOnly) {
+        if (! $viewOnly) {
             $this->createComponentClass($componentDir, $name, $componentNamespace, $viewPrefix, $force);
         }
 
         // Create component view unless class-only flag is set
-        if (!$classOnly) {
+        if (! $classOnly) {
             $this->createComponentView($viewsDir, $name, $force);
         }
 
         $this->info("Livewire component {$name} created successfully for module {$module}.");
+
         return 0;
     }
 
@@ -107,9 +117,10 @@ class MakeModuleLivewireCommand extends Command
     {
         $componentPath = "{$componentDir}/{$name}.php";
 
-        if (File::exists($componentPath) && !$force) {
-            if (!$this->confirm("The Livewire component class already exists. Do you want to overwrite it?")) {
-                $this->info("Component class creation skipped.");
+        if (File::exists($componentPath) && ! $force) {
+            if (! $this->confirm('The Livewire component class already exists. Do you want to overwrite it?')) {
+                $this->info('Component class creation skipped.');
+
                 return;
             }
         }
@@ -127,9 +138,10 @@ class MakeModuleLivewireCommand extends Command
     {
         $viewPath = "{$viewsDir}/{$this->kebabCase($name)}.blade.php";
 
-        if (File::exists($viewPath) && !$force) {
-            if (!$this->confirm("The Livewire component view already exists. Do you want to overwrite it?")) {
-                $this->info("Component view creation skipped.");
+        if (File::exists($viewPath) && ! $force) {
+            if (! $this->confirm('The Livewire component view already exists. Do you want to overwrite it?')) {
+                $this->info('Component view creation skipped.');
+
                 return;
             }
         }
@@ -212,4 +224,3 @@ EOT;
         ));
     }
 }
- 

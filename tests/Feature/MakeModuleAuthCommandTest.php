@@ -3,16 +3,18 @@
 namespace NgarakDev\Modularization\Tests\Feature;
 
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Artisan;
-use Orchestra\Testbench\TestCase;
-use NgarakDev\Modularization\Console\Commands\MakeModuleCommand;
 use NgarakDev\Modularization\Console\Commands\MakeModuleAuthCommand;
+use NgarakDev\Modularization\Console\Commands\MakeModuleCommand;
 use NgarakDev\Modularization\Providers\ModularizationServiceProvider;
+use Orchestra\Testbench\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class MakeModuleAuthCommandTest extends TestCase
 {
     protected $files;
+
     protected $testModuleName = 'AuthTest';
+
     protected $modulesPath;
 
     protected function getPackageProviders($app)
@@ -26,16 +28,16 @@ class MakeModuleAuthCommandTest extends TestCase
     {
         parent::setUp();
 
-        $this->files = new Filesystem();
+        $this->files = new Filesystem;
         $this->modulesPath = base_path('modules');
 
         // Make sure we have a clean test environment
-        if ($this->files->isDirectory($this->modulesPath . '/' . $this->testModuleName)) {
-            $this->files->deleteDirectory($this->modulesPath . '/' . $this->testModuleName);
+        if ($this->files->isDirectory($this->modulesPath.'/'.$this->testModuleName)) {
+            $this->files->deleteDirectory($this->modulesPath.'/'.$this->testModuleName);
         }
 
         // Ensure modules directory exists
-        if (!$this->files->isDirectory($this->modulesPath)) {
+        if (! $this->files->isDirectory($this->modulesPath)) {
             $this->files->makeDirectory($this->modulesPath, 0755, true);
         }
 
@@ -52,73 +54,73 @@ class MakeModuleAuthCommandTest extends TestCase
     protected function tearDown(): void
     {
         // Clean up the test module
-        if ($this->files->isDirectory($this->modulesPath . '/' . $this->testModuleName)) {
-            $this->files->deleteDirectory($this->modulesPath . '/' . $this->testModuleName);
+        if ($this->files->isDirectory($this->modulesPath.'/'.$this->testModuleName)) {
+            $this->files->deleteDirectory($this->modulesPath.'/'.$this->testModuleName);
         }
 
         parent::tearDown();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_generate_auth_scaffolding()
     {
         // Execute the command
         $this->artisan('module:make-auth', [
-            'name' => $this->testModuleName
+            'name' => $this->testModuleName,
         ])
             ->expectsOutput("Authentication module [{$this->testModuleName}] created successfully")
             ->assertExitCode(0);
 
         // Check that controllers were created
-        $controllersPath = $this->modulesPath . '/' . $this->testModuleName . '/Http/Controllers/Auth';
+        $controllersPath = $this->modulesPath.'/'.$this->testModuleName.'/Http/Controllers/Auth';
         $this->assertTrue($this->files->isDirectory($controllersPath));
 
         // Check for controller files
-        $this->assertTrue($this->files->exists($controllersPath . '/LoginController.php'));
-        $this->assertTrue($this->files->exists($controllersPath . '/RegisterController.php'));
-        $this->assertTrue($this->files->exists($controllersPath . '/ForgotPasswordController.php'));
-        $this->assertTrue($this->files->exists($controllersPath . '/ResetPasswordController.php'));
-        $this->assertTrue($this->files->exists($controllersPath . '/VerifyEmailController.php'));
+        $this->assertTrue($this->files->exists($controllersPath.'/LoginController.php'));
+        $this->assertTrue($this->files->exists($controllersPath.'/RegisterController.php'));
+        $this->assertTrue($this->files->exists($controllersPath.'/ForgotPasswordController.php'));
+        $this->assertTrue($this->files->exists($controllersPath.'/ResetPasswordController.php'));
+        $this->assertTrue($this->files->exists($controllersPath.'/VerifyEmailController.php'));
 
         // Check that views were created
-        $viewsPath = $this->modulesPath . '/' . $this->testModuleName . '/Resources/views/auth';
+        $viewsPath = $this->modulesPath.'/'.$this->testModuleName.'/Resources/views/auth';
         $this->assertTrue($this->files->isDirectory($viewsPath));
 
         // Check for view files
-        $this->assertTrue($this->files->exists($viewsPath . '/login.blade.php'));
-        $this->assertTrue($this->files->exists($viewsPath . '/register.blade.php'));
-        $this->assertTrue($this->files->exists($viewsPath . '/forgot-password.blade.php'));
-        $this->assertTrue($this->files->exists($viewsPath . '/reset-password.blade.php'));
-        $this->assertTrue($this->files->exists($viewsPath . '/verify-email.blade.php'));
+        $this->assertTrue($this->files->exists($viewsPath.'/login.blade.php'));
+        $this->assertTrue($this->files->exists($viewsPath.'/register.blade.php'));
+        $this->assertTrue($this->files->exists($viewsPath.'/forgot-password.blade.php'));
+        $this->assertTrue($this->files->exists($viewsPath.'/reset-password.blade.php'));
+        $this->assertTrue($this->files->exists($viewsPath.'/verify-email.blade.php'));
 
         // Check for auth layout
-        $layoutsPath = $this->modulesPath . '/' . $this->testModuleName . '/Resources/views/layouts';
+        $layoutsPath = $this->modulesPath.'/'.$this->testModuleName.'/Resources/views/layouts';
         $this->assertTrue($this->files->isDirectory($layoutsPath));
-        $this->assertTrue($this->files->exists($layoutsPath . '/auth-layout.blade.php'));
+        $this->assertTrue($this->files->exists($layoutsPath.'/auth-layout.blade.php'));
 
         // Check for dashboard view
-        $dashboardPath = $this->modulesPath . '/' . $this->testModuleName . '/Resources/views/dashboard';
+        $dashboardPath = $this->modulesPath.'/'.$this->testModuleName.'/Resources/views/dashboard';
         $this->assertTrue($this->files->isDirectory($dashboardPath));
-        $this->assertTrue($this->files->exists($dashboardPath . '/index.blade.php'));
+        $this->assertTrue($this->files->exists($dashboardPath.'/index.blade.php'));
 
         // Check that middleware was created
-        $middlewarePath = $this->modulesPath . '/' . $this->testModuleName . '/Http/Middleware';
+        $middlewarePath = $this->modulesPath.'/'.$this->testModuleName.'/Http/Middleware';
         $this->assertTrue($this->files->isDirectory($middlewarePath));
 
         // Check for middleware files
-        $this->assertTrue($this->files->exists($middlewarePath . '/Authenticate.php'));
-        $this->assertTrue($this->files->exists($middlewarePath . '/RedirectIfAuthenticated.php'));
+        $this->assertTrue($this->files->exists($middlewarePath.'/Authenticate.php'));
+        $this->assertTrue($this->files->exists($middlewarePath.'/RedirectIfAuthenticated.php'));
 
         // Check that routes were created
-        $routesPath = $this->modulesPath . '/' . $this->testModuleName . '/Routes/auth.php';
+        $routesPath = $this->modulesPath.'/'.$this->testModuleName.'/Routes/auth.php';
         $this->assertTrue($this->files->exists($routesPath));
 
         // Check for dashboard route
-        $webRoutesPath = $this->modulesPath . '/' . $this->testModuleName . '/Routes/web.php';
+        $webRoutesPath = $this->modulesPath.'/'.$this->testModuleName.'/Routes/web.php';
         $this->assertTrue($this->files->exists($webRoutesPath));
 
         // Check that service provider was created
-        $providerPath = $this->modulesPath . '/' . $this->testModuleName . '/Providers/' . $this->testModuleName . 'ServiceProvider.php';
+        $providerPath = $this->modulesPath.'/'.$this->testModuleName.'/Providers/'.$this->testModuleName.'ServiceProvider.php';
         $this->assertTrue($this->files->exists($providerPath));
         $providerContent = $this->files->get($providerPath);
 
@@ -131,39 +133,39 @@ class MakeModuleAuthCommandTest extends TestCase
         $this->assertStringContainsString("'{$moduleNameLower}.guest'", $providerContent);
     }
 
-    /** @test */
+    #[Test]
     public function it_uses_default_name_when_no_name_provided()
     {
         // Execute the command without a name parameter
         $this->artisan('module:make-auth')
-            ->expectsOutput("Authentication module [Auth] created successfully")
+            ->expectsOutput('Authentication module [Auth] created successfully')
             ->assertExitCode(0);
 
         // Check that the default Auth module was created
-        $this->assertTrue($this->files->isDirectory($this->modulesPath . '/Auth'));
-        $this->assertTrue($this->files->exists($this->modulesPath . '/Auth/Providers/AuthServiceProvider.php'));
+        $this->assertTrue($this->files->isDirectory($this->modulesPath.'/Auth'));
+        $this->assertTrue($this->files->exists($this->modulesPath.'/Auth/Providers/AuthServiceProvider.php'));
 
         // Clean up default module
-        $this->files->deleteDirectory($this->modulesPath . '/Auth');
+        $this->files->deleteDirectory($this->modulesPath.'/Auth');
     }
 
-    /** @test */
+    #[Test]
     public function it_does_not_overwrite_existing_files_without_force_option()
     {
         // First run to create files
         $this->artisan('module:make-auth', [
-            'name' => $this->testModuleName
+            'name' => $this->testModuleName,
         ])->run();
 
         // Modify a file to check it's not overwritten
-        $loginControllerPath = $this->modulesPath . '/' . $this->testModuleName . '/Http/Controllers/Auth/LoginController.php';
+        $loginControllerPath = $this->modulesPath.'/'.$this->testModuleName.'/Http/Controllers/Auth/LoginController.php';
         $originalContent = $this->files->get($loginControllerPath);
-        $modifiedContent = $originalContent . "\n// Modified test content";
+        $modifiedContent = $originalContent."\n// Modified test content";
         $this->files->put($loginControllerPath, $modifiedContent);
 
         // Run command again without force
         $this->artisan('module:make-auth', [
-            'name' => $this->testModuleName
+            'name' => $this->testModuleName,
         ])
             ->expectsQuestion("Module [{$this->testModuleName}] already exists. Do you want to continue?", true)
             ->run();
@@ -174,26 +176,26 @@ class MakeModuleAuthCommandTest extends TestCase
         // Run command with force option
         $this->artisan('module:make-auth', [
             'name' => $this->testModuleName,
-            '--force' => true
+            '--force' => true,
         ])->run();
 
         // Check that file was overwritten
         $this->assertNotEquals($modifiedContent, $this->files->get($loginControllerPath));
     }
 
-    /** @test */
+    #[Test]
     public function it_asks_for_confirmation_when_module_already_exists()
     {
         // Create the module first
-        $this->files->makeDirectory($this->modulesPath . '/ExistingModule', 0755, true);
+        $this->files->makeDirectory($this->modulesPath.'/ExistingModule', 0755, true);
 
         // Execute the command with existing module and answer "no" to confirmation
         $this->artisan('module:make-auth', ['name' => 'ExistingModule'])
-            ->expectsQuestion("Module [ExistingModule] already exists. Do you want to continue?", false)
-            ->expectsOutput("Operation cancelled.")
+            ->expectsQuestion('Module [ExistingModule] already exists. Do you want to continue?', false)
+            ->expectsOutput('Operation cancelled.')
             ->assertExitCode(1);
 
         // Clean up
-        $this->files->deleteDirectory($this->modulesPath . '/ExistingModule');
+        $this->files->deleteDirectory($this->modulesPath.'/ExistingModule');
     }
 }

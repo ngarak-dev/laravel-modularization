@@ -1,23 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Route;
-use {{namespace}}\{{moduleName}}\Http\Controllers\{{moduleName}}Controller;
+use {{namespace}}\{{moduleName}}\Http\Controllers\{{className}}Controller;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your module.
-|
-*/
-
-Route::resource('{{moduleNameLower}}', {{moduleName}}Controller::class)->names([
-    'index' => '{{moduleNameLower}}.index',
-    'create' => '{{moduleNameLower}}.create',
-    'store' => '{{moduleNameLower}}.store',
-    'show' => '{{moduleNameLower}}.show',
-    'edit' => '{{moduleNameLower}}.edit',
-    'update' => '{{moduleNameLower}}.update',
-    'destroy' => '{{moduleNameLower}}.destroy',
-]); 
+Route::resource('{{classNameLower}}', {{className}}Controller::class)->names([
+    'index' => '{{classNameLower}}.index',
+    'create' => '{{classNameLower}}.create',
+    'store' => '{{classNameLower}}.store',
+    'show' => '{{classNameLower}}.show',
+    'edit' => '{{classNameLower}}.edit',
+    'update' => '{{classNameLower}}.update',
+    'destroy' => '{{classNameLower}}.destroy',
+]);

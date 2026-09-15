@@ -1,0 +1,15 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{namespace}}\{{moduleName}}\Tests\Feature;
+
+use Orchestra\Testbench\TestCase;
+
+class {{class}} extends TestCase
+{
+    public function test_example(): void
+    {
+        $this->assertTrue(true);
+    }
+}

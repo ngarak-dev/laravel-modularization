@@ -1,123 +1,76 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization;
 
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Str;
 
+/**
+ * Backwards-compatible public API used by the Modularization facade.
+ */
 class ModularizationService
 {
-    /**
-     * @var Filesystem
-     */
-    protected $files;
-
-    /**
-     * @var string
-     */
-    protected $basePath;
-
-    /**
-     * @var array
-     */
-    protected $modules = [];
-
-    /**
-     * Create a new ModularizationService instance.
-     *
-     * @param Filesystem $files
-     */
-    public function __construct(Filesystem $files)
-    {
-        $this->files = $files;
-        $this->basePath = base_path(config('modularization.modules_path'));
-        $this->scanModules();
-    }
+    public function __construct(
+        protected Filesystem $files,
+        protected ModuleManager $manager,
+    ) {}
 
     /**
      * Scan for all available modules.
-     *
-     * @return void
      */
-    public function scanModules()
+    public function scanModules(): void
     {
-        if (!$this->files->isDirectory($this->basePath)) {
-            return;
-        }
-
-        $modules = $this->files->directories($this->basePath);
-
-        foreach ($modules as $module) {
-            $name = basename($module);
-            $this->modules[$name] = [
-                'name' => $name,
-                'path' => $module,
-                'enabled' => true, // By default, all modules are enabled
-            ];
-        }
+        $this->manager->discover(false);
     }
 
     /**
-     * Get all modules.
+     * Get all modules as a name-indexed array.
      *
-     * @return array
+     * @return array<string, array<string, mixed>>
      */
-    public function getModules()
+    public function getModules(): array
     {
-        return $this->modules;
+        return $this->manager->getModules();
     }
 
-    /**
-     * Determine whether the given module exists.
-     *
-     * @param string $name
-     * @return bool
-     */
-    public function hasModule($name)
+    public function hasModule(string $name): bool
     {
-        return isset($this->modules[$name]);
+        return $this->manager->hasModule($name);
     }
 
-    /**
-     * Determine whether the given module is enabled.
-     *
-     * @param string $name
-     * @return bool
-     */
-    public function isEnabled($name)
+    public function isEnabled(string $name): bool
     {
-        return $this->hasModule($name) && $this->modules[$name]['enabled'];
+        return $this->manager->isEnabled($name);
     }
 
-    /**
-     * Enable a module.
-     *
-     * @param string $name
-     * @return bool
-     */
-    public function enable($name)
+    public function enable(string $name): bool
     {
-        if ($this->hasModule($name)) {
-            $this->modules[$name]['enabled'] = true;
-            return true;
-        }
-
-        return false;
+        return $this->manager->enable($name);
     }
 
-    /**
-     * Disable a module.
-     *
-     * @param string $name
-     * @return bool
-     */
-    public function disable($name)
+    public function disable(string $name): bool
     {
-        if ($this->hasModule($name)) {
-            $this->modules[$name]['enabled'] = false;
-            return true;
-        }
+        return $this->manager->disable($name);
+    }
 
-        return false;
+    public function manager(): ModuleManager
+    {
+        return $this->manager;
+    }
+
+    public function path(?string $module = null, string $path = ''): string
+    {
+        return $this->manager->path($module, $path);
+    }
+
+    public function cache(): string
+    {
+        return $this->manager->cache();
+    }
+
+    public function clearCache(): bool
+    {
+        return $this->manager->clearCache();
     }
 }

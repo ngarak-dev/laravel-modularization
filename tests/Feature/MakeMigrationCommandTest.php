@@ -4,13 +4,16 @@ namespace NgarakDev\Modularization\Tests\Feature;
 
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
-use Orchestra\Testbench\TestCase;
 use Mockery;
+use Orchestra\Testbench\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class MakeMigrationCommandTest extends TestCase
 {
     protected $testModuleName = 'TestModule';
+
     protected $modulesPath;
+
     protected $files;
 
     protected function getPackageProviders($app)
@@ -18,7 +21,7 @@ class MakeMigrationCommandTest extends TestCase
         return ['NgarakDev\Modularization\Providers\ModularizationServiceProvider'];
     }
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
         $this->modulesPath = base_path('modules');
@@ -28,33 +31,33 @@ class MakeMigrationCommandTest extends TestCase
         $this->createTestModule();
     }
 
-    public function tearDown(): void
+    protected function tearDown(): void
     {
         // Cleanup the test module
-        if (File::isDirectory($this->modulesPath . '/' . $this->testModuleName)) {
-            File::deleteDirectory($this->modulesPath . '/' . $this->testModuleName);
+        if (File::isDirectory($this->modulesPath.'/'.$this->testModuleName)) {
+            File::deleteDirectory($this->modulesPath.'/'.$this->testModuleName);
         }
 
         Mockery::close();
         parent::tearDown();
     }
 
-    /** @test */
+    #[Test]
     public function it_fails_when_module_does_not_exist()
     {
         $this->artisan('module:make-migration', [
             'name' => 'create_test_table',
-            'module' => 'NonExistentModule'
+            'module' => 'NonExistentModule',
         ])
-            ->expectsOutput("Module [NonExistentModule] does not exist.")
+            ->expectsOutput('Module [NonExistentModule] does not exist.')
             ->assertExitCode(1);
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_migration_directory_if_it_does_not_exist()
     {
         // Remove migrations directory if it exists
-        $migrationsPath = $this->modulesPath . '/' . $this->testModuleName . '/Database/Migrations';
+        $migrationsPath = $this->modulesPath.'/'.$this->testModuleName.'/Database/Migrations';
         if (File::isDirectory($migrationsPath)) {
             File::deleteDirectory($migrationsPath);
         }
@@ -70,7 +73,7 @@ class MakeMigrationCommandTest extends TestCase
 
         $this->artisan('module:make-migration', [
             'name' => 'create_test_table',
-            'module' => $this->testModuleName
+            'module' => $this->testModuleName,
         ]);
 
         $this->assertTrue(File::isDirectory($migrationsPath), 'Migrations directory was not created.');
@@ -81,7 +84,7 @@ class MakeMigrationCommandTest extends TestCase
      */
     protected function createTestModule()
     {
-        $modulePath = $this->modulesPath . '/' . $this->testModuleName;
+        $modulePath = $this->modulesPath.'/'.$this->testModuleName;
 
         // Create module directories
         $directories = [
@@ -91,7 +94,7 @@ class MakeMigrationCommandTest extends TestCase
         ];
 
         foreach ($directories as $directory) {
-            $path = $modulePath . ($directory ? '/' . $directory : '');
+            $path = $modulePath.($directory ? '/'.$directory : '');
             $this->files->makeDirectory($path, 0755, true, true);
         }
     }

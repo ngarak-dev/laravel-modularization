@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{namespace}}\{{moduleName}}\Database\Factories;
+
+use Illuminate\Database\Eloquent\Factories\Factory;
+use {{namespace}}\{{moduleName}}\Models\{{className}};
+
+/**
+ * @extends Factory<{{className}}>
+ */
+class {{class}} extends Factory
+{
+    protected $model = {{className}}::class;
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'name' => fake()->name(),
+        ];
+    }
+}

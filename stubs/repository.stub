@@ -1,33 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace {{namespace}}\{{moduleName}}\Repositories;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
-use {{namespace}}\{{moduleName}}\Models\{{moduleName}};
-use {{namespace}}\{{moduleName}}\Repositories\Interfaces\{{moduleName}}RepositoryInterface;
+use {{namespace}}\{{moduleName}}\Models\{{className}};
+use {{namespace}}\{{moduleName}}\Repositories\Interfaces\{{className}}RepositoryInterface;
 
-class {{moduleName}}Repository implements {{moduleName}}RepositoryInterface
+class {{className}}Repository implements {{className}}RepositoryInterface
 {
-    /**
-     * @var {{moduleName}}
-     */
-    protected $model;
-
-    /**
-     * {{moduleName}}Repository constructor.
-     *
-     * @param {{moduleName}} $model
-     */
-    public function __construct({{moduleName}} $model)
-    {
-        $this->model = $model;
+    public function __construct(
+        protected {{className}} $model,
+    ) {
     }
 
     /**
-     * Get all instances of the model.
-     *
-     * @return Collection
+     * @return Collection<int, {{className}}>
      */
     public function all(): Collection
     {
@@ -35,80 +25,46 @@ class {{moduleName}}Repository implements {{moduleName}}RepositoryInterface
     }
 
     /**
-     * Get all records for service layer compatibility.
-     *
-     * @return Collection
+     * @return Collection<int, {{className}}>
      */
-    public function getAll()
+    public function getAll(): Collection
     {
         return $this->all();
     }
 
     /**
-     * Find record by ID for service layer compatibility.
-     *
-     * @param int $id
-     * @return {{moduleName}}|null
-     */
-    public function findById($id)
-    {
-        return $this->find($id);
-    }
-
-    /**
-     * Get paginated instances of the model.
-     *
-     * @param int $perPage
-     * @return LengthAwarePaginator
+     * @return LengthAwarePaginator<int, {{className}}>
      */
     public function paginate(int $perPage = 15): LengthAwarePaginator
     {
         return $this->model->paginate($perPage);
     }
 
-    /**
-     * Create a new instance of the model.
-     *
-     * @param array $data
-     * @return {{moduleName}}
-     */
-    public function create(array $data): {{moduleName}}
+    public function create(array $data): {{className}}
     {
         return $this->model->create($data);
     }
 
-    /**
-     * Update an existing instance of the model.
-     *
-     * @param {{moduleName}} $model
-     * @param array $data
-     * @return {{moduleName}}
-     */
-    public function update({{moduleName}} $model, array $data): {{moduleName}}
+    public function update(int|string $id, array $data): {{className}}
     {
-        $model->update($data);
-        return $model;
+        $record = $this->findById($id);
+        $record->update($data);
+
+        return $record;
     }
 
-    /**
-     * Delete an instance of the model.
-     *
-     * @param {{moduleName}} $model
-     * @return bool
-     */
-    public function delete({{moduleName}} $model): bool
+    public function delete(int|string $id): bool
     {
-        return $model->delete();
+        return (bool) $this->findById($id)->delete();
     }
 
-    /**
-     * Find an instance of the model by its primary key.
-     *
-     * @param int $id
-     * @return {{moduleName}}|null
-     */
-    public function find(int $id): ?{{moduleName}}
+    public function find(int|string $id): ?{{className}}
     {
         return $this->model->find($id);
     }
-} 
+
+    public function findById(int|string $id): {{className}}
+    {
+        return $this->model->findOrFail($id);
+    }
+}
