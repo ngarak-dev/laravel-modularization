@@ -38,7 +38,7 @@ final class ModuleName
             throw InvalidModuleException::invalidName($name, 'Module name cannot exceed 64 characters.');
         }
 
-        if (preg_match('/[\\/\\\\.\\0\\:]/', $trimmed) === 1) {
+        if (preg_match('/[^A-Za-z0-9_\-]/', $trimmed) === 1) {
             throw InvalidModuleException::invalidName($name);
         }
 

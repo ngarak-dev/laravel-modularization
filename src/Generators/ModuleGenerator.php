@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NgarakDev\Modularization\Generators;
 
 use Illuminate\Filesystem\Filesystem;
+use NgarakDev\Modularization\Exceptions\ModuleNotFoundException;
 use NgarakDev\Modularization\ModuleCache;
 use NgarakDev\Modularization\ModuleConfiguration;
 use NgarakDev\Modularization\ModuleManifest;
@@ -54,7 +55,7 @@ final class ModuleGenerator
         $path = $this->paths->path($module->studly());
 
         if (! $this->files->isDirectory($path)) {
-            throw \NgarakDev\Modularization\Exceptions\ModuleNotFoundException::make($module->studly(), $this->paths->modulesPath());
+            throw ModuleNotFoundException::make($module->studly(), $this->paths->modulesPath());
         }
 
         if ($languages === []) {

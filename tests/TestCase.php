@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NgarakDev\Modularization\Tests;
 
 use Illuminate\Filesystem\Filesystem;
+use NgarakDev\Modularization\ModuleManager;
 use NgarakDev\Modularization\Providers\ModularizationServiceProvider;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
 
@@ -79,8 +80,8 @@ class {$name}ServiceProvider extends ServiceProvider
 PHP);
         }
 
-        if ($this->app->bound(\NgarakDev\Modularization\ModuleManager::class)) {
-            $this->app->make(\NgarakDev\Modularization\ModuleManager::class)->refresh();
+        if ($this->app->bound(ModuleManager::class)) {
+            $this->app->make(ModuleManager::class)->refresh();
         }
 
         return $path;
