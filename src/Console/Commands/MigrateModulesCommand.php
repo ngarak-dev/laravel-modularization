@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 
 class MigrateModulesCommand extends Command
 {
@@ -42,8 +44,9 @@ class MigrateModulesCommand extends Command
         $modulesPath = base_path(config('modularization.modules_path', 'modules'));
 
         // Check if modules directory exists
-        if (!File::isDirectory($modulesPath)) {
-            $this->error("Modules directory does not exist.");
+        if (! File::isDirectory($modulesPath)) {
+            $this->error('Modules directory does not exist.');
+
             return 1;
         }
 
@@ -54,7 +57,8 @@ class MigrateModulesCommand extends Command
             });
 
         if ($modules->isEmpty()) {
-            $this->warn("No modules found.");
+            $this->warn('No modules found.');
+
             return 0;
         }
 
@@ -62,13 +66,13 @@ class MigrateModulesCommand extends Command
         $action = 'migration';
         if ($this->option('fresh')) {
             $action = 'fresh migration';
-        } else if ($this->option('rollback')) {
+        } elseif ($this->option('rollback')) {
             $action = 'rollback';
-        } else if ($this->option('status')) {
+        } elseif ($this->option('status')) {
             $action = 'status check';
-        } else if ($this->option('reset')) {
+        } elseif ($this->option('reset')) {
             $action = 'reset';
-        } else if ($this->option('refresh')) {
+        } elseif ($this->option('refresh')) {
             $action = 'refresh';
         }
 
@@ -77,16 +81,17 @@ class MigrateModulesCommand extends Command
         $successCount = 0;
 
         // Process each module
-        $this->info("Starting {$action} process for all modules" . ($onlyEnabled ? " (enabled only)" : "") . "...");
+        $this->info("Starting {$action} process for all modules".($onlyEnabled ? ' (enabled only)' : '').'...');
 
         foreach ($modules as $module) {
             // Skip disabled modules if only-enabled flag is set
             if ($onlyEnabled) {
-                $isDisabled = File::exists($modulesPath . '/' . $module . '/.disabled');
-                $configFile = $modulesPath . '/' . $module . '/Config/config.php';
+                $isDisabled = File::exists($modulesPath.'/'.$module.'/.disabled');
+                $configFile = $modulesPath.'/'.$module.'/Config/config.php';
 
                 if ($isDisabled) {
                     $this->info("Skipping disabled module [{$module}]");
+
                     continue;
                 }
 
@@ -94,15 +99,17 @@ class MigrateModulesCommand extends Command
                     $config = include $configFile;
                     if (isset($config['enabled']) && $config['enabled'] === false) {
                         $this->info("Skipping disabled module [{$module}] (per config)");
+
                         continue;
                     }
                 }
             }
 
             // First check if the module has migrations
-            $migrationsPath = $modulesPath . '/' . $module . '/Database/Migrations';
-            if (!File::isDirectory($migrationsPath) || count(File::glob($migrationsPath . '/*.php')) === 0) {
+            $migrationsPath = $modulesPath.'/'.$module.'/Database/Migrations';
+            if (! File::isDirectory($migrationsPath) || count(File::glob($migrationsPath.'/*.php')) === 0) {
                 $this->info("Skipping module [{$module}] - no migrations found.");
+
                 continue;
             }
 
@@ -160,11 +167,12 @@ class MigrateModulesCommand extends Command
         }
 
         $this->newLine();
-        $this->info("Migration Summary:");
+        $this->info('Migration Summary:');
         $this->info("- {$successCount} modules processed successfully");
 
         if (count($failedModules) > 0) {
-            $this->error("- " . count($failedModules) . " modules failed: " . implode(', ', $failedModules));
+            $this->error('- '.count($failedModules).' modules failed: '.implode(', ', $failedModules));
+
             return 1;
         }
 

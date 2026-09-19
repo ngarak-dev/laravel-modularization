@@ -36,6 +36,16 @@ class MigrateModulesCommandTest extends TestCase
         $app['config']->set('modularization.modules_path', 'modules');
     }
 
+    protected function getEnvironmentSetUp($app)
+    {
+        $app['config']->set('database.default', 'testing');
+        $app['config']->set('database.connections.testing', [
+            'driver'   => 'sqlite',
+            'database' => ':memory:',
+            'prefix'   => '',
+        ]);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -111,7 +121,6 @@ class MigrateModulesCommandTest extends TestCase
                 $modulePath.'/Database/Migrations/2023_01_01_00000'.$index.'_create_'.strtolower($moduleName).'_table.php',
                 <<<PHP
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;

@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Str;
 
 class MakeModuleManagerCommand extends Command
 {
@@ -27,14 +28,13 @@ class MakeModuleManagerCommand extends Command
     /**
      * The filesystem instance.
      *
-     * @var \Illuminate\Filesystem\Filesystem
+     * @var Filesystem
      */
     protected $files;
 
     /**
      * Create a new command instance.
      *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
      * @return void
      */
     public function __construct(Filesystem $files)
@@ -45,32 +45,31 @@ class MakeModuleManagerCommand extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int
      */
-    public function handle()
+    public function handle(): int
     {
         $moduleName = $this->argument('name') ?: 'ModuleManager';
         $force = $this->option('force');
 
         $modulesPath = base_path(config('modularization.modules_path', 'modules'));
-        $modulePath = $modulesPath . '/' . $moduleName;
+        $modulePath = $modulesPath.'/'.$moduleName;
 
         // Create module directory if it doesn't exist
-        if (!$this->files->isDirectory($modulePath)) {
+        if (! $this->files->isDirectory($modulePath)) {
             $this->createBaseModuleStructure($moduleName, $modulePath);
-        } else if (!$force) {
-            if (!$this->confirm("Module [{$moduleName}] already exists. Do you want to continue?")) {
-                $this->info("Operation cancelled.");
+        } elseif (! $force) {
+            if (! $this->confirm("Module [{$moduleName}] already exists. Do you want to continue?")) {
+                $this->info('Operation cancelled.');
+
                 return 1;
             }
 
             // Ensure Config directory exists in existing module
-            $configDir = $modulePath . '/Config';
-            if (!$this->files->isDirectory($configDir)) {
+            $configDir = $modulePath.'/Config';
+            if (! $this->files->isDirectory($configDir)) {
                 $this->files->makeDirectory($configDir, 0755, true);
                 $this->createConfigFile($moduleName, $modulePath);
-            } else if (!$this->files->exists($configDir . '/config.php') || $force) {
+            } elseif (! $this->files->exists($configDir.'/config.php')) {
                 $this->createConfigFile($moduleName, $modulePath);
             }
         }
@@ -89,12 +88,8 @@ class MakeModuleManagerCommand extends Command
 
     /**
      * Create the base module structure.
-     *
-     * @param string $moduleName
-     * @param string $modulePath
-     * @return void
      */
-    protected function createBaseModuleStructure($moduleName, $modulePath)
+    protected function createBaseModuleStructure(string $moduleName, string $modulePath): void
     {
         $this->info("Creating module [{$moduleName}]...");
 
@@ -111,13 +106,13 @@ class MakeModuleManagerCommand extends Command
         ];
 
         foreach ($directories as $directory) {
-            $path = $modulePath . ($directory ? '/' . $directory : '');
+            $path = $modulePath.($directory ? '/'.$directory : '');
             $this->files->makeDirectory($path, 0755, true);
         }
 
         // Create service provider
         $namespace = config('modularization.namespace', 'Modules');
-        $providerPath = $modulePath . '/Providers/' . $moduleName . 'ServiceProvider.php';
+        $providerPath = $modulePath.'/Providers/'.$moduleName.'ServiceProvider.php';
 
         $providerContent = <<<EOT
 <?php
@@ -214,14 +209,10 @@ EOT;
 
     /**
      * Create config file for the module.
-     *
-     * @param string $moduleName
-     * @param string $modulePath
-     * @return void
      */
-    protected function createConfigFile($moduleName, $modulePath)
+    protected function createConfigFile(string $moduleName, string $modulePath): void
     {
-        $configPath = $modulePath . '/Config/config.php';
+        $configPath = $modulePath.'/Config/config.php';
         $moduleNameLower = strtolower($moduleName);
 
         $content = <<<EOT
@@ -243,24 +234,19 @@ return [
 EOT;
 
         $this->files->put($configPath, $content);
-        $this->line("Created: Config/config.php");
+        $this->line('Created: Config/config.php');
     }
 
     /**
      * Create module manager controller.
-     *
-     * @param string $moduleName
-     * @param string $modulePath
-     * @param bool $force
-     * @return void
      */
-    protected function createModuleManagerController($moduleName, $modulePath, $force)
+    protected function createModuleManagerController(string $moduleName, string $modulePath, bool $force): void
     {
-        $controllerPath = $modulePath . '/Http/Controllers/ModuleManagerController.php';
+        $controllerPath = $modulePath.'/Http/Controllers/ModuleManagerController.php';
         $namespace = config('modularization.namespace', 'Modules');
         $moduleNameLower = strtolower($moduleName);
 
-        if (!$this->files->exists($controllerPath) || $force) {
+        if (! $this->files->exists($controllerPath) || $force) {
             $content = <<<EOT
 <?php
 
@@ -318,7 +304,7 @@ class ModuleManagerController extends Controller
      *
      * @return array
      */
-    protected function getModules()
+    protected function getModules(): array
     {
         \$modulesPath = base_path(config('modularization.modules_path', 'modules'));
         \$modules = [];
@@ -380,28 +366,23 @@ class ModuleManagerController extends Controller
 EOT;
 
             $this->files->put($controllerPath, $content);
-            $this->line("Created: ModuleManagerController.php");
+            $this->line('Created: ModuleManagerController.php');
         } else {
-            $this->warn("Skipped: ModuleManagerController.php (already exists)");
+            $this->warn('Skipped: ModuleManagerController.php (already exists)');
         }
     }
 
     /**
      * Create module manager views.
-     *
-     * @param string $moduleName
-     * @param string $modulePath
-     * @param bool $force
-     * @return void
      */
-    protected function createModuleManagerViews($moduleName, $modulePath, $force)
+    protected function createModuleManagerViews(string $moduleName, string $modulePath, bool $force): void
     {
         // Create layout view
-        $layoutPath = $modulePath . '/Resources/views/layouts/master.blade.php';
+        $layoutPath = $modulePath.'/Resources/views/layouts/master.blade.php';
         $moduleNameLower = strtolower($moduleName);
 
-        if (!$this->files->exists($layoutPath) || $force) {
-            $content = <<<EOT
+        if (! $this->files->exists($layoutPath) || $force) {
+            $content = <<<'EOT'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -455,15 +436,15 @@ EOT;
 EOT;
 
             $this->files->put($layoutPath, $content);
-            $this->line("Created: layouts/master.blade.php");
+            $this->line('Created: layouts/master.blade.php');
         } else {
-            $this->warn("Skipped: layouts/master.blade.php (already exists)");
+            $this->warn('Skipped: layouts/master.blade.php (already exists)');
         }
 
         // Create dashboard view
-        $dashboardPath = $modulePath . '/Resources/views/dashboard/index.blade.php';
+        $dashboardPath = $modulePath.'/Resources/views/dashboard/index.blade.php';
 
-        if (!$this->files->exists($dashboardPath) || $force) {
+        if (! $this->files->exists($dashboardPath) || $force) {
             $content = <<<EOT
 @extends('{$moduleNameLower}::layouts.master')
 
@@ -530,27 +511,22 @@ EOT;
 EOT;
 
             $this->files->put($dashboardPath, $content);
-            $this->line("Created: dashboard/index.blade.php");
+            $this->line('Created: dashboard/index.blade.php');
         } else {
-            $this->warn("Skipped: dashboard/index.blade.php (already exists)");
+            $this->warn('Skipped: dashboard/index.blade.php (already exists)');
         }
     }
 
     /**
      * Create module manager routes.
-     *
-     * @param string $moduleName
-     * @param string $modulePath
-     * @param bool $force
-     * @return void
      */
-    protected function createModuleManagerRoutes($moduleName, $modulePath, $force)
+    protected function createModuleManagerRoutes(string $moduleName, string $modulePath, bool $force): void
     {
-        $routesPath = $modulePath . '/Routes/web.php';
+        $routesPath = $modulePath.'/Routes/web.php';
         $namespace = config('modularization.namespace', 'Modules');
         $moduleNameLower = strtolower($moduleName);
 
-        if (!$this->files->exists($routesPath) || $force) {
+        if (! $this->files->exists($routesPath) || $force) {
             $content = <<<EOT
 <?php
 
@@ -573,13 +549,13 @@ EOT;
     /**
      * Update service provider to register routes.
      *
-     * @param string $moduleName
-     * @param string $modulePath
+     * @param  string  $moduleName
+     * @param  string  $modulePath
      * @return void
      */
     protected function updateServiceProvider($moduleName, $modulePath)
     {
-        $providerPath = $modulePath . '/Providers/' . $moduleName . 'ServiceProvider.php';
+        $providerPath = $modulePath.'/Providers/'.$moduleName.'ServiceProvider.php';
 
         if ($this->files->exists($providerPath)) {
             $content = $this->files->get($providerPath);
@@ -604,18 +580,14 @@ EOT;
 
     /**
      * Create RouteServiceProvider for the module.
-     *
-     * @param string $moduleName
-     * @param string $modulePath
-     * @return void
      */
-    protected function createRouteServiceProvider($moduleName, $modulePath)
+    protected function createRouteServiceProvider(string $moduleName, string $modulePath): void
     {
-        $providerPath = $modulePath . '/Providers/RouteServiceProvider.php';
+        $providerPath = $modulePath.'/Providers/RouteServiceProvider.php';
         $namespace = config('modularization.namespace', 'Modules');
         $moduleNameLower = strtolower($moduleName);
 
-        if (!$this->files->exists($providerPath)) {
+        if (! $this->files->exists($providerPath)) {
             $content = <<<EOT
 <?php
 
@@ -672,9 +644,9 @@ class RouteServiceProvider extends ServiceProvider
 EOT;
 
             $this->files->put($providerPath, $content);
-            $this->line("Created: RouteServiceProvider.php");
+            $this->line('Created: RouteServiceProvider.php');
         } else {
-            $this->warn("Skipped: RouteServiceProvider.php (already exists)");
+            $this->warn('Skipped: RouteServiceProvider.php (already exists)');
         }
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization\Console\Commands;
 
 use Illuminate\Console\Command;
@@ -33,7 +35,7 @@ class MakeModuleLivewireCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         $namespace = config('modularization.namespace', 'Modules');
         $moduleBasePath = base_path(config('modularization.modules_path', 'modules'));
@@ -113,7 +115,7 @@ class MakeModuleLivewireCommand extends Command
     /**
      * Create the Livewire component class.
      */
-    protected function createComponentClass($componentDir, $name, $namespace, $viewName, $force)
+    protected function createComponentClass(string $componentDir, string $name, string $namespace, string $viewName, bool $force): void
     {
         $componentPath = "{$componentDir}/{$name}.php";
 
@@ -134,7 +136,7 @@ class MakeModuleLivewireCommand extends Command
     /**
      * Create the Livewire component view.
      */
-    protected function createComponentView($viewsDir, $name, $force)
+    protected function createComponentView(string $viewsDir, string $name, bool $force): void
     {
         $viewPath = "{$viewsDir}/{$this->kebabCase($name)}.blade.php";
 
@@ -155,7 +157,7 @@ class MakeModuleLivewireCommand extends Command
     /**
      * Get the component class stub.
      */
-    protected function getComponentStub($name, $namespace, $viewName)
+    protected function getComponentStub(string $name, string $namespace, string $viewName): string
     {
         return <<<EOT
 <?php
@@ -177,7 +179,7 @@ EOT;
     /**
      * Get the component view stub.
      */
-    protected function getViewStub($name)
+    protected function getViewStub(string $name): string
     {
         return <<<EOT
 <div>
@@ -220,7 +222,7 @@ EOT;
         return strtolower(preg_replace(
             ['/([a-z\d])([A-Z])/', '/([^-])([A-Z][a-z])/'],
             ['$1-$2', '$1-$2'],
-            $string
+            $string,
         ));
     }
 }

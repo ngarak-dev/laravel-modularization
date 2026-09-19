@@ -19,14 +19,11 @@ class CommandServiceTest extends TestCase
     #[Test]
     public function it_registers_both_command_names()
     {
-        // Get all registered commands
         $commands = Artisan::all();
 
-        // Check that both command names are registered
         $this->assertArrayHasKey('make:module', $commands);
         $this->assertArrayHasKey('module:make', $commands);
 
-        // Verify they point to the same command class
         $makeModuleCommand = get_class($commands['make:module']);
         $moduleMakeCommand = get_class($commands['module:make']);
 
@@ -41,7 +38,6 @@ class CommandServiceTest extends TestCase
         // Get the command definition
         $definition = $command->getDefinition();
 
-        // Check that all the required options are defined
         $this->assertTrue($definition->hasOption('api'));
         $this->assertTrue($definition->hasOption('force'));
         $this->assertTrue($definition->hasOption('with-views'));

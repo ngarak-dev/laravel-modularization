@@ -256,8 +256,8 @@ class MakeModuleCommandTest extends TestCase
         $servicePath = $this->modulesPath.'/'.$this->testModuleName.'/Services/'.$this->testModuleName.'Service.php';
         $serviceContent = $this->files->get($servicePath);
 
-        $this->assertStringContainsString('public function getAll()', $serviceContent);
-        $this->assertStringContainsString('public function findById(', $serviceContent);
+        $this->assertStringContainsString('public function all()', $serviceContent);
+        $this->assertStringContainsString('public function find(', $serviceContent);
         $this->assertStringContainsString('public function create(', $serviceContent);
         $this->assertStringContainsString('public function update(', $serviceContent);
         $this->assertStringContainsString('public function delete(', $serviceContent);

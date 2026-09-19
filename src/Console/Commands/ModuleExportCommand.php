@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization\Console\Commands;
 
 use Illuminate\Console\Command;
@@ -175,14 +177,14 @@ class ModuleExportCommand extends Command
                 $content = str_replace(
                     "namespace {$namespace}\\{$moduleName}",
                     "namespace {$newNamespace}",
-                    $content
+                    $content,
                 );
 
                 // Replace use statements for module classes
                 $content = preg_replace(
                     "/(use\\s+){$namespace}\\\\{$moduleName}\\\\([^;]+);/",
                     "$1{$newNamespace}\\\\$2;",
-                    $content
+                    $content,
                 );
             }
 

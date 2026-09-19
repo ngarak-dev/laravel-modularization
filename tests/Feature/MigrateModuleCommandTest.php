@@ -33,6 +33,16 @@ class MigrateModuleCommandTest extends TestCase
         $app['config']->set('modularization.modules_path', 'modules');
     }
 
+    protected function getEnvironmentSetUp($app)
+    {
+        $app['config']->set('database.default', 'testing');
+        $app['config']->set('database.connections.testing', [
+            'driver'   => 'sqlite',
+            'database' => ':memory:',
+            'prefix'   => '',
+        ]);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -93,7 +103,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('test_table', function (Blueprint $table) {
+        Schema::create('migrate_test_table', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->timestamps();
@@ -102,7 +112,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('test_table');
+        Schema::dropIfExists('migrate_test_table');
     }
 };
 PHP);

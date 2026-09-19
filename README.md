@@ -10,7 +10,8 @@ This package is not a clone of `nwidart/laravel-modules`. It stays small, uses L
 - Laravel 10, 11, or 12
 - Livewire 3 is optional and only needed if you generate or auto-register Livewire components
 
-## Installation
+Optional:
+- Livewire 3.x (for `--with-livewire` support)
 
 ```bash
 composer require ngarak-dev/laravel-modularization

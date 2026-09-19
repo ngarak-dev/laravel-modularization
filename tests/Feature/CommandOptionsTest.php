@@ -146,8 +146,8 @@ class CommandOptionsTest extends TestCase
             $this->modulesPath.'/'.$this->testModuleName.'/Livewire/'.$resourceName.'Form.php'
         ));
 
-        // Verify Livewire views were created
-        $kebabResource = strtolower(preg_replace('/[A-Z]/', '-$0', lcfirst($resourceName)));
+        // Verify Livewire views were created (Resources directory is PascalCase)
+        $kebabResource = \Illuminate\Support\Str::kebab($resourceName);
         $this->assertTrue($this->files->isFile(
             $this->modulesPath.'/'.$this->testModuleName.'/Resources/views/livewire/'.$kebabResource.'-table.blade.php'
         ));

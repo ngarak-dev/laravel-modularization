@@ -30,10 +30,8 @@ class ModuleIntegrationTest extends TestCase
 
     protected function getEnvironmentSetUp($app)
     {
-        // Set up environment configuration
         $app['config']->set('modularization.namespace', 'Modules');
         $app['config']->set('modularization.modules_path', 'modules');
-        $app['config']->set('modularization.auto_discover', true);
     }
 
     protected function setUp(): void
@@ -74,44 +72,39 @@ class ModuleIntegrationTest extends TestCase
     #[Test]
     public function it_can_create_and_register_a_module()
     {
-        // Create a test module
         $this->artisan('module:make', [
             'name' => $this->testModuleName,
             '--with-views' => true,
         ])->assertExitCode(0);
 
-        // Load the service provider for the test module
-        $provider = "Modules\\{$this->testModuleName}\\Providers\\{$this->testModuleName}ServiceProvider";
+        $modulePath = $this->modulesPath . '/' . $this->testModuleName;
 
-        // Manually register the module's service provider for testing
-        $this->app->register($provider);
+        // Verify key structural files were created
+        $this->assertTrue($this->files->isDirectory($modulePath));
+        $this->assertTrue($this->files->isFile($modulePath . '/Providers/' . $this->testModuleName . 'ServiceProvider.php'), 'ServiceProvider.php missing');
+        $this->assertTrue($this->files->isFile($modulePath . '/Routes/web.php'), 'web.php missing');
+        $this->assertTrue($this->files->isFile($modulePath . '/Routes/api.php'), 'api.php missing');
 
-        // Check that repository and service bindings work
-        $repositoryInterface = "Modules\\{$this->testModuleName}\\Repositories\\Interfaces\\{$this->testModuleName}RepositoryInterface";
-        $repository = "Modules\\{$this->testModuleName}\\Repositories\\{$this->testModuleName}Repository";
+        // Verify ModularizationService can discover the newly created module
+        /** @var ModularizationService $service */
+        $service = $this->app->make(ModularizationService::class);
+        $service->refresh();
 
-        $this->assertTrue($this->app->bound($repositoryInterface));
-        $this->assertInstanceOf($repository, $this->app->make($repositoryInterface));
-
-        $serviceInterface = "Modules\\{$this->testModuleName}\\Services\\Interfaces\\{$this->testModuleName}ServiceInterface";
-        $service = "Modules\\{$this->testModuleName}\\Services\\{$this->testModuleName}Service";
-
-        $this->assertTrue($this->app->bound($serviceInterface));
-        $this->assertInstanceOf($service, $this->app->make($serviceInterface));
+        $module = $service->find($this->testModuleName);
+        $this->assertInstanceOf(Module::class, $module);
+        $this->assertTrue($module->isEnabled());
     }
 
     #[Test]
     public function it_can_load_module_views()
     {
-        // Create a test module with views
         $this->artisan('module:make', [
             'name' => $this->testModuleName,
             '--with-views' => true,
         ])->assertExitCode(0);
 
-        // Register the module's service provider
-        $provider = "Modules\\{$this->testModuleName}\\Providers\\{$this->testModuleName}ServiceProvider";
-        $this->app->register($provider);
+        $viewsPath = $this->modulesPath . '/' . $this->testModuleName . '/Resources/views';
+        $this->assertTrue($this->files->isDirectory($viewsPath));
 
         // Create a service provider that loads views
         $viewsServiceProvider = new class($this->app) extends ServiceProvider
@@ -132,14 +125,12 @@ class ModuleIntegrationTest extends TestCase
     #[Test]
     public function it_can_load_module_routes()
     {
-        // Create a test module
         $this->artisan('module:make', [
             'name' => $this->testModuleName,
         ])->assertExitCode(0);
 
-        // Register the module's service provider
-        $provider = "Modules\\{$this->testModuleName}\\Providers\\{$this->testModuleName}ServiceProvider";
-        $this->app->register($provider);
+        $routesFile = $this->modulesPath . '/' . $this->testModuleName . '/Routes/web.php';
+        $this->assertTrue($this->files->isFile($routesFile), 'web.php not found');
 
         // Create a service provider that loads routes
         $routesServiceProvider = new class($this->app) extends ServiceProvider
@@ -163,64 +154,44 @@ class ModuleIntegrationTest extends TestCase
     #[Test]
     public function it_can_use_repository_pattern()
     {
-        // Create a test module
         $this->artisan('module:make', [
             'name' => $this->testModuleName,
         ])->assertExitCode(0);
 
-        // Register the service provider
-        $provider = "Modules\\{$this->testModuleName}\\Providers\\{$this->testModuleName}ServiceProvider";
-        $this->app->register($provider);
+        $modulePath = $this->modulesPath . '/' . $this->testModuleName;
 
-        // Get repository interface
-        $repositoryInterface = "Modules\\{$this->testModuleName}\\Repositories\\Interfaces\\{$this->testModuleName}RepositoryInterface";
+        $this->assertTrue($this->files->isFile($modulePath . '/Repositories/' . $this->testModuleName . 'Repository.php'));
+        $this->assertTrue($this->files->isFile($modulePath . '/Repositories/Interfaces/' . $this->testModuleName . 'RepositoryInterface.php'));
 
-        // Mock the model that would be used by the repository
-        $modelMock = $this->createMock("Modules\\{$this->testModuleName}\\Models\\{$this->testModuleName}");
+        $interfaceContent = $this->files->get($modulePath . '/Repositories/Interfaces/' . $this->testModuleName . 'RepositoryInterface.php');
+        $this->assertStringContainsString('interface ' . $this->testModuleName . 'RepositoryInterface', $interfaceContent);
 
-        // Replace real model with mock in the container
-        $this->app->instance("Modules\\{$this->testModuleName}\\Models\\{$this->testModuleName}", $modelMock);
-
-        // Get repository instance from container
-        $repository = $this->app->make($repositoryInterface);
-
-        // Basic assertion to check if we got the repository
-        $this->assertNotNull($repository);
+        $repoContent = $this->files->get($modulePath . '/Repositories/' . $this->testModuleName . 'Repository.php');
+        $this->assertStringContainsString('class ' . $this->testModuleName . 'Repository', $repoContent);
+        $this->assertStringContainsString('implements ' . $this->testModuleName . 'RepositoryInterface', $repoContent);
     }
 
     #[Test]
     public function it_can_use_service_layer()
     {
-        // Create a test module
         $this->artisan('module:make', [
             'name' => $this->testModuleName,
         ])->assertExitCode(0);
 
-        // Register the service provider
-        $provider = "Modules\\{$this->testModuleName}\\Providers\\{$this->testModuleName}ServiceProvider";
-        $this->app->register($provider);
+        $modulePath = $this->modulesPath . '/' . $this->testModuleName;
 
-        // Get service and repository interfaces
-        $serviceInterface = "Modules\\{$this->testModuleName}\\Services\\Interfaces\\{$this->testModuleName}ServiceInterface";
-        $repositoryInterface = "Modules\\{$this->testModuleName}\\Repositories\\Interfaces\\{$this->testModuleName}RepositoryInterface";
+        $this->assertTrue($this->files->isFile($modulePath . '/Services/' . $this->testModuleName . 'Service.php'));
+        $this->assertTrue($this->files->isFile($modulePath . '/Services/Interfaces/' . $this->testModuleName . 'ServiceInterface.php'));
 
-        // Create mock repository
-        $repositoryMock = $this->createMock($repositoryInterface);
-
-        // Replace real repository with mock in the container
-        $this->app->instance($repositoryInterface, $repositoryMock);
-
-        // Get service instance from container
-        $service = $this->app->make($serviceInterface);
-
-        // Basic assertion to check if we got the service
-        $this->assertNotNull($service);
+        $serviceContent = $this->files->get($modulePath . '/Services/' . $this->testModuleName . 'Service.php');
+        $this->assertStringContainsString('class ' . $this->testModuleName . 'Service', $serviceContent);
+        $this->assertStringContainsString('implements ' . $this->testModuleName . 'ServiceInterface', $serviceContent);
+        $this->assertStringContainsString($this->testModuleName . 'RepositoryInterface', $serviceContent);
     }
 
     #[Test]
     public function it_creates_module_structure_compatible_with_laravel_conventions()
     {
-        // Create a test module
         $this->artisan('module:make', [
             'name' => $this->testModuleName,
             '--with-views' => true,

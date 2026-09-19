@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 return [
+
     /*
     |--------------------------------------------------------------------------
     | Modules Directory
@@ -24,7 +27,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Module Directories
+    | Default Module Directories
     |--------------------------------------------------------------------------
     |
     | Directories created inside each new module. Existing modules are not

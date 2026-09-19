@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace NgarakDev\Modularization\Console\Commands;
 
 use Illuminate\Console\Command;
@@ -27,14 +29,13 @@ class MakeModuleTranslationCommand extends Command
     /**
      * The filesystem instance.
      *
-     * @var \Illuminate\Filesystem\Filesystem
+     * @var Filesystem
      */
     protected $files;
 
     /**
      * Create a new command instance.
      *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
      * @return void
      */
     public function __construct(Filesystem $files)
@@ -45,10 +46,8 @@ class MakeModuleTranslationCommand extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int
      */
-    public function handle()
+    public function handle(): int
     {
         $moduleName = $this->argument('module');
         $languages = $this->option('languages');
@@ -60,11 +59,12 @@ class MakeModuleTranslationCommand extends Command
         }
 
         $modulesPath = base_path(config('modularization.modules_path', 'modules'));
-        $modulePath = $modulesPath . '/' . $moduleName;
+        $modulePath = $modulesPath.'/'.$moduleName;
 
         // Check if module exists
-        if (!$this->files->isDirectory($modulePath)) {
+        if (! $this->files->isDirectory($modulePath)) {
             $this->error("Module [{$moduleName}] does not exist!");
+
             return 1;
         }
 
@@ -72,38 +72,38 @@ class MakeModuleTranslationCommand extends Command
         $this->createTranslationFiles($moduleName, $modulePath, $languages, $force);
 
         $this->info("Translation files created successfully for module [{$moduleName}]");
+
         return 0;
     }
 
     /**
      * Create translation files for the module.
      *
-     * @param string $name Module name
-     * @param string $path Module path
-     * @param array $languages Languages
-     * @param bool $force Force overwrite
-     * @return void
+     * @param  string  $name  Module name
+     * @param  string  $path  Module path
+     * @param  array  $languages  Languages
+     * @param  bool  $force  Force overwrite
      */
-    protected function createTranslationFiles($name, $path, $languages, $force)
+    protected function createTranslationFiles(string $name, string $path, array $languages, bool $force): void
     {
-        $langPath = $path . '/Resources/lang';
+        $langPath = $path.'/Resources/lang';
 
-        if (!$this->files->isDirectory($langPath)) {
+        if (! $this->files->isDirectory($langPath)) {
             $this->files->makeDirectory($langPath, 0755, true);
         }
 
         $moduleLowerName = strtolower($name);
 
         foreach ($languages as $lang) {
-            $langDir = $langPath . '/' . $lang;
+            $langDir = $langPath.'/'.$lang;
 
-            if (!$this->files->isDirectory($langDir)) {
+            if (! $this->files->isDirectory($langDir)) {
                 $this->files->makeDirectory($langDir, 0755, true);
             }
 
             // Create general.php for common translations
-            $generalPath = $langDir . '/general.php';
-            if (!$this->files->exists($generalPath) || $force) {
+            $generalPath = $langDir.'/general.php';
+            if (! $this->files->exists($generalPath) || $force) {
                 $generalContent = $this->getTranslationGeneralStub([
                     '{{moduleName}}' => $name,
                     '{{language}}' => $lang,
@@ -116,8 +116,8 @@ class MakeModuleTranslationCommand extends Command
             }
 
             // Create validation.php for form validation messages
-            $validationPath = $langDir . '/validation.php';
-            if (!$this->files->exists($validationPath) || $force) {
+            $validationPath = $langDir.'/validation.php';
+            if (! $this->files->exists($validationPath) || $force) {
                 $validationContent = $this->getTranslationValidationStub([
                     '{{moduleName}}' => $name,
                     '{{language}}' => $lang,
@@ -130,8 +130,8 @@ class MakeModuleTranslationCommand extends Command
             }
 
             // Create module-specific translations
-            $modulePath = $langDir . '/' . $moduleLowerName . '.php';
-            if (!$this->files->exists($modulePath) || $force) {
+            $modulePath = $langDir.'/'.$moduleLowerName.'.php';
+            if (! $this->files->exists($modulePath) || $force) {
                 $moduleContent = $this->getTranslationModuleStub([
                     '{{moduleName}}' => $name,
                     '{{moduleNameLower}}' => $moduleLowerName,
@@ -149,10 +149,9 @@ class MakeModuleTranslationCommand extends Command
     /**
      * Get the general translation stub.
      *
-     * @param array $replacements Replacements
-     * @return string
+     * @param  array  $replacements  Replacements
      */
-    protected function getTranslationGeneralStub($replacements = [])
+    protected function getTranslationGeneralStub(array $replacements = []): string
     {
         $stub = <<<'EOT'
 <?php
@@ -188,10 +187,9 @@ EOT;
     /**
      * Get the validation translation stub.
      *
-     * @param array $replacements Replacements
-     * @return string
+     * @param  array  $replacements  Replacements
      */
-    protected function getTranslationValidationStub($replacements = [])
+    protected function getTranslationValidationStub(array $replacements = []): string
     {
         $stub = <<<'EOT'
 <?php
@@ -227,10 +225,9 @@ EOT;
     /**
      * Get the module-specific translation stub.
      *
-     * @param array $replacements Replacements
-     * @return string
+     * @param  array  $replacements  Replacements
      */
-    protected function getTranslationModuleStub($replacements = [])
+    protected function getTranslationModuleStub(array $replacements = []): string
     {
         $moduleNames = [
             'en' => '{{moduleName}}',

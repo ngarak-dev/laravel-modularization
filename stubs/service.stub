@@ -21,12 +21,12 @@ class {{className}}Service implements {{className}}ServiceInterface
      */
     public function getAll(): Collection
     {
-        return $this->repository->getAll();
+        return $this->repository->all();
     }
 
     public function findById(int|string $id): {{className}}
     {
-        return $this->repository->findById($id);
+        return $this->repository->paginate($perPage);
     }
 
     public function create(array $data): {{className}}
