@@ -4,182 +4,132 @@ declare(strict_types=1);
 
 namespace NgarakDev\Modularization\Tests\Unit;
 
-use Illuminate\Filesystem\Filesystem;
-use NgarakDev\Modularization\Module;
-use NgarakDev\Modularization\Providers\ModularizationServiceProvider;
-use NgarakDev\Modularization\Support\ModuleStatusManager;
-use Orchestra\Testbench\TestCase;
+use NgarakDev\Modularization\ModuleStatusManager;
+use NgarakDev\Modularization\Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class ModuleStatusManagerTest extends TestCase
 {
-    protected Filesystem $files;
-
-    protected string $modulesPath;
-
-    protected ModuleStatusManager $manager;
-
-    protected function getPackageProviders($app): array
-    {
-        return [ModularizationServiceProvider::class];
-    }
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->files = new Filesystem;
-        $this->modulesPath = sys_get_temp_dir().'/status_manager_test_'.uniqid();
-        $this->files->makeDirectory($this->modulesPath.'/MyModule', 0755, true);
-
-        $this->manager = new ModuleStatusManager($this->files);
-    }
-
-    protected function tearDown(): void
-    {
-        if ($this->files->isDirectory($this->modulesPath)) {
-            $this->files->deleteDirectory($this->modulesPath);
-        }
-
-        parent::tearDown();
-    }
-
-    private function makeModule(string $name, bool $enabled = true): Module
-    {
-        return new Module(
-            name: $name,
-            path: $this->modulesPath.'/'.$name,
-            enabled: $enabled,
-            namespace: 'Modules\\'.$name,
-            version: '1.0.0',
-            description: '',
-            requires: [],
-        );
-    }
-
-    /** @test */
+    #[Test]
     public function it_reports_enabled_when_no_sentinel_file_exists(): void
     {
-        $module = $this->makeModule('MyModule');
+        $this->writeModuleFixture('MyModule');
 
-        $this->assertTrue($this->manager->isEnabled($module));
+        $this->assertTrue($this->app->make(ModuleStatusManager::class)->isEnabled('MyModule'));
     }
 
-    /** @test */
+    #[Test]
     public function it_reports_disabled_when_sentinel_file_exists(): void
     {
-        $module = $this->makeModule('MyModule');
-        $this->files->put($this->modulesPath.'/MyModule/.disabled', '');
+        $this->writeModuleFixture('MyModule');
+        $this->files->put($this->modulePath('MyModule', '.disabled'), '');
 
-        $this->assertFalse($this->manager->isEnabled($module));
+        $this->assertFalse($this->app->make(ModuleStatusManager::class)->isEnabled('MyModule'));
     }
 
-    /** @test */
+    #[Test]
     public function disable_creates_sentinel_file(): void
     {
-        $module = $this->makeModule('MyModule');
-        $sentinelPath = $this->modulesPath.'/MyModule/.disabled';
-
+        $this->writeModuleFixture('MyModule');
+        $sentinelPath = $this->modulePath('MyModule', '.disabled');
         $this->assertFalse($this->files->exists($sentinelPath));
 
-        $this->manager->disable($module);
+        $this->app->make(ModuleStatusManager::class)->disable('MyModule');
 
         $this->assertTrue($this->files->exists($sentinelPath));
     }
 
-    /** @test */
+    #[Test]
     public function disable_writes_json_metadata_to_sentinel_file(): void
     {
-        $module = $this->makeModule('MyModule');
-        $sentinelPath = $this->modulesPath.'/MyModule/.disabled';
+        $this->writeModuleFixture('MyModule');
+        $this->app->make(ModuleStatusManager::class)->disable('MyModule');
 
-        $this->manager->disable($module);
-
-        $content = $this->files->get($sentinelPath);
-        $data = json_decode($content, true);
+        $data = json_decode($this->files->get($this->modulePath('MyModule', '.disabled')), true);
 
         $this->assertIsArray($data);
         $this->assertArrayHasKey('disabled_at', $data);
     }
 
-    /** @test */
+    #[Test]
     public function enable_removes_sentinel_file(): void
     {
-        $module = $this->makeModule('MyModule');
-        $sentinelPath = $this->modulesPath.'/MyModule/.disabled';
+        $this->writeModuleFixture('MyModule');
+        $this->files->put($this->modulePath('MyModule', '.disabled'), '');
 
-        $this->files->put($sentinelPath, '');
-        $this->assertTrue($this->files->exists($sentinelPath));
+        $this->app->make(ModuleStatusManager::class)->enable('MyModule');
 
-        $this->manager->enable($module);
-
-        $this->assertFalse($this->files->exists($sentinelPath));
+        $this->assertFalse($this->files->exists($this->modulePath('MyModule', '.disabled')));
     }
 
-    /** @test */
+    #[Test]
     public function enable_is_idempotent_when_already_enabled(): void
     {
-        $module = $this->makeModule('MyModule');
+        $this->writeModuleFixture('MyModule');
+        $manager = $this->app->make(ModuleStatusManager::class);
 
-        // Should not throw even when already enabled
-        $this->manager->enable($module);
-        $this->manager->enable($module);
+        $manager->enable('MyModule');
+        $manager->enable('MyModule');
 
-        $this->assertTrue($this->manager->isEnabled($module));
+        $this->assertTrue($manager->isEnabled('MyModule'));
     }
 
-    /** @test */
+    #[Test]
     public function disable_is_idempotent_when_already_disabled(): void
     {
-        $module = $this->makeModule('MyModule');
+        $this->writeModuleFixture('MyModule');
+        $manager = $this->app->make(ModuleStatusManager::class);
 
-        $this->manager->disable($module);
-        $this->manager->disable($module);
+        $manager->disable('MyModule');
+        $manager->disable('MyModule');
 
-        $this->assertFalse($this->manager->isEnabled($module));
+        $this->assertFalse($manager->isEnabled('MyModule'));
     }
 
-    /** @test */
+    #[Test]
     public function it_updates_module_json_when_disabling(): void
     {
-        $manifestPath = $this->modulesPath.'/MyModule/module.json';
-        $this->files->put($manifestPath, json_encode([
-            'name' => 'MyModule',
-            'enabled' => true,
-        ]));
+        $this->writeModuleFixture('MyModule');
+        $this->app->make(ModuleStatusManager::class)->disable('MyModule');
 
-        $module = $this->makeModule('MyModule');
-        $this->manager->disable($module);
-
-        $manifest = json_decode($this->files->get($manifestPath), true);
+        $manifest = json_decode($this->files->get($this->modulePath('MyModule', 'module.json')), true);
         $this->assertFalse($manifest['enabled']);
     }
 
-    /** @test */
+    #[Test]
     public function it_updates_module_json_when_enabling(): void
     {
-        $manifestPath = $this->modulesPath.'/MyModule/module.json';
-        $this->files->put($manifestPath, json_encode([
-            'name' => 'MyModule',
-            'enabled' => false,
-        ]));
-        $this->files->put($this->modulesPath.'/MyModule/.disabled', '');
+        $this->writeModuleFixture('MyModule', ['enabled' => false]);
+        $this->files->put($this->modulePath('MyModule', '.disabled'), '');
 
-        $module = $this->makeModule('MyModule', false);
-        $this->manager->enable($module);
+        $this->app->make(ModuleStatusManager::class)->enable('MyModule');
 
-        $manifest = json_decode($this->files->get($manifestPath), true);
+        $manifest = json_decode($this->files->get($this->modulePath('MyModule', 'module.json')), true);
         $this->assertTrue($manifest['enabled']);
     }
 
-    /** @test */
+    #[Test]
     public function it_does_not_fail_when_module_json_is_absent(): void
     {
-        $module = $this->makeModule('MyModule');
+        $path = $this->modulePath('MyModule');
+        $this->files->ensureDirectoryExists($path, 0755);
 
-        // Should not throw - module.json is optional
-        $this->manager->disable($module);
-        $this->manager->enable($module);
+        $manager = $this->app->make(ModuleStatusManager::class);
+        $manager->disable('MyModule');
+        $manager->enable('MyModule');
 
-        $this->assertTrue($this->manager->isEnabled($module));
+        $this->assertTrue($manager->isEnabled('MyModule'));
+    }
+
+    #[Test]
+    public function toggle_flips_enabled_state(): void
+    {
+        $this->writeModuleFixture('MyModule');
+        $manager = $this->app->make(ModuleStatusManager::class);
+
+        $this->assertFalse($manager->toggle('MyModule'));
+        $this->assertTrue($manager->isDisabled('MyModule'));
+        $this->assertTrue($manager->toggle('MyModule'));
+        $this->assertTrue($manager->isEnabled('MyModule'));
     }
 }

@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 namespace {{namespace}}\{{moduleName}}\Listeners;
-
+{{eventImport}}
 class {{class}}
 {
-    public function handle(object $event): void
+    public function handle({{eventType}} $event): void
     {
         //
     }

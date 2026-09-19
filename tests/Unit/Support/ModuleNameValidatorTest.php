@@ -6,6 +6,7 @@ namespace NgarakDev\Modularization\Tests\Unit\Support;
 
 use NgarakDev\Modularization\Exceptions\InvalidModuleException;
 use NgarakDev\Modularization\Support\ModuleNameValidator;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class ModuleNameValidatorTest extends TestCase
@@ -18,7 +19,7 @@ class ModuleNameValidatorTest extends TestCase
         $this->validator = new ModuleNameValidator;
     }
 
-    /** @test */
+    #[Test]
     public function it_accepts_valid_module_names(): void
     {
         $validNames = [
@@ -35,7 +36,7 @@ class ModuleNameValidatorTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function it_rejects_empty_names(): void
     {
         $this->expectException(InvalidModuleException::class);
@@ -44,7 +45,7 @@ class ModuleNameValidatorTest extends TestCase
         $this->validator->validate('');
     }
 
-    /** @test */
+    #[Test]
     public function it_rejects_names_starting_with_numbers(): void
     {
         $this->expectException(InvalidModuleException::class);
@@ -53,7 +54,7 @@ class ModuleNameValidatorTest extends TestCase
         $this->validator->validate('123Module');
     }
 
-    /** @test */
+    #[Test]
     public function it_rejects_names_with_invalid_characters(): void
     {
         $this->expectException(InvalidModuleException::class);
@@ -61,7 +62,7 @@ class ModuleNameValidatorTest extends TestCase
         $this->validator->validate('My-Module');
     }
 
-    /** @test */
+    #[Test]
     public function it_rejects_path_traversal_attempts(): void
     {
         $dangerousNames = [
@@ -76,7 +77,7 @@ class ModuleNameValidatorTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function it_rejects_reserved_names(): void
     {
         $this->expectException(InvalidModuleException::class);
@@ -85,7 +86,7 @@ class ModuleNameValidatorTest extends TestCase
         $this->validator->validate('Modules');
     }
 
-    /** @test */
+    #[Test]
     public function it_rejects_names_exceeding_max_length(): void
     {
         $longName = str_repeat('A', 65);
@@ -96,7 +97,7 @@ class ModuleNameValidatorTest extends TestCase
         $this->validator->validate($longName);
     }
 
-    /** @test */
+    #[Test]
     public function it_sanitizes_invalid_names(): void
     {
         $this->assertSame('Module', $this->validator->sanitize(''));

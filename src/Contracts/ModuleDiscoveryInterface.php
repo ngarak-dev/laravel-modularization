@@ -4,32 +4,22 @@ declare(strict_types=1);
 
 namespace NgarakDev\Modularization\Contracts;
 
-use Illuminate\Support\Collection;
-
 /**
- * Discovers modules from the filesystem.
+ * Discovers modules from the filesystem or compiled cache.
  */
 interface ModuleDiscoveryInterface
 {
     /**
-     * Discover all modules.
-     *
-     * @return Collection<string, ModuleInterface>
+     * @return array<string, ModuleInterface>
      */
-    public function discover(): Collection;
+    public function discover(bool $useCache = true): array;
 
     /**
-     * Discover a single module by name.
+     * @return array<string, ModuleInterface>
      */
-    public function discoverModule(string $name): ?ModuleInterface;
+    public function scan(): array;
 
-    /**
-     * Get the base path where modules are stored.
-     */
-    public function getBasePath(): string;
+    public function isValidModuleName(string $name): bool;
 
-    /**
-     * Check if a module directory exists.
-     */
     public function exists(string $name): bool;
 }

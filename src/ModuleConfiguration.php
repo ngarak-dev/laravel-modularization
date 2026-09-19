@@ -27,12 +27,18 @@ final class ModuleConfiguration
             );
         }
 
+        if ($this->isAbsolutePath($path)) {
+            return $path;
+        }
+
         return trim($path, '/');
     }
 
     public function modulesPath(): string
     {
-        return base_path($this->modulesPathRelative());
+        $path = $this->modulesPathRelative();
+
+        return $this->isAbsolutePath($path) ? $path : base_path($path);
     }
 
     public function namespace(): string
@@ -106,12 +112,22 @@ final class ModuleConfiguration
             );
         }
 
-        return base_path($relative);
+        return $this->isAbsolutePath($relative) ? $relative : base_path($relative);
     }
 
     public function failOnMissingDependencies(): bool
     {
         return (bool) $this->config->get('modularization.dependencies.fail_on_missing', false);
+    }
+
+    public function warnOnMissingDependencies(): bool
+    {
+        return (bool) $this->config->get('modularization.dependencies.warn_on_missing', true);
+    }
+
+    public function failOnRouteCollision(): bool
+    {
+        return (bool) $this->config->get('modularization.routes.fail_on_collision', false);
     }
 
     public function skipDisabledOnBoot(): bool
@@ -122,6 +138,34 @@ final class ModuleConfiguration
     public function updateComposer(): bool
     {
         return (bool) $this->config->get('modularization.update_composer', true);
+    }
+
+    public function dumpAutoload(): bool
+    {
+        return (bool) $this->config->get('modularization.dump_autoload', true);
+    }
+
+    public function registryPath(): string
+    {
+        $relative = (string) $this->config->get('modularization.registry.path', 'bootstrap/cache/modules-registry.json');
+
+        if ($relative === '' || str_contains($relative, '..')) {
+            throw new InvalidArgumentException(
+                'Configuration [modularization.registry.path] must be a path relative to the application base path, without `..` segments.'
+            );
+        }
+
+        return $this->isAbsolutePath($relative) ? $relative : base_path($relative);
+    }
+
+    public function viteEnabled(): bool
+    {
+        return (bool) $this->config->get('modularization.assets.vite', true);
+    }
+
+    private function isAbsolutePath(string $path): bool
+    {
+        return str_starts_with($path, '/') || preg_match('/^[A-Za-z]:[\\\\\\/]/', $path) === 1;
     }
 
     /**

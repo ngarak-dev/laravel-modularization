@@ -2,30 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.1.0] - 2026-09-15
+## [1.1.0] - 2026-09-19
 
 ### Added
 
 - `module.json` module contract (`name`, `namespace`, `provider`, `version`, `description`, `enabled`, `requires`)
+- Semver constraints on `requires` (`^`, `~`, `>=`, and exact versions)
 - Module dependency detection, circular-dependency errors, and deterministic load order
 - Metadata cache with `module:cache`, `module:clear`, and `module:discover`
-- `module:list` status table (enabled, disabled, invalid, missing dependencies, cached)
-- Generators for controller, model, repository, service, request, resource, seeder, factory, policy, job, notification, command, test, and listener classes inside a module
+- Shared JSON registry (`bootstrap/cache/modules-registry.json`) written by `module:cache`
+- `module:list` status table (enabled, disabled, installing, broken, invalid, missing dependencies, cached)
+- Lifecycle events: `ModuleDiscovered`, `ModuleEnabled`, `ModuleDisabled`, `ModuleRegistered`, `ModuleBroken`
+- `.installing` and `.broken` marker files in addition to `.disabled`
+- Route-name collision detection (`modularization.routes.fail_on_collision`)
+- Per-module Vite inputs collected onto `modularization.vite.inputs`
+- `composer dump-autoload` after `module:make` (`dump_autoload`, skipped in testing)
+- Generators for controller, model, repository, service, request, resource, seeder, factory, policy, job, notification, command, test, listener, auth, manager, translation, livewire, export, and migrate
 - Optional `--no-repository` / `--no-service` module scaffolding
 - `--requires` on `module:make`
 - Package-specific exceptions with actionable messages
-- Laravel Pint, PHPStan, and GitHub Actions CI for PHP 8.1–8.3 and Laravel 10–12
+- Laravel Pint, PHPStan level 6 on the full `src/` tree, and GitHub Actions for PHP 8.1–8.3 and Laravel 10–12
+- Composer scripts: `test`, `test-coverage`, `format`, `format-check`, `analyse`, `ci`
 - `modules_path()` helper and a typed `ModuleManager` API behind the existing facade
+- `ModularizationService::VERSION` is `1.1.0`
 
 ### Changed
 
-- Split discovery, registration, caching, status, and generation out of the service provider and `MakeModuleCommand`
+- One runtime: `ModuleManager` plus contracts, implemented by the `src/` core (duplicate `Support\*` / `Services\*` runtimes removed)
+- Auth, manager, event, translation, livewire, export, and migrate commands delegate to generators
 - `enable()` / `disable()` persist through `.disabled` and invalidate the module cache
 - Livewire is a suggested dependency instead of a hard requirement
 - Generated stubs are typed PHP 8.1+ and keep module vs class namespaces distinct
 - `directories` and auto-register config keys are actually honored
 - Module names and generator paths are validated so they cannot leave the modules directory
 - Module cache ignores stored paths and reconstructs them from the module name; missing directories are dropped
+- Missing dependencies warn by default (`dependencies.warn_on_missing`) instead of only existing/enabled checks
 
 ### Fixed
 
@@ -34,10 +45,12 @@ All notable changes to this project will be documented in this file.
 - Missing `createTranslationFiles` path on module creation
 - Livewire view paths using mixed `resources` / `Resources` directories
 - `module:make` / `make:module` aliases not both being registered
+- Windows-style absolute paths and mixed separators in module path joining
+- Duplicate CI workflows racing the same jobs
 
 ### Upgrade
 
-See the README upgrade notes. Existing modules without `module.json` continue to load from `Config/config.php`.
+See [UPGRADE.md](UPGRADE.md). Existing modules without `module.json` continue to load from `Config/config.php`.
 
 ## [1.0.6] - 2024-05-31
 

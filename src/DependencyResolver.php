@@ -74,6 +74,13 @@ final class DependencyResolver
         foreach ($module->requires as $dependency) {
             if (! isset($modules[$dependency]) || ! $modules[$dependency]->enabled || ! $modules[$dependency]->valid) {
                 $missing[] = $dependency;
+
+                continue;
+            }
+
+            $requirement = $module->requirements()[$dependency] ?? new ModuleRequirement($dependency);
+            if (! $requirement->isSatisfiedBy($modules[$dependency]->version)) {
+                $missing[] = $dependency.'@'.$requirement->constraint;
             }
         }
 

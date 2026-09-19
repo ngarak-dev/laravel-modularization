@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace NgarakDev\Modularization\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Filesystem\Filesystem;
 use NgarakDev\Modularization\Console\Commands\Concerns\InteractsWithModules;
 
 /**
@@ -21,11 +20,6 @@ class ModuleToggleCommand extends Command
                             {--enable : Enable the module}';
 
     protected $description = 'Enable or disable a module';
-
-    public function __construct(?Filesystem $files = null)
-    {
-        parent::__construct();
-    }
 
     public function handle(): int
     {

@@ -42,8 +42,12 @@ use NgarakDev\Modularization\Contracts\ModuleLoaderInterface;
 use NgarakDev\Modularization\Contracts\ModuleRepositoryInterface;
 use NgarakDev\Modularization\Contracts\ModuleStatusManagerInterface;
 use NgarakDev\Modularization\DependencyResolver;
+use NgarakDev\Modularization\Generators\AuthModuleGenerator;
 use NgarakDev\Modularization\Generators\ClassGenerator;
+use NgarakDev\Modularization\Generators\ManagerModuleGenerator;
+use NgarakDev\Modularization\Generators\ModuleExporter;
 use NgarakDev\Modularization\Generators\ModuleGenerator;
+use NgarakDev\Modularization\Generators\ModuleMigrator;
 use NgarakDev\Modularization\ModularizationService;
 use NgarakDev\Modularization\ModuleCache;
 use NgarakDev\Modularization\ModuleConfiguration;
@@ -52,16 +56,11 @@ use NgarakDev\Modularization\ModuleManager;
 use NgarakDev\Modularization\ModuleManifest;
 use NgarakDev\Modularization\ModulePathResolver;
 use NgarakDev\Modularization\ModuleRegistrar;
+use NgarakDev\Modularization\ModuleRegistry;
 use NgarakDev\Modularization\ModuleStatusManager;
-use NgarakDev\Modularization\Services\DependencyResolver as ContractDependencyResolver;
-use NgarakDev\Modularization\Services\ModuleCache as ContractModuleCache;
-use NgarakDev\Modularization\Services\ModuleDiscovery as ContractModuleDiscovery;
-use NgarakDev\Modularization\Services\ModuleLoader;
-use NgarakDev\Modularization\Services\ModuleRepository as ContractModuleRepository;
-use NgarakDev\Modularization\Services\ModuleStatusManager as ContractModuleStatusManager;
+use NgarakDev\Modularization\RouteCollisionDetector;
 use NgarakDev\Modularization\StubLocator;
 use NgarakDev\Modularization\Support\ModuleNameValidator;
-use NgarakDev\Modularization\Support\ModulePathResolver as SupportModulePathResolver;
 use NgarakDev\Modularization\Support\StubRenderer;
 
 class ModularizationServiceProvider extends ServiceProvider
@@ -114,11 +113,19 @@ class ModularizationServiceProvider extends ServiceProvider
         $this->app->singleton(ModuleDiscovery::class);
         $this->app->singleton(DependencyResolver::class);
         $this->app->singleton(ModuleStatusManager::class);
+        $this->app->singleton(RouteCollisionDetector::class);
+        $this->app->singleton(ModuleRegistry::class);
         $this->app->singleton(ModuleRegistrar::class);
         $this->app->singleton(StubLocator::class);
         $this->app->singleton(ModuleGenerator::class);
         $this->app->singleton(ClassGenerator::class);
+        $this->app->singleton(AuthModuleGenerator::class);
+        $this->app->singleton(ManagerModuleGenerator::class);
+        $this->app->singleton(ModuleExporter::class);
+        $this->app->singleton(ModuleMigrator::class);
         $this->app->singleton(ModuleManager::class);
+        $this->app->singleton(ModuleNameValidator::class);
+        $this->app->singleton(StubRenderer::class);
 
         $this->app->singleton('modularization', function ($app) {
             return new ModularizationService($app['files'], $app->make(ModuleManager::class));
@@ -127,70 +134,11 @@ class ModularizationServiceProvider extends ServiceProvider
         $this->app->alias('modularization', ModularizationService::class);
         $this->app->alias(ModuleManager::class, 'modules');
 
-        $this->registerContractServices();
-    }
-
-    /**
-     * Register the contracts/services architecture alongside the concrete manager.
-     */
-    private function registerContractServices(): void
-    {
-        $this->app->singleton(SupportModulePathResolver::class, function ($app) {
-            return new SupportModulePathResolver($app);
-        });
-
-        $this->app->singleton(ModuleNameValidator::class);
-        $this->app->singleton(StubRenderer::class);
-
-        $this->app->singleton(ModuleDiscoveryInterface::class, function ($app) {
-            return new ContractModuleDiscovery(
-                $app,
-                $app['files'],
-                $app->make(SupportModulePathResolver::class),
-            );
-        });
-
-        $this->app->singleton(ModuleRepositoryInterface::class, function ($app) {
-            return new ContractModuleRepository(
-                $app->make(ModuleDiscoveryInterface::class),
-            );
-        });
-
-        $this->app->singleton(ModuleLoaderInterface::class, function ($app) {
-            return new ModuleLoader(
-                $app,
-                $app['files'],
-            );
-        });
-
-        $this->app->singleton(ModuleCacheInterface::class, function ($app) {
-            return new ContractModuleCache(
-                $app,
-                $app['files'],
-            );
-        });
-
-        $this->app->singleton(ModuleStatusManagerInterface::class, function ($app) {
-            return new ContractModuleStatusManager(
-                $app->make(ModuleRepositoryInterface::class),
-                $app->make(SupportModulePathResolver::class),
-                $app['files'],
-            );
-        });
-
-        $this->app->singleton(ContractDependencyResolver::class, function ($app) {
-            return new ContractDependencyResolver(
-                $app->make(ModuleRepositoryInterface::class),
-            );
-        });
-
-        $this->app->singleton(\NgarakDev\Modularization\Services\ModuleGenerator::class);
-
-        $this->app->alias(ModuleDiscoveryInterface::class, ContractModuleDiscovery::class);
-        $this->app->alias(ModuleRepositoryInterface::class, ContractModuleRepository::class);
-        $this->app->alias(ModuleCacheInterface::class, ContractModuleCache::class);
-        $this->app->alias(ModuleStatusManagerInterface::class, ContractModuleStatusManager::class);
-        $this->app->alias(ModuleLoaderInterface::class, ModuleLoader::class);
+        $this->app->bind(ModuleDiscoveryInterface::class, ModuleDiscovery::class);
+        $this->app->bind(ModuleRepositoryInterface::class, ModuleManager::class);
+        $this->app->bind(ModuleLoaderInterface::class, ModuleRegistrar::class);
+        $this->app->bind(ModuleCacheInterface::class, ModuleCache::class);
+        $this->app->bind(ModuleStatusManagerInterface::class, ModuleStatusManager::class);
     }
 
     public function boot(): void

@@ -16,6 +16,7 @@ final class Module implements ModuleInterface
      * @param  array<string, string|null>  $routes
      * @param  array<int, array{alias: string, class: string}>  $livewire
      * @param  array<int, string>  $configFiles
+     * @param  array<string, string>  $requirementConstraints
      */
     public function __construct(
         public readonly string $name,
@@ -37,6 +38,8 @@ final class Module implements ModuleInterface
         public readonly array $livewire = [],
         public readonly array $configFiles = [],
         public readonly ?string $manifestPath = null,
+        public readonly string $lifecycle = 'enabled',
+        public readonly array $requirementConstraints = [],
     ) {}
 
     /**
@@ -44,15 +47,42 @@ final class Module implements ModuleInterface
      */
     public static function fromArray(array $data): self
     {
+        $manifest = is_array($data['manifest'] ?? null) ? $data['manifest'] : [];
+        $requires = $data['requires'] ?? $manifest['requires'] ?? [];
+        $constraints = [];
+
+        if (is_array($data['requirement_constraints'] ?? null)) {
+            foreach ($data['requirement_constraints'] as $name => $constraint) {
+                $constraints[(string) $name] = (string) $constraint;
+            }
+        } elseif (is_array($requires)) {
+            foreach (ModuleRequirement::parseList($requires) as $name => $requirement) {
+                $constraints[$name] = $requirement->constraint;
+            }
+        }
+
+        if ($constraints !== []) {
+            $requireNames = array_keys($constraints);
+        } else {
+            $requireNames = array_values(array_map('strval', is_array($requires) ? array_values($requires) : []));
+        }
+
+        $lifecycle = (string) ($data['lifecycle'] ?? '');
+        $enabled = (bool) ($data['enabled'] ?? $manifest['enabled'] ?? true);
+
+        if ($lifecycle === '') {
+            $lifecycle = $enabled ? 'enabled' : 'disabled';
+        }
+
         return new self(
             name: (string) ($data['name'] ?? ''),
             path: (string) ($data['path'] ?? ''),
             namespace: (string) ($data['namespace'] ?? ''),
-            provider: isset($data['provider']) ? (string) $data['provider'] : null,
-            version: (string) ($data['version'] ?? '1.0.0'),
-            description: (string) ($data['description'] ?? ''),
-            enabled: (bool) ($data['enabled'] ?? true),
-            requires: array_values(array_map('strval', $data['requires'] ?? [])),
+            provider: isset($data['provider']) ? (string) $data['provider'] : (isset($manifest['provider']) ? (string) $manifest['provider'] : null),
+            version: (string) ($data['version'] ?? $manifest['version'] ?? '1.0.0'),
+            description: (string) ($data['description'] ?? $manifest['description'] ?? ''),
+            enabled: $enabled,
+            requires: $requireNames,
             cached: (bool) ($data['cached'] ?? false),
             valid: (bool) ($data['valid'] ?? true),
             invalidReason: isset($data['invalid_reason']) ? (string) $data['invalid_reason'] : null,
@@ -64,6 +94,8 @@ final class Module implements ModuleInterface
             livewire: is_array($data['livewire'] ?? null) ? $data['livewire'] : [],
             configFiles: array_values(array_map('strval', $data['config_files'] ?? [])),
             manifestPath: isset($data['manifest_path']) ? (string) $data['manifest_path'] : null,
+            lifecycle: $lifecycle,
+            requirementConstraints: $constraints,
         );
     }
 
@@ -124,7 +156,24 @@ final class Module implements ModuleInterface
             'livewire' => $this->livewire,
             'config_files' => $this->configFiles,
             'manifest_path' => $this->manifestPath,
+            'lifecycle' => $this->lifecycle,
+            'requirement_constraints' => $this->requirementConstraints,
+            'manifest' => [
+                'version' => $this->version,
+                'description' => $this->description,
+                'requires' => $this->requires,
+                'provider' => $this->provider,
+            ],
         ];
+    }
+
+    public function subPath(string $subPath = ''): string
+    {
+        if ($subPath === '') {
+            return $this->path;
+        }
+
+        return rtrim($this->path, '/\\').DIRECTORY_SEPARATOR.ltrim(str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $subPath), '/\\');
     }
 
     public function viewNamespace(): string
@@ -154,7 +203,28 @@ final class Module implements ModuleInterface
             livewire: $this->livewire,
             configFiles: $this->configFiles,
             manifestPath: $this->manifestPath,
+            lifecycle: $enabled ? 'enabled' : 'disabled',
+            requirementConstraints: $this->requirementConstraints,
         );
+    }
+
+    public function withLifecycle(string $lifecycle, ?string $invalidReason = null, ?bool $valid = null): self
+    {
+        $enabled = $lifecycle === 'enabled';
+
+        return $this->withEnabled($enabled)->replace([
+            'lifecycle' => $lifecycle,
+            'valid' => $valid ?? ($lifecycle !== 'broken'),
+            'invalid_reason' => $invalidReason ?? $this->invalidReason,
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     */
+    public function replace(array $overrides): self
+    {
+        return self::fromArray(array_merge($this->toArray(), $overrides));
     }
 
     public function markCached(): self
@@ -179,13 +249,19 @@ final class Module implements ModuleInterface
             livewire: $this->livewire,
             configFiles: $this->configFiles,
             manifestPath: $this->manifestPath,
+            lifecycle: $this->lifecycle,
+            requirementConstraints: $this->requirementConstraints,
         );
     }
 
     public function status(): string
     {
-        if (! $this->valid) {
-            return 'invalid';
+        if ($this->lifecycle === 'installing') {
+            return 'installing';
+        }
+
+        if (! $this->valid || $this->lifecycle === 'broken') {
+            return 'broken';
         }
 
         return $this->enabled ? 'enabled' : 'disabled';
@@ -240,5 +316,23 @@ final class Module implements ModuleInterface
     public function getVersion(): string
     {
         return $this->version;
+    }
+
+    /**
+     * @return array<string, ModuleRequirement>
+     */
+    public function requirements(): array
+    {
+        if ($this->requirementConstraints === []) {
+            return ModuleRequirement::parseList($this->requires);
+        }
+
+        $requirements = [];
+
+        foreach ($this->requirementConstraints as $name => $constraint) {
+            $requirements[$name] = new ModuleRequirement($name, $constraint);
+        }
+
+        return $requirements;
     }
 }

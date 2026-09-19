@@ -11,6 +11,8 @@ use Illuminate\Filesystem\Filesystem;
  */
 class ModularizationService
 {
+    public const VERSION = '1.1.0';
+
     public function __construct(
         protected Filesystem $files,
         protected ModuleManager $manager,

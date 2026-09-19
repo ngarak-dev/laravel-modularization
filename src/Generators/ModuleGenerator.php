@@ -36,8 +36,52 @@ final class ModuleGenerator
         $this->ensureComposerNamespace();
         $this->createDirectories($path);
         $created = array_merge($created, $this->createCoreFiles($module, $path, $options));
+        $created = array_merge($created, $this->writeViteAssets($module, $path));
 
         $this->cache->forget();
+        $this->dumpAutoload();
+
+        return $created;
+    }
+
+    /**
+     * @param  array<int, string>  $languages
+     * @return array<int, string>
+     */
+    public function generateTranslations(string $name, array $languages = [], bool $force = false): array
+    {
+        $module = ModuleName::parse($name);
+        $path = $this->paths->path($module->studly());
+
+        if (! $this->files->isDirectory($path)) {
+            throw \NgarakDev\Modularization\Exceptions\ModuleNotFoundException::make($module->studly(), $this->paths->modulesPath());
+        }
+
+        if ($languages === []) {
+            $languages = ['en', 'es', 'fr', 'de'];
+        }
+
+        $created = [];
+
+        foreach ($languages as $language) {
+            $lang = preg_replace('/[^a-zA-Z0-9_\-]/', '', (string) $language) ?: 'en';
+            $langDir = $path.'/Resources/lang/'.$lang;
+            $this->files->ensureDirectoryExists($langDir, 0755);
+
+            $files = [
+                $langDir.'/general.php' => $this->generalTranslationStub(),
+                $langDir.'/validation.php' => $this->validationTranslationStub(),
+                $langDir.'/'.$module->lower().'.php' => $this->moduleTranslationStub($module, $lang),
+            ];
+
+            foreach ($files as $target => $content) {
+                if ($this->files->exists($target) && ! $force) {
+                    continue;
+                }
+
+                $created[] = $this->writeRaw($target, $content);
+            }
+        }
 
         return $created;
     }
@@ -302,6 +346,54 @@ PHP;
         return $created;
     }
 
+    /**
+     * @return array<int, string>
+     */
+    private function writeViteAssets(ModuleName $module, string $path): array
+    {
+        $jsDir = $path.'/Resources/assets/js';
+        $cssDir = $path.'/Resources/assets/css';
+        $this->files->ensureDirectoryExists($jsDir, 0755);
+        $this->files->ensureDirectoryExists($cssDir, 0755);
+
+        return [
+            $this->writeRaw($jsDir.'/app.js', "// {$module->studly()} module entry\n"),
+            $this->writeRaw($cssDir.'/app.css', "/* {$module->studly()} module styles */\n"),
+        ];
+    }
+
+    private function dumpAutoload(): void
+    {
+        if (! $this->configuration->dumpAutoload()) {
+            return;
+        }
+
+        $composer = $this->composerBinary();
+
+        if ($composer === null) {
+            return;
+        }
+
+        $command = escapeshellarg($composer).' dump-autoload --no-interaction';
+        exec($command, $output, $status);
+    }
+
+    private function composerBinary(): ?string
+    {
+        $candidates = [
+            base_path('vendor/bin/composer'),
+            'composer',
+        ];
+
+        foreach ($candidates as $candidate) {
+            if ($candidate === 'composer' || is_file($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
     private function writeMigration(ModuleName $module, string $path): string
     {
         $table = $module->snakePlural();
@@ -469,12 +561,25 @@ PHP;
         return <<<'PHP'
 <?php
 
-return [
-    'required' => 'The :attribute field is required.',
-    'string' => 'The :attribute must be a string.',
-    'numeric' => 'The :attribute must be a number.',
-    'email' => 'The :attribute must be a valid email address.',
-];
+        return [
+            'required' => 'The :attribute field is required.',
+            'string' => 'The :attribute must be a string.',
+            'numeric' => 'The :attribute must be a number.',
+            'email' => 'The :attribute must be a valid email address.',
+            'min' => [
+                'string' => 'The :attribute must be at least :min characters.',
+                'numeric' => 'The :attribute must be at least :min.',
+                'array' => 'The :attribute must have at least :min items.',
+            ],
+            'max' => [
+                'string' => 'The :attribute must not exceed :max characters.',
+                'numeric' => 'The :attribute must not exceed :max.',
+                'array' => 'The :attribute must not have more than :max items.',
+            ],
+            'unique' => 'The :attribute has already been taken.',
+            'exists' => 'The selected :attribute is invalid.',
+            'date' => 'The :attribute is not a valid date.',
+        ];
 
 PHP;
     }

@@ -40,6 +40,7 @@ final class ClassGenerator
         'unit-test' => ['stub' => 'test', 'path' => 'Tests/Unit', 'suffix' => 'Test'],
         'middleware' => ['stub' => 'middleware', 'path' => 'Http/Middleware'],
         'observer' => ['stub' => 'observer', 'path' => 'Observers', 'suffix' => 'Observer'],
+        'livewire' => ['stub' => 'livewire-component', 'path' => 'Livewire'],
     ];
 
     public function __construct(
@@ -98,6 +99,9 @@ final class ClassGenerator
             '{{classNamespace}}' => $namespace,
             '{{moduleNamespace}}' => $this->configuration->namespace().'\\'.$module->studly(),
             '{{table}}' => Str::snake(Str::pluralStudly($classWithoutSuffix)),
+            '{{eventImport}}' => '',
+            '{{eventType}}' => 'object',
+            '{{eventName}}' => 'object',
         ], $extra);
 
         $content = $this->stubs->render($definition['stub'], $replacements);
@@ -110,6 +114,21 @@ final class ClassGenerator
         $this->files->put($target, $content);
 
         $created = [$target];
+
+        if ($type === 'livewire' && ! ($extra['class-only'] ?? false)) {
+            $viewName = $class->kebab();
+            $viewDir = $this->paths->join($modulePath, 'Resources/views/livewire');
+            $viewTarget = $viewDir.'/'.$viewName.'.blade.php';
+
+            if (! $this->files->exists($viewTarget) || $force) {
+                $view = $this->stubs->render('livewire-component-view', $replacements);
+                if ($view !== '') {
+                    $this->files->ensureDirectoryExists($viewDir, 0755);
+                    $this->files->put($viewTarget, $view);
+                    $created[] = $viewTarget;
+                }
+            }
+        }
 
         if ($type === 'repository') {
             $created = array_merge($created, $this->generate($moduleName, 'repository-interface', $className, $force, $extra));

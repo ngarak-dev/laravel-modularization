@@ -78,14 +78,27 @@ final class ModuleManifest
             $requires = [];
         }
 
+        $parsedRequires = ModuleRequirement::parseList($requires);
+
+        $lifecycle = (string) ($raw['lifecycle'] ?? '');
+        $enabled = (bool) ($raw['enabled'] ?? true);
+        if ($lifecycle === '') {
+            $lifecycle = $enabled ? 'enabled' : 'disabled';
+        }
+
         return [
             'name' => (string) ($raw['name'] ?? $parsed->studly()),
             'namespace' => (string) ($raw['namespace'] ?? $namespace.'\\'.$parsed->studly()),
             'provider' => (string) ($raw['provider'] ?? $namespace.'\\'.$parsed->studly().'\\Providers\\'.$parsed->studly().'ServiceProvider'),
             'version' => (string) ($raw['version'] ?? '1.0.0'),
             'description' => (string) ($raw['description'] ?? $parsed->studly().' module'),
-            'enabled' => (bool) ($raw['enabled'] ?? true),
-            'requires' => array_values(array_map('strval', $requires)),
+            'enabled' => $enabled,
+            'lifecycle' => $lifecycle,
+            'requires' => array_keys($parsedRequires),
+            'requirement_constraints' => array_map(
+                static fn (ModuleRequirement $requirement): string => $requirement->constraint,
+                $parsedRequires
+            ),
             'manifest_path' => $manifestPath,
             'path' => $modulePath,
         ];

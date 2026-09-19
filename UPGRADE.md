@@ -1,8 +1,8 @@
 # Upgrade Guide
 
-## Upgrading from 1.x to 2.0
+## Upgrading from 1.0 to 1.1.0
 
-Version 2.0 introduces a modernized architecture while maintaining backwards compatibility. Most existing code will continue to work without changes.
+Version 1.1.0 unifies discovery, caching, status, and registration behind `ModuleManager` while keeping the 1.x public API. Existing modules continue to load.
 
 ### New Features
 
@@ -16,48 +16,44 @@ Modules now support a `module.json` file:
     "description": "Product management",
     "version": "1.0.0",
     "enabled": true,
-    "requires": ["Users"]
+    "requires": ["Users:^1.0"]
 }
 ```
+
+`requires` entries may be plain names (`"Users"`), `Name:constraint` strings, or a map of name to constraint. Constraints use Composer-style `^`, `~`, `>=`, `<=`, `>`, `<`, or an exact version.
 
 To add a manifest to existing modules:
 
 ```bash
-# Create module.json in each module directory
 echo '{"name": "ModuleName", "version": "1.0.0", "enabled": true}' > modules/ModuleName/module.json
 ```
 
 #### New Commands
 
 ```bash
-# List all modules
 php artisan module:list
-
-# Cache modules for production
 php artisan module:cache
-
-# Clear module cache
 php artisan module:clear
+php artisan module:discover
 ```
 
-#### Module Dependencies
+`module:cache` also writes `bootstrap/cache/modules-registry.json` for other apps that need the same inventory.
 
-Add dependencies to `module.json`:
+#### Lifecycle
 
-```json
-{
-    "name": "Orders",
-    "requires": ["Products", "Users"]
-}
-```
+`.disabled`, `.installing`, and `.broken` marker files are honored. Listen for `ModuleDiscovered`, `ModuleEnabled`, `ModuleDisabled`, `ModuleRegistered`, and `ModuleBroken`.
+
+#### Route names
+
+Set `modularization.routes.fail_on_collision` to `true` to refuse booting when two enabled modules declare the same `->name()`.
 
 ### Breaking Changes
 
-None. All v1.x APIs continue to work in v2.0.
+None required for existing 1.x applications. Duplicate Support/Services runtime classes were removed; type-hint `ModuleManager` and the `Contracts\*` interfaces instead of the deleted `Support\Module*` / `Services\*` classes if you extended those internals.
 
 ### Deprecations
 
-The following are deprecated and will be removed in v3.0:
+The following remain available and will be removed in 2.0:
 
 #### ModularizationService
 
@@ -67,83 +63,19 @@ $service = app('modularization');
 $modules = $service->getModules();
 
 // Use instead
-$manager = app(ModuleManager::class);
+$manager = app(\NgarakDev\Modularization\ModuleManager::class);
 $modules = $manager->all();
 ```
 
-#### scanModules()
-
-```php
-// Deprecated
-$service->scanModules();
-
-// Use instead
-$manager->refresh();
-```
+Package version is `NgarakDev\Modularization\ModularizationService::VERSION` (`1.1.0`).
 
 ### Recommended Updates
 
-#### 1. Add module.json to existing modules
-
-```json
-{
-    "name": "YourModule",
-    "description": "Module description",
-    "version": "1.0.0",
-    "enabled": true,
-    "provider": "Modules\\YourModule\\Providers\\YourModuleServiceProvider",
-    "requires": []
-}
-```
-
-#### 2. Use ModuleManager instead of ModularizationService
-
-```php
-// Before
-use NgarakDev\Modularization\ModularizationService;
-
-$service = app(ModularizationService::class);
-$modules = $service->getModules();
-
-// After
-use NgarakDev\Modularization\ModuleManager;
-
-$manager = app(ModuleManager::class);
-$modules = $manager->all();
-```
-
-#### 3. Use typed stubs
-
-Regenerate stubs to get modern PHP features:
-
-```bash
-php artisan module:publish-stubs
-```
-
-#### 4. Enable caching in production
-
-```bash
-# In deployment script
-php artisan module:cache
-```
-
-### Configuration Changes
-
-New configuration options in `config/modularization.php`:
-
-```php
-return [
-    // Existing options...
-    
-    // New: Cache settings
-    'cache' => [
-        'enabled' => env('MODULES_CACHE', false),
-        'path' => env('MODULES_CACHE_PATH', null),
-    ],
-];
-```
-
-To update your config:
+1. Add `module.json` to existing modules.
+2. Prefer `ModuleManager` over `ModularizationService`.
+3. Run `php artisan module:publish-stubs` to pick up typed stubs.
+4. Run `php artisan module:cache` in production deploys.
+5. Set `dump_autoload` if you want `module:make` to refresh Composer automatically.
 
 ```bash
 php artisan vendor:publish --tag=modularization-config --force

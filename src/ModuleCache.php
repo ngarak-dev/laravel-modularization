@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NgarakDev\Modularization;
 
 use Illuminate\Filesystem\Filesystem;
+use NgarakDev\Modularization\Contracts\ModuleCacheInterface;
 use NgarakDev\Modularization\Exceptions\InvalidModuleException;
 use NgarakDev\Modularization\Support\ModuleName;
 use Throwable;
@@ -12,7 +13,7 @@ use Throwable;
 /**
  * Persists discovered module metadata so production boots skip filesystem scans.
  */
-final class ModuleCache
+final class ModuleCache implements ModuleCacheInterface
 {
     public const VERSION = 1;
 
@@ -117,5 +118,36 @@ final class ModuleCache
         }
 
         return false;
+    }
+
+    public function isCached(): bool
+    {
+        return $this->exists();
+    }
+
+    /**
+     * @param  array<string, Module>  $modules
+     */
+    public function write(array $modules): string
+    {
+        return $this->put($modules);
+    }
+
+    /**
+     * @return array<string, Module>|null
+     */
+    public function load(): ?array
+    {
+        return $this->get();
+    }
+
+    public function clear(): bool
+    {
+        return $this->forget();
+    }
+
+    public function getCachePath(): string
+    {
+        return $this->configuration->cachePath();
     }
 }

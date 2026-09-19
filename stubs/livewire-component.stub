@@ -1,0 +1,15 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{classNamespace}};
+
+use Livewire\Component;
+
+class {{className}} extends Component
+{
+    public function render()
+    {
+        return view('{{moduleNameLower}}.livewire.{{classNameLower}}');
+    }
+}

@@ -12,33 +12,21 @@ use NgarakDev\Modularization\Exceptions\ModuleNotFoundException;
 interface ModuleStatusManagerInterface
 {
     /**
-     * Enable a module.
-     *
      * @throws ModuleNotFoundException
      */
-    public function enable(string $name): void;
+    public function enable(string $name): bool;
 
     /**
-     * Disable a module.
-     *
      * @throws ModuleNotFoundException
      */
-    public function disable(string $name): void;
+    public function disable(string $name): bool;
 
-    /**
-     * Check if a module is enabled.
-     */
     public function isEnabled(string $name): bool;
 
-    /**
-     * Check if a module is disabled.
-     */
     public function isDisabled(string $name): bool;
 
     /**
-     * Toggle module status.
-     *
-     * @return bool Returns true if module is now enabled, false if disabled
+     * @return bool True when the module is enabled after toggling
      *
      * @throws ModuleNotFoundException
      */

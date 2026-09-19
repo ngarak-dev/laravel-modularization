@@ -7,6 +7,8 @@ namespace NgarakDev\Modularization;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
 use Livewire\Component;
+use NgarakDev\Modularization\Contracts\ModuleDiscoveryInterface;
+use NgarakDev\Modularization\Events\ModuleDiscovered;
 use NgarakDev\Modularization\Exceptions\InvalidModuleException;
 use NgarakDev\Modularization\Support\ModuleName;
 use ReflectionClass;
@@ -14,7 +16,7 @@ use ReflectionClass;
 /**
  * Discovers modules from the filesystem or a compiled cache.
  */
-final class ModuleDiscovery
+final class ModuleDiscovery implements ModuleDiscoveryInterface
 {
     public function __construct(
         private readonly Filesystem $files,
@@ -66,7 +68,33 @@ final class ModuleDiscovery
 
         ksort($modules);
 
+        foreach ($modules as $module) {
+            if (function_exists('event')) {
+                event(new ModuleDiscovered($module));
+            }
+        }
+
         return $modules;
+    }
+
+    public function isValidModuleName(string $name): bool
+    {
+        try {
+            ModuleName::parse($name);
+
+            return true;
+        } catch (InvalidModuleException) {
+            return false;
+        }
+    }
+
+    public function exists(string $name): bool
+    {
+        try {
+            return $this->files->isDirectory($this->paths->path($name));
+        } catch (InvalidModuleException) {
+            return false;
+        }
     }
 
     public function inspect(string $name, ?string $directory = null): Module
@@ -74,7 +102,20 @@ final class ModuleDiscovery
         $directory ??= $this->paths->path($name);
         $meta = $this->manifest->read($directory, $name);
         $disabledFile = $this->paths->join($directory, '.disabled');
+        $installingFile = $this->paths->join($directory, '.installing');
+        $brokenFile = $this->paths->join($directory, '.broken');
         $enabled = (bool) ($meta['enabled'] ?? true) && ! $this->files->exists($disabledFile);
+
+        $lifecycle = (string) ($meta['lifecycle'] ?? '');
+        if ($this->files->exists($installingFile)) {
+            $lifecycle = 'installing';
+            $enabled = false;
+        } elseif ($this->files->exists($brokenFile)) {
+            $lifecycle = 'broken';
+            $enabled = false;
+        } elseif ($lifecycle === '') {
+            $lifecycle = $enabled ? 'enabled' : 'disabled';
+        }
 
         $provider = isset($meta['provider']) ? (string) $meta['provider'] : null;
         $providerRelative = $this->paths->firstExistingFile($directory, [
@@ -104,8 +145,8 @@ final class ModuleDiscovery
             enabled: $enabled,
             requires: $meta['requires'] ?? [],
             cached: false,
-            valid: $valid,
-            invalidReason: $invalidReason,
+            valid: $valid && $lifecycle !== 'broken',
+            invalidReason: $invalidReason ?? ($lifecycle === 'broken' ? 'module marked broken' : null),
             routes: $this->discoverRoutes($directory),
             views: $this->paths->firstExistingDirectory($directory, ['Resources/views', 'resources/views']),
             translations: $this->paths->firstExistingDirectory($directory, ['Resources/lang', 'resources/lang', 'Resources/lang/vendor']),
@@ -114,6 +155,8 @@ final class ModuleDiscovery
             livewire: $this->discoverLivewire($directory, (string) $meta['namespace'], $name),
             configFiles: $this->discoverConfigFiles($directory),
             manifestPath: isset($meta['manifest_path']) ? (string) $meta['manifest_path'] : null,
+            lifecycle: $lifecycle,
+            requirementConstraints: is_array($meta['requirement_constraints'] ?? null) ? $meta['requirement_constraints'] : [],
         );
     }
 

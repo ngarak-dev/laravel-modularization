@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace NgarakDev\Modularization\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Filesystem\Filesystem;
 use NgarakDev\Modularization\Console\Commands\Concerns\InteractsWithModules;
 use NgarakDev\Modularization\Exceptions\InvalidModuleException;
 use NgarakDev\Modularization\Exceptions\ModuleGenerationException;
@@ -40,11 +39,6 @@ class MakeModuleCommand extends Command
                         {--no-service : Skip service scaffolding}';
 
     protected $description = 'Create a new module with optional repository and service layers';
-
-    public function __construct(?Filesystem $files = null)
-    {
-        parent::__construct();
-    }
 
     public function handle(ModuleGenerator $generator): int
     {

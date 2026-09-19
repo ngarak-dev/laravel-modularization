@@ -5,16 +5,10 @@ declare(strict_types=1);
 namespace NgarakDev\Modularization\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\File;
+use NgarakDev\Modularization\Generators\ModuleMigrator;
 
 class MigrateModulesCommand extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'module:migrate-all
                             {--force : Force the operation to run when in production}
                             {--seed : Indicates if the seed task should be re-run}
@@ -27,155 +21,59 @@ class MigrateModulesCommand extends Command
                             {--reset : Rollback all database migrations}
                             {--refresh : Reset and re-run all migrations}';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Run migrations for all modules';
 
-    /**
-     * Execute the console command.
-     *
-     * @return int
-     */
-    public function handle()
+    public function handle(ModuleMigrator $migrator): int
     {
-        $modulesPath = base_path(config('modularization.modules_path', 'modules'));
+        $options = [
+            'force' => (bool) $this->option('force'),
+            'seed' => (bool) $this->option('seed'),
+            'step' => (bool) $this->option('step'),
+            'pretend' => (bool) $this->option('pretend'),
+            'only-enabled' => (bool) $this->option('only-enabled'),
+            'fresh' => (bool) $this->option('fresh'),
+            'rollback' => (bool) $this->option('rollback'),
+            'status' => (bool) $this->option('status'),
+            'reset' => (bool) $this->option('reset'),
+            'refresh' => (bool) $this->option('refresh'),
+        ];
 
-        // Check if modules directory exists
-        if (! File::isDirectory($modulesPath)) {
-            $this->error('Modules directory does not exist.');
-
-            return 1;
-        }
-
-        // Get all module directories
-        $modules = collect(File::directories($modulesPath))
-            ->map(function ($directory) {
-                return basename($directory);
-            });
-
-        if ($modules->isEmpty()) {
-            $this->warn('No modules found.');
-
-            return 0;
-        }
-
-        // Determine which migrate command is being requested
         $action = 'migration';
-        if ($this->option('fresh')) {
+        if ($options['fresh']) {
             $action = 'fresh migration';
-        } elseif ($this->option('rollback')) {
+        } elseif ($options['rollback']) {
             $action = 'rollback';
-        } elseif ($this->option('status')) {
+        } elseif ($options['status']) {
             $action = 'status check';
-        } elseif ($this->option('reset')) {
+        } elseif ($options['reset']) {
             $action = 'reset';
-        } elseif ($this->option('refresh')) {
+        } elseif ($options['refresh']) {
             $action = 'refresh';
         }
 
-        $onlyEnabled = $this->option('only-enabled');
-        $failedModules = [];
-        $successCount = 0;
+        $this->info('Starting '.$action.' process for all modules'.($options['only-enabled'] ? ' (enabled only)' : '').'...');
 
-        // Process each module
-        $this->info("Starting {$action} process for all modules".($onlyEnabled ? ' (enabled only)' : '').'...');
+        $result = $migrator->migrateAll($options);
 
-        foreach ($modules as $module) {
-            // Skip disabled modules if only-enabled flag is set
-            if ($onlyEnabled) {
-                $isDisabled = File::exists($modulesPath.'/'.$module.'/.disabled');
-                $configFile = $modulesPath.'/'.$module.'/Config/config.php';
+        foreach ($result['messages'] as $message) {
+            match ($message['type']) {
+                'error' => $this->error($message['text']),
+                'warn' => $this->warn($message['text']),
+                'write' => $this->output->write($message['text']),
+                default => $this->info($message['text']),
+            };
+        }
 
-                if ($isDisabled) {
-                    $this->info("Skipping disabled module [{$module}]");
+        if ($result['messages'] !== [] && ($result['success'] > 0 || $result['failed'] !== [])) {
+            $this->newLine();
+            $this->info('Migration Summary:');
+            $this->info('- '.$result['success'].' modules processed successfully');
 
-                    continue;
-                }
-
-                if (File::exists($configFile)) {
-                    $config = include $configFile;
-                    if (isset($config['enabled']) && $config['enabled'] === false) {
-                        $this->info("Skipping disabled module [{$module}] (per config)");
-
-                        continue;
-                    }
-                }
-            }
-
-            // First check if the module has migrations
-            $migrationsPath = $modulesPath.'/'.$module.'/Database/Migrations';
-            if (! File::isDirectory($migrationsPath) || count(File::glob($migrationsPath.'/*.php')) === 0) {
-                $this->info("Skipping module [{$module}] - no migrations found.");
-
-                continue;
-            }
-
-            // Build command options - always pass all options to the module:migrate command
-            // which will handle module-specific migrations safely
-            $options = ['name' => $module];
-
-            if ($this->option('force')) {
-                $options['--force'] = true;
-            }
-
-            if ($this->option('seed')) {
-                $options['--seed'] = true;
-            }
-
-            if ($this->option('step')) {
-                $options['--step'] = true;
-            }
-
-            if ($this->option('pretend')) {
-                $options['--pretend'] = true;
-            }
-
-            if ($this->option('fresh')) {
-                $options['--fresh'] = true;
-            }
-
-            if ($this->option('rollback')) {
-                $options['--rollback'] = true;
-            }
-
-            if ($this->option('status')) {
-                $options['--status'] = true;
-            }
-
-            if ($this->option('reset')) {
-                $options['--reset'] = true;
-            }
-
-            if ($this->option('refresh')) {
-                $options['--refresh'] = true;
-            }
-
-            // Execute migration for this module using module:migrate which ensures scope safety
-            $this->info("\nProcessing {$action} for module [{$module}]...");
-            $result = Artisan::call('module:migrate', $options);
-
-            $this->output->write(Artisan::output());
-
-            if ($result !== 0) {
-                $failedModules[] = $module;
-            } else {
-                $successCount++;
+            if ($result['failed'] !== []) {
+                $this->error('- '.count($result['failed']).' modules failed: '.implode(', ', $result['failed']));
             }
         }
 
-        $this->newLine();
-        $this->info('Migration Summary:');
-        $this->info("- {$successCount} modules processed successfully");
-
-        if (count($failedModules) > 0) {
-            $this->error('- '.count($failedModules).' modules failed: '.implode(', ', $failedModules));
-
-            return 1;
-        }
-
-        return 0;
+        return $result['exit'];
     }
 }

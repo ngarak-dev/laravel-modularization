@@ -57,9 +57,16 @@
     },
     "scripts": {
         "test": "phpunit",
+        "test-coverage": "phpunit --coverage-text",
         "pint": "pint",
         "format": "pint",
-        "analyse": "phpstan analyse --memory-limit=512M"
+        "format-check": "pint --test",
+        "analyse": "phpstan analyse --memory-limit=512M",
+        "ci": [
+            "@format-check",
+            "@analyse",
+            "@test"
+        ]
     },
     "minimum-stability": "stable",
     "prefer-stable": true,

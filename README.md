@@ -2,6 +2,8 @@
 
 A Laravel package for organizing applications by **business domain**. Each module owns its routes, views, migrations, and (optionally) repositories and services.
 
+**Current version: 1.1.0**
+
 This package is not a clone of `nwidart/laravel-modules`. It stays small, uses Laravel’s own service providers and generators, and treats the repository/service layers as optional scaffolding rather than a required architecture.
 
 ## Requirements
@@ -126,13 +128,17 @@ Enabled modules automatically register:
 
 Route files are loaded in module-name order after dependency sorting, so load order is deterministic. Avoid colliding route names across modules (`billing.orders.index` vs `orders.index`).
 
-Place Vite-friendly assets in `Resources/assets` and publish them with:
+Place Vite-friendly assets in `Resources/assets/js/app.js` and `Resources/assets/css/app.css`. When `modularization.assets.vite` is true, those files are collected onto `config('modularization.vite.inputs')` so the application Vite config can spread them:
 
-```bash
-php artisan vendor:publish --tag=billing-assets
+```js
+input: [
+  'resources/css/app.css',
+  'resources/js/app.js',
+  ...(process.env.MODULES_VITE_INPUTS?.split(',') ?? []),
+]
 ```
 
-Or import them from your application’s Vite config. The package does not invent a frontend build.
+Or read `bootstrap/cache/modules-registry.json` after `php artisan module:cache`. The package does not run Vite itself.
 
 Set `auto_register_controllers` to `false` if a module service provider already loads its own routes.
 
@@ -178,17 +184,24 @@ php artisan module:make-manager
 
 ## Dependencies
 
-`requires` in `module.json` is a list of module names. The package:
+`requires` in `module.json` is a list of module names, optionally with Composer-style version constraints:
 
-1. Detects the dependency
-2. Checks that it exists
+```json
+{
+    "requires": ["Users", "Billing:^1.2"]
+}
+```
+
+Associative form also works: `"requires": { "Users": "^1.0" }`. Constraints (`^`, `~`, `>=`, `<=`, `>`, `<`, exact) are checked against the dependency's `version`. Missing, disabled, invalid, or unsatisfied dependencies skip that module unless `modularization.dependencies.fail_on_missing` is `true`. Duplicate Laravel route names across enabled modules can fail boot when `modularization.routes.fail_on_collision` is `true`.
+
+The package:
+
+1. Parses each requirement and its version constraint
+2. Checks that the module exists, is enabled, and satisfies the constraint
 3. Detects circular graphs
 4. Boots modules in dependency order
 5. Shows missing dependencies in `module:list`
-
-Version constraints are not evaluated. Keep the list as names only.
-
-`modularization.dependencies.fail_on_missing` defaults to `false` so a missing dependency skips that module instead of taking down the application. Set it to `true` if you want a boot-time exception.
+6. Warns (by default) when a requirement cannot be satisfied
 
 ## Enable, disable, list, cache
 
@@ -201,7 +214,7 @@ php artisan module:cache
 php artisan module:clear
 ```
 
-`module:list` shows enabled, disabled, invalid, missing-dependency, and cached state.
+`module:list` shows enabled, disabled, installing, broken, invalid, missing-dependency, and cached state. Marker files `.disabled`, `.installing`, and `.broken` participate in that status. Enable/disable also dispatch `ModuleEnabled` / `ModuleDisabled`; discovery dispatches `ModuleDiscovered`.
 
 In production, run `module:cache` during deploy (it is hooked into `php artisan optimize` on Laravel 11+). Changing enable/disable clears the cache so stale metadata cannot hide a disabled module. If a cache file exists but the configured `modules_path` changed, the cache is ignored.
 
@@ -236,7 +249,12 @@ Publish `config/modularization.php` to change:
 | `auto_register_livewire` | Register Livewire components |
 | `scaffold.repositories` / `scaffold.services` | Default scaffolding |
 | `cache.path` / `cache.enabled` | Compiled module metadata |
+| `registry.path` | Shared JSON inventory written by `module:cache` |
 | `dependencies.fail_on_missing` | Throw on missing `requires` |
+| `dependencies.warn_on_missing` | Log when a module is skipped |
+| `routes.fail_on_collision` | Throw when two modules share a route name |
+| `assets.vite` | Collect per-module Vite inputs |
+| `dump_autoload` | Run `composer dump-autoload` after `module:make` |
 | `update_composer` | Add the namespace to `composer.json` |
 
 Invalid `modules_path` or `namespace` values fail with a clear error. Unused keys from earlier versions (`enforce_repository_pattern`) still exist so existing config files keep working.

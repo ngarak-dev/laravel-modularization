@@ -4,27 +4,29 @@ declare(strict_types=1);
 
 namespace NgarakDev\Modularization\Tests\Unit;
 
+use NgarakDev\Modularization\DependencyResolver;
+use NgarakDev\Modularization\Exceptions\CircularModuleDependencyException;
 use NgarakDev\Modularization\Exceptions\ModuleDependencyException;
 use NgarakDev\Modularization\Module;
-use NgarakDev\Modularization\Support\ModuleDependencyResolver;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class ModuleDependencyResolverTest extends TestCase
 {
-    private function makeModule(string $name, array $requires = [], bool $enabled = true): Module
+    private function makeModule(string $name, array $requires = [], bool $enabled = true, string $version = '1.0.0'): Module
     {
         return new Module(
             name: $name,
             path: '/modules/'.$name,
-            enabled: $enabled,
             namespace: 'Modules\\'.$name,
-            version: '1.0.0',
-            description: '',
+            version: $version,
+            enabled: $enabled,
             requires: $requires,
+            requirementConstraints: array_fill_keys($requires, '*'),
         );
     }
 
-    /** @test */
+    #[Test]
     public function it_resolves_modules_with_no_dependencies(): void
     {
         $modules = [
@@ -32,15 +34,14 @@ class ModuleDependencyResolverTest extends TestCase
             'Beta' => $this->makeModule('Beta'),
         ];
 
-        $resolver = new ModuleDependencyResolver($modules);
-        $resolved = $resolver->resolve();
+        $resolved = (new DependencyResolver)->sort($modules);
 
         $this->assertCount(2, $resolved);
         $this->assertArrayHasKey('Alpha', $resolved);
         $this->assertArrayHasKey('Beta', $resolved);
     }
 
-    /** @test */
+    #[Test]
     public function it_resolves_modules_in_dependency_order(): void
     {
         $modules = [
@@ -49,145 +50,109 @@ class ModuleDependencyResolverTest extends TestCase
             'Payments' => $this->makeModule('Payments', ['Users', 'Orders']),
         ];
 
-        $resolver = new ModuleDependencyResolver($modules);
-        $resolved = $resolver->resolve();
-        $names = array_keys($resolved);
+        $names = array_keys((new DependencyResolver)->sort($modules));
 
-        $usersPos = array_search('Users', $names, true);
-        $ordersPos = array_search('Orders', $names, true);
-        $paymentsPos = array_search('Payments', $names, true);
-
-        $this->assertLessThan($ordersPos, $usersPos, 'Users must load before Orders');
-        $this->assertLessThan($paymentsPos, $ordersPos, 'Orders must load before Payments');
-        $this->assertLessThan($paymentsPos, $usersPos, 'Users must load before Payments');
+        $this->assertLessThan(array_search('Orders', $names, true), array_search('Users', $names, true));
+        $this->assertLessThan(array_search('Payments', $names, true), array_search('Orders', $names, true));
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_when_dependency_is_missing(): void
     {
-        $modules = [
-            'Orders' => $this->makeModule('Orders', ['Users']),
-        ];
-
         $this->expectException(ModuleDependencyException::class);
         $this->expectExceptionMessageMatches('/Users/');
 
-        $resolver = new ModuleDependencyResolver($modules);
-        $resolver->validate();
+        (new DependencyResolver)->sort([
+            'Orders' => $this->makeModule('Orders', ['Users']),
+        ], true);
     }
 
-    /** @test */
-    public function it_throws_when_dependency_is_disabled(): void
+    #[Test]
+    public function it_reports_disabled_dependencies_as_missing(): void
     {
+        $resolver = new DependencyResolver;
         $modules = [
             'Orders' => $this->makeModule('Orders', ['Users']),
             'Users' => $this->makeModule('Users', [], false),
         ];
 
-        $this->expectException(ModuleDependencyException::class);
-
-        $resolver = new ModuleDependencyResolver($modules);
-        $resolver->validate();
+        $this->assertSame(['Users'], $resolver->missingDependencies($modules['Orders'], $modules));
     }
 
-    /** @test */
+    #[Test]
     public function it_detects_direct_circular_dependency(): void
     {
-        $modules = [
-            'Alpha' => $this->makeModule('Alpha', ['Beta']),
-            'Beta' => $this->makeModule('Beta', ['Alpha']),
-        ];
-
-        $this->expectException(ModuleDependencyException::class);
+        $this->expectException(CircularModuleDependencyException::class);
         $this->expectExceptionMessageMatches('/circular/i');
 
-        $resolver = new ModuleDependencyResolver($modules);
-        $resolver->resolve();
+        (new DependencyResolver)->sort([
+            'Alpha' => $this->makeModule('Alpha', ['Beta']),
+            'Beta' => $this->makeModule('Beta', ['Alpha']),
+        ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_detects_indirect_circular_dependency(): void
     {
-        $modules = [
+        $this->expectException(CircularModuleDependencyException::class);
+
+        (new DependencyResolver)->sort([
             'A' => $this->makeModule('A', ['B']),
             'B' => $this->makeModule('B', ['C']),
             'C' => $this->makeModule('C', ['A']),
-        ];
-
-        $this->expectException(ModuleDependencyException::class);
-        $this->expectExceptionMessageMatches('/circular/i');
-
-        $resolver = new ModuleDependencyResolver($modules);
-        $resolver->resolve();
+        ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_resolves_a_chain_of_dependencies(): void
     {
-        $modules = [
+        $resolved = (new DependencyResolver)->sort([
             'D' => $this->makeModule('D', ['C']),
             'C' => $this->makeModule('C', ['B']),
             'B' => $this->makeModule('B', ['A']),
             'A' => $this->makeModule('A'),
-        ];
+        ]);
 
-        $resolver = new ModuleDependencyResolver($modules);
-        $resolved = $resolver->resolve();
-        $names = array_keys($resolved);
-
-        $this->assertSame(
-            ['A', 'B', 'C', 'D'],
-            $names,
-            'Modules should be resolved in chain order A→B→C→D'
-        );
+        $this->assertSame(['A', 'B', 'C', 'D'], array_keys($resolved));
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_module_with_multiple_dependencies(): void
     {
-        $modules = [
+        $names = array_keys((new DependencyResolver)->sort([
             'Shipping' => $this->makeModule('Shipping', ['Orders', 'Products']),
             'Products' => $this->makeModule('Products'),
             'Orders' => $this->makeModule('Orders', ['Products']),
-        ];
+        ]));
 
-        $resolver = new ModuleDependencyResolver($modules);
-        $resolved = $resolver->resolve();
-
-        $names = array_keys($resolved);
-        $this->assertContains('Products', $names);
-        $this->assertLessThan(
-            array_search('Orders', $names, true),
-            array_search('Products', $names, true)
-        );
-        $this->assertLessThan(
-            array_search('Shipping', $names, true),
-            array_search('Orders', $names, true)
-        );
+        $this->assertLessThan(array_search('Orders', $names, true), array_search('Products', $names, true));
+        $this->assertLessThan(array_search('Shipping', $names, true), array_search('Orders', $names, true));
     }
 
-    /** @test */
+    #[Test]
     public function it_resolves_empty_module_list(): void
     {
-        $resolver = new ModuleDependencyResolver([]);
-        $resolved = $resolver->resolve();
-
-        $this->assertIsArray($resolved);
-        $this->assertEmpty($resolved);
+        $this->assertSame([], (new DependencyResolver)->sort([]));
     }
 
-    /** @test */
-    public function validate_passes_when_all_dependencies_are_met(): void
+    #[Test]
+    public function unsatisfied_semver_constraints_are_missing_dependencies(): void
     {
-        $modules = [
-            'Orders' => $this->makeModule('Orders', ['Users']),
-            'Users' => $this->makeModule('Users'),
-        ];
+        $orders = new Module(
+            name: 'Orders',
+            path: '/modules/Orders',
+            namespace: 'Modules\\Orders',
+            requires: ['Users'],
+            requirementConstraints: ['Users' => '^2.0'],
+        );
+        $users = $this->makeModule('Users', [], true, '1.4.0');
 
-        $resolver = new ModuleDependencyResolver($modules);
+        $missing = (new DependencyResolver)->missingDependencies($orders, [
+            'Orders' => $orders,
+            'Users' => $users,
+        ]);
 
-        // Should not throw
-        $resolver->validate();
-        $this->assertTrue(true);
+        $this->assertNotEmpty($missing);
+        $this->assertStringContainsString('Users', $missing[0]);
     }
 }

@@ -22,7 +22,7 @@ Thank you for considering contributing to Laravel Modularization!
 composer test
 
 # Run specific test file
-vendor/bin/phpunit tests/Unit/Support/ModuleTest.php
+vendor/bin/phpunit tests/Unit/ModuleTest.php
 
 # Run with coverage
 composer test-coverage

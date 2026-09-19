@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace NgarakDev\Modularization;
 
 use Illuminate\Support\Collection;
+use NgarakDev\Modularization\Contracts\ModuleRepositoryInterface;
 use NgarakDev\Modularization\Exceptions\ModuleNotFoundException;
 use NgarakDev\Modularization\Support\ModuleName;
 
 /**
  * Primary package API for discovering, inspecting, and managing modules.
  */
-final class ModuleManager
+final class ModuleManager implements ModuleRepositoryInterface
 {
     /**
      * @var array<string, Module>|null
@@ -26,6 +27,8 @@ final class ModuleManager
         private readonly ModuleRegistrar $registrar,
         private readonly ModuleConfiguration $configuration,
         private readonly DependencyResolver $dependencies,
+        private readonly RouteCollisionDetector $collisions,
+        private readonly ModuleRegistry $registry,
     ) {}
 
     /**
@@ -117,6 +120,37 @@ final class ModuleManager
         return collect($dependents);
     }
 
+    /**
+     * @return array<string, Module>
+     */
+    public function enabled(): array
+    {
+        return array_filter($this->all(), static fn (Module $module): bool => $module->enabled);
+    }
+
+    /**
+     * @return array<string, Module>
+     */
+    public function disabled(): array
+    {
+        return array_filter($this->all(), static fn (Module $module): bool => ! $module->enabled);
+    }
+
+    public function findOrFail(string $name): Module
+    {
+        return $this->get($name);
+    }
+
+    public function count(): int
+    {
+        return count($this->all());
+    }
+
+    public function exportRegistry(?string $path = null): string
+    {
+        return $this->registry->write($this->all(), $path);
+    }
+
     public function hasModule(string $name): bool
     {
         try {
@@ -198,9 +232,15 @@ final class ModuleManager
     {
         $modules = $this->discovery->scan();
         $path = $this->cache->put($modules);
+        $this->registry->write($modules);
         $this->modules = $modules;
 
         return $path;
+    }
+
+    public function refresh(): void
+    {
+        $this->modules = null;
     }
 
     public function clearCache(): bool
@@ -218,7 +258,13 @@ final class ModuleManager
 
     public function boot(): void
     {
-        $this->registrar->registerAll($this->all());
+        $modules = $this->all();
+
+        if ($this->configuration->failOnRouteCollision()) {
+            $this->collisions->assertNone($modules);
+        }
+
+        $this->registrar->registerAll($modules);
     }
 
     /**
@@ -240,8 +286,8 @@ final class ModuleManager
         return $this->dependencies->missingDependencies($this->get($name), $this->all());
     }
 
-    public function refresh(): void
+    public function getOrderedByDependencies(): array
     {
-        $this->modules = null;
+        return $this->inLoadOrder();
     }
 }

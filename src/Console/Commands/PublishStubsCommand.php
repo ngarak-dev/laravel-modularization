@@ -14,11 +14,6 @@ class PublishStubsCommand extends Command
 
     protected $description = 'Publish stubs for customization';
 
-    public function __construct(?Filesystem $files = null)
-    {
-        parent::__construct();
-    }
-
     public function handle(Filesystem $files, StubLocator $stubs): int
     {
         $sourcePath = $stubs->packageStubsPath();

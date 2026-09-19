@@ -142,6 +142,45 @@ return [
     */
     'dependencies' => [
         'fail_on_missing' => false,
+        'warn_on_missing' => true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Route name collisions
+    |--------------------------------------------------------------------------
+    |
+    | When true, booting modules that declare the same ->name() value throws.
+    |
+    */
+    'routes' => [
+        'fail_on_collision' => false,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Shared registry
+    |--------------------------------------------------------------------------
+    |
+    | JSON snapshot written alongside module:cache so other apps can read the
+    | same module inventory without scanning the filesystem.
+    |
+    */
+    'registry' => [
+        'path' => 'bootstrap/cache/modules-registry.json',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Frontend assets
+    |--------------------------------------------------------------------------
+    |
+    | When true, each module's Resources/assets/js/app.js and css/app.css are
+    | collected onto config('modularization.vite.inputs') for the app Vite file.
+    |
+    */
+    'assets' => [
+        'vite' => true,
     ],
 
     /*
@@ -163,4 +202,15 @@ return [
     |
     */
     'update_composer' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Composer dump-autoload
+    |--------------------------------------------------------------------------
+    |
+    | Run `composer dump-autoload` after creating a module so new PSR-4 classes
+    | resolve immediately. Disabled automatically during package tests.
+    |
+    */
+    'dump_autoload' => env('APP_ENV') !== 'testing',
 ];

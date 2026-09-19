@@ -6,6 +6,7 @@ namespace NgarakDev\Modularization;
 
 use Illuminate\Filesystem\Filesystem;
 use NgarakDev\Modularization\Exceptions\InvalidModuleException;
+use NgarakDev\Modularization\Exceptions\InvalidModuleNameException;
 use NgarakDev\Modularization\Support\ModuleName;
 
 final class ModulePathResolver
@@ -34,6 +35,30 @@ final class ModulePathResolver
         $this->assertWithinModulesDirectory($modulePath);
 
         return $this->join($modulePath, $path);
+    }
+
+    public function child(string $module, string $relativePath): string
+    {
+        $relativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\'));
+
+        if (in_array('..', explode(DIRECTORY_SEPARATOR, $relativePath), true) || str_contains($relativePath, "\0")) {
+            throw new InvalidModuleNameException('The requested module path contains an unsafe segment.');
+        }
+
+        $modulePath = $this->path($module);
+        $candidate = $relativePath === '' ? $modulePath : $modulePath.DIRECTORY_SEPARATOR.$relativePath;
+        $root = rtrim($modulePath, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+
+        if ($candidate !== rtrim($modulePath, DIRECTORY_SEPARATOR) && ! str_starts_with($this->normalize($candidate), $this->normalize($root))) {
+            throw new InvalidModuleNameException('The requested module path escapes its module directory.');
+        }
+
+        return $candidate;
+    }
+
+    public function normalizePath(string $path): string
+    {
+        return $this->normalize($path);
     }
 
     public function relativePath(string $absolute): string
