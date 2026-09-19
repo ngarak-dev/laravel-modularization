@@ -8,6 +8,9 @@ use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use NgarakDev\Modularization\Console\Commands\Concerns\InteractsWithModules;
 
+/**
+ * Command to enable or disable modules.
+ */
 class ModuleToggleCommand extends Command
 {
     use InteractsWithModules;
@@ -47,6 +50,10 @@ class ModuleToggleCommand extends Command
 
                 return self::SUCCESS;
             }
+        } catch (ModuleNotFoundException $e) {
+            $this->error($e->getMessage());
+            return self::FAILURE;
+        }
 
             $this->modules()->disable($name);
             $this->info("Module [{$name}] has been disabled.");
@@ -60,6 +67,7 @@ class ModuleToggleCommand extends Command
             $this->modules()->enable($name);
             $this->info("Module [{$name}] has been enabled.");
         }
+    }
 
         if ($this->modules()->isCached()) {
             $this->warn('Module cache was cleared. Run `php artisan module:cache` before deploying to production.');

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace {{namespace}}\{{moduleName}}\Livewire;
 
+use Illuminate\Contracts\View\View;
 use Livewire\Component;
 use Livewire\WithPagination;
 use {{namespace}}\{{moduleName}}\Services\Interfaces\{{className}}ServiceInterface;
@@ -44,7 +45,7 @@ class {{className}}Table extends Component
         session()->flash('message', '{{className}} deleted successfully');
     }
 
-    public function render()
+    public function render(): View
     {
         return view('{{moduleNameLower}}::livewire.{{classNameLower}}-table', [
             '{{classNameLower}}s' => app({{className}}ServiceInterface::class)->getAll(),

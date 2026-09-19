@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NgarakDev\Modularization\Providers;
 
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use NgarakDev\Modularization\Console\Commands\MakeMigrationCommand;
 use NgarakDev\Modularization\Console\Commands\MakeModuleAuthCommand;

@@ -1,5 +1,7 @@
 @extends('{{moduleNameLower}}::layouts.module-layout')
 
+@section('title', '{{ __("{{moduleName}} List") }}')
+
 @section('content')
 <div class="bg-white shadow overflow-hidden sm:rounded-lg">
     <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
@@ -9,13 +11,13 @@
         </a>
     </div>
 
-    @if (session('success'))
-        <div class="mx-4 my-2 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-            <span class="block sm:inline">{{ session('success') }}</span>
+    @if(session('success'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4" role="alert">
+            {{ session('success') }}
         </div>
     @endif
 
-    <div class="overflow-x-auto">
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>

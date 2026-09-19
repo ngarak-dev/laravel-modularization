@@ -13,7 +13,7 @@ return [
     | Directory names must stay inside this path; `..` segments are rejected.
     |
     */
-    'modules_path' => 'modules',
+    'modules_path' => env('MODULES_PATH', 'modules'),
 
     /*
     |--------------------------------------------------------------------------
@@ -23,7 +23,7 @@ return [
     | Root PHP namespace for generated and discovered modules.
     |
     */
-    'namespace' => 'Modules',
+    'namespace' => env('MODULES_NAMESPACE', 'Modules'),
 
     /*
     |--------------------------------------------------------------------------
@@ -35,13 +35,24 @@ return [
     |
     */
     'directories' => [
+        'Config',
+        'Database/Factories',
+        'Database/Migrations',
+        'Database/Seeders',
         'Http/Controllers',
         'Http/Controllers/API',
         'Http/Middleware',
         'Http/Requests',
+        'Livewire',
         'Models',
+        'Providers',
         'Repositories',
         'Repositories/Interfaces',
+        'Resources/assets/css',
+        'Resources/assets/js',
+        'Resources/lang',
+        'Resources/views',
+        'Routes',
         'Services',
         'Services/Interfaces',
         'Providers',
@@ -62,6 +73,7 @@ return [
         'Console',
         'Tests/Unit',
         'Tests/Feature',
+        'Tests/Unit',
     ],
 
     /*
@@ -76,11 +88,11 @@ return [
     | Key kept as auto_register_controllers for backwards compatibility.
     |
     */
-    'auto_register_controllers' => true,
+    'auto_register_providers' => true,
 
     /*
     |--------------------------------------------------------------------------
-    | Auto-register Livewire Components
+    | Auto-Register Routes
     |--------------------------------------------------------------------------
     |
     | When true, PHP classes under a module's Livewire directory that extend

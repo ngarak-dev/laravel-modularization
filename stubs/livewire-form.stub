@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace {{namespace}}\{{moduleName}}\Livewire;
 
+use Illuminate\Contracts\View\View;
 use Livewire\Component;
 use {{namespace}}\{{moduleName}}\Services\Interfaces\{{className}}ServiceInterface;
 

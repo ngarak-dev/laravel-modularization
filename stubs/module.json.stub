@@ -1,0 +1,16 @@
+{
+    "name": "{{moduleName}}",
+    "description": "{{moduleName}} module",
+    "version": "1.0.0",
+    "enabled": true,
+    "provider": "{{namespace}}\\{{moduleName}}\\Providers\\{{moduleName}}ServiceProvider",
+    "requires": [],
+    "routes": {
+        "prefix": "{{moduleNameLower}}",
+        "middleware": ["web"]
+    },
+    "menu": {
+        "title": "{{moduleName}}",
+        "icon": "fa fa-th-large"
+    }
+}

@@ -12,6 +12,9 @@ use NgarakDev\Modularization\Exceptions\ModuleGenerationException;
 use NgarakDev\Modularization\Generators\ModuleGenerator;
 use NgarakDev\Modularization\Support\ModuleName;
 
+/**
+ * Command to create a new module.
+ */
 class MakeModuleCommand extends Command
 {
     use InteractsWithModules;
