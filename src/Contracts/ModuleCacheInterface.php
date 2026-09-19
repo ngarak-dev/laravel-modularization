@@ -26,7 +26,7 @@ interface ModuleCacheInterface
     /**
      * Cache the modules.
      *
-     * @param Collection<string, ModuleInterface> $modules
+     * @param  Collection<string, ModuleInterface>  $modules
      */
     public function put(Collection $modules): void;
 

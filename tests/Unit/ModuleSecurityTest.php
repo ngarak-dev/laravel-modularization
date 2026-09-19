@@ -16,7 +16,9 @@ use Orchestra\Testbench\TestCase;
 class ModuleSecurityTest extends TestCase
 {
     protected Filesystem $files;
+
     protected string $modulesPath;
+
     protected ModuleDiscovery $discovery;
 
     protected function getPackageProviders($app): array
@@ -28,8 +30,8 @@ class ModuleSecurityTest extends TestCase
     {
         parent::setUp();
 
-        $this->files = new Filesystem();
-        $this->modulesPath = sys_get_temp_dir() . '/security_modules_' . uniqid();
+        $this->files = new Filesystem;
+        $this->modulesPath = sys_get_temp_dir().'/security_modules_'.uniqid();
         $this->files->makeDirectory($this->modulesPath, 0755, true);
 
         $this->discovery = new ModuleDiscovery(
@@ -114,9 +116,9 @@ class ModuleSecurityTest extends TestCase
     /** @test */
     public function dot_prefixed_directories_are_not_discovered_as_modules(): void
     {
-        $this->files->makeDirectory($this->modulesPath . '/.hidden');
-        $this->files->makeDirectory($this->modulesPath . '/.git');
-        $this->files->makeDirectory($this->modulesPath . '/ValidModule');
+        $this->files->makeDirectory($this->modulesPath.'/.hidden');
+        $this->files->makeDirectory($this->modulesPath.'/.git');
+        $this->files->makeDirectory($this->modulesPath.'/ValidModule');
 
         $modules = $this->discovery->discover();
 
@@ -171,8 +173,8 @@ class ModuleSecurityTest extends TestCase
     public function discovery_only_reads_within_configured_modules_path(): void
     {
         // Create a module in a completely separate temp directory
-        $outsideDir = sys_get_temp_dir() . '/outside_modules_' . uniqid();
-        $this->files->makeDirectory($outsideDir . '/EscapedModule', 0755, true);
+        $outsideDir = sys_get_temp_dir().'/outside_modules_'.uniqid();
+        $this->files->makeDirectory($outsideDir.'/EscapedModule', 0755, true);
 
         $modules = $this->discovery->discover();
 

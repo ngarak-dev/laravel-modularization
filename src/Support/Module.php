@@ -12,7 +12,7 @@ use NgarakDev\Modularization\Contracts\ModuleInterface;
 final class Module implements ModuleInterface
 {
     /**
-     * @param array<string, mixed> $manifest
+     * @param  array<string, mixed>  $manifest
      */
     public function __construct(
         private readonly string $name,
@@ -20,8 +20,7 @@ final class Module implements ModuleInterface
         private readonly string $namespace,
         private bool $enabled = true,
         private readonly array $manifest = [],
-    ) {
-    }
+    ) {}
 
     public function getName(): string
     {
@@ -56,7 +55,8 @@ final class Module implements ModuleInterface
             return $providerClass;
         }
 
-        $defaultProvider = $this->namespace . '\\Providers\\' . $this->name . 'ServiceProvider';
+        $defaultProvider = $this->namespace.'\\Providers\\'.$this->name.'ServiceProvider';
+
         return class_exists($defaultProvider) ? $defaultProvider : null;
     }
 
@@ -103,7 +103,7 @@ final class Module implements ModuleInterface
             return $this->path;
         }
 
-        return $this->path . DIRECTORY_SEPARATOR . ltrim($subPath, DIRECTORY_SEPARATOR);
+        return $this->path.DIRECTORY_SEPARATOR.ltrim($subPath, DIRECTORY_SEPARATOR);
     }
 
     /**
@@ -125,7 +125,7 @@ final class Module implements ModuleInterface
     /**
      * Create a Module from an array.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {

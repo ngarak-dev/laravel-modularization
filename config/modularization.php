@@ -36,15 +36,20 @@ return [
     */
     'directories' => [
         'Config',
+        'Console',
         'Database/Factories',
         'Database/Migrations',
         'Database/Seeders',
+        'Events',
         'Http/Controllers',
         'Http/Controllers/API',
         'Http/Middleware',
         'Http/Requests',
+        'Jobs',
+        'Listeners',
         'Livewire',
         'Models',
+        'Policies',
         'Providers',
         'Repositories',
         'Repositories/Interfaces',
@@ -55,23 +60,6 @@ return [
         'Routes',
         'Services',
         'Services/Interfaces',
-        'Providers',
-        'Database/Migrations',
-        'Database/Seeders',
-        'Database/Factories',
-        'Routes',
-        'Config',
-        'Resources/views',
-        'Resources/lang',
-        'Resources/assets/js',
-        'Resources/assets/css',
-        'Livewire',
-        'Events',
-        'Listeners',
-        'Jobs',
-        'Policies',
-        'Console',
-        'Tests/Unit',
         'Tests/Feature',
         'Tests/Unit',
     ],
@@ -88,6 +76,7 @@ return [
     | Key kept as auto_register_controllers for backwards compatibility.
     |
     */
+    'auto_register_controllers' => true,
     'auto_register_providers' => true,
 
     /*

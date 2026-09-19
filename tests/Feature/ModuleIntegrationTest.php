@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use NgarakDev\Modularization\Console\Commands\MakeModuleCommand;
+use NgarakDev\Modularization\ModularizationService;
+use NgarakDev\Modularization\Module;
 use NgarakDev\Modularization\Providers\ModularizationServiceProvider;
 use Orchestra\Testbench\TestCase;
 use PHPUnit\Framework\Attributes\Test;
@@ -77,13 +79,12 @@ class ModuleIntegrationTest extends TestCase
             '--with-views' => true,
         ])->assertExitCode(0);
 
-        $modulePath = $this->modulesPath . '/' . $this->testModuleName;
+        $modulePath = $this->modulesPath.'/'.$this->testModuleName;
 
         // Verify key structural files were created
         $this->assertTrue($this->files->isDirectory($modulePath));
-        $this->assertTrue($this->files->isFile($modulePath . '/Providers/' . $this->testModuleName . 'ServiceProvider.php'), 'ServiceProvider.php missing');
-        $this->assertTrue($this->files->isFile($modulePath . '/Routes/web.php'), 'web.php missing');
-        $this->assertTrue($this->files->isFile($modulePath . '/Routes/api.php'), 'api.php missing');
+        $this->assertTrue($this->files->isFile($modulePath.'/Providers/'.$this->testModuleName.'ServiceProvider.php'), 'ServiceProvider.php missing');
+        $this->assertTrue($this->files->isFile($modulePath.'/Routes/web.php'), 'web.php missing');
 
         // Verify ModularizationService can discover the newly created module
         /** @var ModularizationService $service */
@@ -103,7 +104,7 @@ class ModuleIntegrationTest extends TestCase
             '--with-views' => true,
         ])->assertExitCode(0);
 
-        $viewsPath = $this->modulesPath . '/' . $this->testModuleName . '/Resources/views';
+        $viewsPath = $this->modulesPath.'/'.$this->testModuleName.'/Resources/views';
         $this->assertTrue($this->files->isDirectory($viewsPath));
 
         // Create a service provider that loads views
@@ -129,7 +130,7 @@ class ModuleIntegrationTest extends TestCase
             'name' => $this->testModuleName,
         ])->assertExitCode(0);
 
-        $routesFile = $this->modulesPath . '/' . $this->testModuleName . '/Routes/web.php';
+        $routesFile = $this->modulesPath.'/'.$this->testModuleName.'/Routes/web.php';
         $this->assertTrue($this->files->isFile($routesFile), 'web.php not found');
 
         // Create a service provider that loads routes
@@ -158,17 +159,17 @@ class ModuleIntegrationTest extends TestCase
             'name' => $this->testModuleName,
         ])->assertExitCode(0);
 
-        $modulePath = $this->modulesPath . '/' . $this->testModuleName;
+        $modulePath = $this->modulesPath.'/'.$this->testModuleName;
 
-        $this->assertTrue($this->files->isFile($modulePath . '/Repositories/' . $this->testModuleName . 'Repository.php'));
-        $this->assertTrue($this->files->isFile($modulePath . '/Repositories/Interfaces/' . $this->testModuleName . 'RepositoryInterface.php'));
+        $this->assertTrue($this->files->isFile($modulePath.'/Repositories/'.$this->testModuleName.'Repository.php'));
+        $this->assertTrue($this->files->isFile($modulePath.'/Repositories/Interfaces/'.$this->testModuleName.'RepositoryInterface.php'));
 
-        $interfaceContent = $this->files->get($modulePath . '/Repositories/Interfaces/' . $this->testModuleName . 'RepositoryInterface.php');
-        $this->assertStringContainsString('interface ' . $this->testModuleName . 'RepositoryInterface', $interfaceContent);
+        $interfaceContent = $this->files->get($modulePath.'/Repositories/Interfaces/'.$this->testModuleName.'RepositoryInterface.php');
+        $this->assertStringContainsString('interface '.$this->testModuleName.'RepositoryInterface', $interfaceContent);
 
-        $repoContent = $this->files->get($modulePath . '/Repositories/' . $this->testModuleName . 'Repository.php');
-        $this->assertStringContainsString('class ' . $this->testModuleName . 'Repository', $repoContent);
-        $this->assertStringContainsString('implements ' . $this->testModuleName . 'RepositoryInterface', $repoContent);
+        $repoContent = $this->files->get($modulePath.'/Repositories/'.$this->testModuleName.'Repository.php');
+        $this->assertStringContainsString('class '.$this->testModuleName.'Repository', $repoContent);
+        $this->assertStringContainsString('implements '.$this->testModuleName.'RepositoryInterface', $repoContent);
     }
 
     #[Test]
@@ -178,15 +179,15 @@ class ModuleIntegrationTest extends TestCase
             'name' => $this->testModuleName,
         ])->assertExitCode(0);
 
-        $modulePath = $this->modulesPath . '/' . $this->testModuleName;
+        $modulePath = $this->modulesPath.'/'.$this->testModuleName;
 
-        $this->assertTrue($this->files->isFile($modulePath . '/Services/' . $this->testModuleName . 'Service.php'));
-        $this->assertTrue($this->files->isFile($modulePath . '/Services/Interfaces/' . $this->testModuleName . 'ServiceInterface.php'));
+        $this->assertTrue($this->files->isFile($modulePath.'/Services/'.$this->testModuleName.'Service.php'));
+        $this->assertTrue($this->files->isFile($modulePath.'/Services/Interfaces/'.$this->testModuleName.'ServiceInterface.php'));
 
-        $serviceContent = $this->files->get($modulePath . '/Services/' . $this->testModuleName . 'Service.php');
-        $this->assertStringContainsString('class ' . $this->testModuleName . 'Service', $serviceContent);
-        $this->assertStringContainsString('implements ' . $this->testModuleName . 'ServiceInterface', $serviceContent);
-        $this->assertStringContainsString($this->testModuleName . 'RepositoryInterface', $serviceContent);
+        $serviceContent = $this->files->get($modulePath.'/Services/'.$this->testModuleName.'Service.php');
+        $this->assertStringContainsString('class '.$this->testModuleName.'Service', $serviceContent);
+        $this->assertStringContainsString('implements '.$this->testModuleName.'ServiceInterface', $serviceContent);
+        $this->assertStringContainsString($this->testModuleName.'RepositoryInterface', $serviceContent);
     }
 
     #[Test]

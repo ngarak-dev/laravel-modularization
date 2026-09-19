@@ -13,21 +13,23 @@ use NgarakDev\Modularization\Exceptions\ModuleGenerationException;
 final class StubRenderer
 {
     private string $customStubsPath;
+
     private string $packageStubsPath;
 
     public function __construct(
         private readonly Filesystem $files,
     ) {
-        $this->packageStubsPath = __DIR__ . '/../../stubs';
+        $this->packageStubsPath = __DIR__.'/../../stubs';
         $this->customStubsPath = base_path('stubs/vendor/modularization');
     }
 
     /**
      * Render a stub with the given replacements.
      *
-     * @param string $stubName The name of the stub file (without .stub extension)
-     * @param array<string, string> $replacements Key-value pairs for placeholder replacement
+     * @param  string  $stubName  The name of the stub file (without .stub extension)
+     * @param  array<string, string>  $replacements  Key-value pairs for placeholder replacement
      * @return string The rendered content
+     *
      * @throws ModuleGenerationException
      */
     public function render(string $stubName, array $replacements = []): string
@@ -48,14 +50,14 @@ final class StubRenderer
      */
     public function getStubContent(string $stubName): string
     {
-        $stubFile = $stubName . '.stub';
+        $stubFile = $stubName.'.stub';
 
-        $customPath = $this->customStubsPath . '/' . $stubFile;
+        $customPath = $this->customStubsPath.'/'.$stubFile;
         if ($this->files->exists($customPath)) {
             return $this->files->get($customPath);
         }
 
-        $packagePath = $this->packageStubsPath . '/' . $stubFile;
+        $packagePath = $this->packageStubsPath.'/'.$stubFile;
         if ($this->files->exists($packagePath)) {
             return $this->files->get($packagePath);
         }
@@ -68,10 +70,10 @@ final class StubRenderer
      */
     public function hasStub(string $stubName): bool
     {
-        $stubFile = $stubName . '.stub';
+        $stubFile = $stubName.'.stub';
 
-        return $this->files->exists($this->customStubsPath . '/' . $stubFile)
-            || $this->files->exists($this->packageStubsPath . '/' . $stubFile);
+        return $this->files->exists($this->customStubsPath.'/'.$stubFile)
+            || $this->files->exists($this->packageStubsPath.'/'.$stubFile);
     }
 
     /**
@@ -118,17 +120,17 @@ final class StubRenderer
         $lastTwoChars = substr($string, -2);
 
         if (in_array($lastTwoChars, ['ch', 'sh', 'ss'], true)) {
-            return $string . 'es';
+            return $string.'es';
         }
 
         if ($lastChar === 's' || $lastChar === 'x' || $lastChar === 'z') {
-            return $string . 'es';
+            return $string.'es';
         }
 
-        if ($lastChar === 'y' && !in_array($lastTwoChars[0] ?? '', ['a', 'e', 'i', 'o', 'u'], true)) {
-            return substr($string, 0, -1) . 'ies';
+        if ($lastChar === 'y' && ! in_array($lastTwoChars[0] ?? '', ['a', 'e', 'i', 'o', 'u'], true)) {
+            return substr($string, 0, -1).'ies';
         }
 
-        return $string . 's';
+        return $string.'s';
     }
 }

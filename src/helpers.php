@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use NgarakDev\Modularization\Contracts\ModuleInterface;
+use NgarakDev\Modularization\ModuleManager;
 use NgarakDev\Modularization\Support\ModuleName;
 
 if (! function_exists('module_path')) {
@@ -38,5 +40,35 @@ if (! function_exists('modules_path')) {
         return $path === ''
             ? $base
             : $base.DIRECTORY_SEPARATOR.ltrim(str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $path), DIRECTORY_SEPARATOR);
+    }
+}
+
+if (! function_exists('modules')) {
+    /**
+     * Get the module manager.
+     */
+    function modules(): ModuleManager
+    {
+        return app(ModuleManager::class);
+    }
+}
+
+if (! function_exists('module')) {
+    /**
+     * Get a module by name.
+     */
+    function module(string $name): ?ModuleInterface
+    {
+        return modules()->find($name);
+    }
+}
+
+if (! function_exists('module_enabled')) {
+    /**
+     * Whether the named module exists and is enabled.
+     */
+    function module_enabled(string $name): bool
+    {
+        return modules()->isEnabled($name);
     }
 }

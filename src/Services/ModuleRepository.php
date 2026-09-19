@@ -35,6 +35,7 @@ final class ModuleRepository implements ModuleRepositoryInterface
     public function all(): Collection
     {
         $this->ensureDiscovered();
+
         return $this->modules;
     }
 
@@ -51,12 +52,13 @@ final class ModuleRepository implements ModuleRepositoryInterface
      */
     public function disabled(): Collection
     {
-        return $this->all()->filter(fn (ModuleInterface $module) => !$module->isEnabled());
+        return $this->all()->filter(fn (ModuleInterface $module) => ! $module->isEnabled());
     }
 
     public function find(string $name): ?ModuleInterface
     {
         $this->ensureDiscovered();
+
         return $this->modules->get($name);
     }
 
@@ -74,11 +76,13 @@ final class ModuleRepository implements ModuleRepositoryInterface
     public function has(string $name): bool
     {
         $this->ensureDiscovered();
+
         return $this->modules->has($name);
     }
 
     public function register(ModuleInterface $module): void
     {
+        $this->ensureDiscovered();
         $this->modules->put($module->getName(), $module);
     }
 
@@ -93,7 +97,7 @@ final class ModuleRepository implements ModuleRepositoryInterface
         $visiting = [];
 
         foreach ($modules as $name => $module) {
-            if (!isset($visited[$name])) {
+            if (! isset($visited[$name])) {
                 $this->topologicalSort($name, $modules, $sorted, $visited, $visiting);
             }
         }
@@ -119,7 +123,7 @@ final class ModuleRepository implements ModuleRepositoryInterface
     /**
      * Set modules directly (used for caching).
      *
-     * @param Collection<string, ModuleInterface> $modules
+     * @param  Collection<string, ModuleInterface>  $modules
      */
     public function setModules(Collection $modules): void
     {
@@ -132,7 +136,7 @@ final class ModuleRepository implements ModuleRepositoryInterface
      */
     private function ensureDiscovered(): void
     {
-        if (!$this->discovered) {
+        if (! $this->discovered) {
             $this->modules = $this->discovery->discover();
             $this->discovered = true;
         }
@@ -141,10 +145,11 @@ final class ModuleRepository implements ModuleRepositoryInterface
     /**
      * Perform topological sort for dependency ordering.
      *
-     * @param Collection<string, ModuleInterface> $modules
-     * @param Collection<string, ModuleInterface> $sorted
-     * @param array<string, bool> $visited
-     * @param array<string, bool> $visiting
+     * @param  Collection<string, ModuleInterface>  $modules
+     * @param  Collection<string, ModuleInterface>  $sorted
+     * @param  array<string, bool>  $visited
+     * @param  array<string, bool>  $visiting
+     *
      * @throws CircularDependencyException
      */
     private function topologicalSort(

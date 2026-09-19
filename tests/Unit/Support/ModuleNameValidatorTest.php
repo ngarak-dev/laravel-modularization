@@ -15,7 +15,7 @@ class ModuleNameValidatorTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->validator = new ModuleNameValidator();
+        $this->validator = new ModuleNameValidator;
     }
 
     /** @test */

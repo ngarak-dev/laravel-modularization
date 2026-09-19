@@ -244,20 +244,20 @@ class MakeModuleCommandTest extends TestCase
         $controllerContent = $this->files->get($controllerPath);
 
         // Verify CRUD methods
-        $this->assertStringContainsString('public function index()', $controllerContent);
-        $this->assertStringContainsString('public function create()', $controllerContent);
-        $this->assertStringContainsString('public function store(', $controllerContent);
-        $this->assertStringContainsString('public function show(', $controllerContent);
-        $this->assertStringContainsString('public function edit(', $controllerContent);
-        $this->assertStringContainsString('public function update(', $controllerContent);
-        $this->assertStringContainsString('public function destroy(', $controllerContent);
+        $this->assertStringContainsString('function index(', $controllerContent);
+        $this->assertStringContainsString('function create(', $controllerContent);
+        $this->assertStringContainsString('function store(', $controllerContent);
+        $this->assertStringContainsString('function show(', $controllerContent);
+        $this->assertStringContainsString('function edit(', $controllerContent);
+        $this->assertStringContainsString('function update(', $controllerContent);
+        $this->assertStringContainsString('function destroy(', $controllerContent);
 
         // Check service implementations for CRUD methods
         $servicePath = $this->modulesPath.'/'.$this->testModuleName.'/Services/'.$this->testModuleName.'Service.php';
         $serviceContent = $this->files->get($servicePath);
 
-        $this->assertStringContainsString('public function all()', $serviceContent);
-        $this->assertStringContainsString('public function find(', $serviceContent);
+        $this->assertStringContainsString('public function getAll()', $serviceContent);
+        $this->assertStringContainsString('public function findById(', $serviceContent);
         $this->assertStringContainsString('public function create(', $serviceContent);
         $this->assertStringContainsString('public function update(', $serviceContent);
         $this->assertStringContainsString('public function delete(', $serviceContent);

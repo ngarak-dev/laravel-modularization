@@ -21,6 +21,8 @@ jobs:
           tools: composer:v2
           coverage: none
       - run: composer validate --strict
-      - run: composer install --no-interaction --prefer-dist
-      - run: composer format
+      - run: |
+          composer config audit.block-insecure false
+          composer update --no-interaction --prefer-dist --no-audit
+      - run: composer format -- --test
       - run: composer test

@@ -21,8 +21,7 @@ final class ModuleDiscovery implements ModuleDiscoveryInterface
         private readonly Application $app,
         private readonly Filesystem $files,
         private readonly ModulePathResolver $pathResolver,
-    ) {
-    }
+    ) {}
 
     /**
      * @return Collection<string, ModuleInterface>
@@ -31,7 +30,7 @@ final class ModuleDiscovery implements ModuleDiscoveryInterface
     {
         $basePath = $this->getBasePath();
 
-        if (!$this->files->isDirectory($basePath)) {
+        if (! $this->files->isDirectory($basePath)) {
             return collect();
         }
 
@@ -54,7 +53,7 @@ final class ModuleDiscovery implements ModuleDiscoveryInterface
     {
         $path = $this->pathResolver->getModulePath($name);
 
-        if (!$this->files->isDirectory($path)) {
+        if (! $this->files->isDirectory($path)) {
             return null;
         }
 
@@ -98,7 +97,7 @@ final class ModuleDiscovery implements ModuleDiscoveryInterface
     {
         $manifest = [];
 
-        $moduleJsonPath = $path . '/module.json';
+        $moduleJsonPath = $path.'/module.json';
         if ($this->files->exists($moduleJsonPath)) {
             $content = $this->files->get($moduleJsonPath);
             $decoded = json_decode($content, true);
@@ -107,7 +106,7 @@ final class ModuleDiscovery implements ModuleDiscoveryInterface
             }
         }
 
-        $configPath = $path . '/Config/config.php';
+        $configPath = $path.'/Config/config.php';
         if ($this->files->exists($configPath)) {
             $config = require $configPath;
             if (is_array($config)) {
@@ -121,11 +120,11 @@ final class ModuleDiscovery implements ModuleDiscoveryInterface
     /**
      * Determine if a module is enabled.
      *
-     * @param array<string, mixed> $manifest
+     * @param  array<string, mixed>  $manifest
      */
     private function isModuleEnabled(string $path, array $manifest): bool
     {
-        if ($this->files->exists($path . '/.disabled')) {
+        if ($this->files->exists($path.'/.disabled')) {
             return false;
         }
 

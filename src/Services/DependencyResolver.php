@@ -17,8 +17,7 @@ final class DependencyResolver
 {
     public function __construct(
         private readonly ModuleRepositoryInterface $repository,
-    ) {
-    }
+    ) {}
 
     /**
      * Validate dependencies for a module.
@@ -30,13 +29,14 @@ final class DependencyResolver
         $missing = [];
 
         foreach ($module->getDependencies() as $dependency) {
-            if (!$this->repository->has($dependency)) {
+            if (! $this->repository->has($dependency)) {
                 $missing[] = $dependency;
+
                 continue;
             }
 
             $depModule = $this->repository->find($dependency);
-            if ($depModule !== null && !$depModule->isEnabled()) {
+            if ($depModule !== null && ! $depModule->isEnabled()) {
                 throw ModuleDependencyException::dependencyDisabled(
                     $module->getName(),
                     $dependency
@@ -44,7 +44,7 @@ final class DependencyResolver
             }
         }
 
-        if (!empty($missing)) {
+        if (! empty($missing)) {
             throw ModuleDependencyException::missingDependencies($module->getName(), $missing);
         }
     }
@@ -65,6 +65,7 @@ final class DependencyResolver
      * Get modules sorted by dependency order.
      *
      * @return Collection<string, ModuleInterface>
+     *
      * @throws CircularDependencyException
      */
     public function getSortedModules(): Collection
@@ -113,7 +114,7 @@ final class DependencyResolver
     /**
      * Build a dependency tree recursively.
      *
-     * @param array<string> $visited
+     * @param  array<string>  $visited
      * @return array<string, array<string>>
      */
     private function buildDependencyTree(ModuleInterface $module, array $visited): array

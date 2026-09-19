@@ -58,11 +58,11 @@ final class ModuleNameValidator
         if (strlen($name) > self::MAX_NAME_LENGTH) {
             throw InvalidModuleException::invalidName(
                 $name,
-                'Module name cannot exceed ' . self::MAX_NAME_LENGTH . ' characters.'
+                'Module name cannot exceed '.self::MAX_NAME_LENGTH.' characters.'
             );
         }
 
-        if (!preg_match(self::VALID_NAME_PATTERN, $name)) {
+        if (! preg_match(self::VALID_NAME_PATTERN, $name)) {
             throw InvalidModuleException::invalidName(
                 $name,
                 'Module name must start with a letter and contain only letters, numbers, and underscores.'
@@ -91,6 +91,7 @@ final class ModuleNameValidator
     {
         try {
             $this->validate($name);
+
             return true;
         } catch (InvalidModuleException) {
             return false;
@@ -108,8 +109,8 @@ final class ModuleNameValidator
             return 'Module';
         }
 
-        if (!preg_match('/^[A-Za-z]/', $sanitized)) {
-            $sanitized = 'Module' . $sanitized;
+        if (! preg_match('/^[A-Za-z]/', $sanitized)) {
+            $sanitized = 'Module'.$sanitized;
         }
 
         if (strlen($sanitized) > self::MAX_NAME_LENGTH) {

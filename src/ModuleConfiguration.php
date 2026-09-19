@@ -64,7 +64,10 @@ final class ModuleConfiguration
 
     public function autoRegisterRoutes(): bool
     {
-        return (bool) $this->config->get('modularization.auto_register_controllers', true);
+        return (bool) $this->config->get(
+            'modularization.auto_register_controllers',
+            $this->config->get('modularization.auto_register_providers', true)
+        );
     }
 
     public function autoRegisterLivewire(): bool

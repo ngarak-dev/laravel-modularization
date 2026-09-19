@@ -3,6 +3,7 @@
 namespace NgarakDev\Modularization\Tests\Feature;
 
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Str;
 use NgarakDev\Modularization\Console\Commands\MakeModuleCommand;
 use NgarakDev\Modularization\Providers\ModularizationServiceProvider;
 use Orchestra\Testbench\TestCase;
@@ -147,7 +148,7 @@ class CommandOptionsTest extends TestCase
         ));
 
         // Verify Livewire views were created (Resources directory is PascalCase)
-        $kebabResource = \Illuminate\Support\Str::kebab($resourceName);
+        $kebabResource = Str::kebab($resourceName);
         $this->assertTrue($this->files->isFile(
             $this->modulesPath.'/'.$this->testModuleName.'/Resources/views/livewire/'.$kebabResource.'-table.blade.php'
         ));

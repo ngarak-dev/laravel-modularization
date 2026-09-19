@@ -13,6 +13,7 @@ use PHPUnit\Framework\TestCase;
 class DependencyResolverTest extends TestCase
 {
     private DependencyResolver $resolver;
+
     private ModuleRepositoryInterface $repository;
 
     protected function setUp(): void
@@ -100,6 +101,7 @@ class DependencyResolverTest extends TestCase
             if ($name === 'Products') {
                 return new Module('Products', '/modules/Products', 'Modules\\Products', true);
             }
+
             return null;
         });
 

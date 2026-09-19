@@ -19,6 +19,22 @@ class ModularizationService
     /**
      * Scan for all available modules.
      */
+    public function refresh(): void
+    {
+        $this->manager->refresh();
+        $this->manager->discover(false);
+    }
+
+    public function find(string $name): ?Module
+    {
+        return $this->manager->find($name);
+    }
+
+    public function findOrFail(string $name): Module
+    {
+        return $this->manager->get($name);
+    }
+
     public function scanModules(): void
     {
         $this->manager->discover(false);

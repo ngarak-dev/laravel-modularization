@@ -36,13 +36,13 @@ class ModuleToggleCommand extends Command
             return $this->failOnInvalidName($exception);
         }
 
-        $disable = (bool) $this->option('disable');
-
         if ($this->option('enable') && $this->option('disable')) {
             $this->error('Pass either --enable or --disable, not both.');
 
             return self::FAILURE;
         }
+
+        $disable = (bool) $this->option('disable');
 
         if ($disable) {
             if (! $module->enabled) {
@@ -50,10 +50,18 @@ class ModuleToggleCommand extends Command
 
                 return self::SUCCESS;
             }
-        } catch (ModuleNotFoundException $e) {
-            $this->error($e->getMessage());
-            return self::FAILURE;
-        }
+
+            $dependents = $this->modules()->getDependents($name);
+
+            if ($dependents->isNotEmpty()) {
+                $this->warn("The following modules depend on [{$name}]: ".$dependents->keys()->implode(', '));
+
+                if (! $this->confirm('Do you want to continue?', false)) {
+                    $this->info('Operation cancelled.');
+
+                    return self::SUCCESS;
+                }
+            }
 
             $this->modules()->disable($name);
             $this->info("Module [{$name}] has been disabled.");
@@ -67,7 +75,6 @@ class ModuleToggleCommand extends Command
             $this->modules()->enable($name);
             $this->info("Module [{$name}] has been enabled.");
         }
-    }
 
         if ($this->modules()->isCached()) {
             $this->warn('Module cache was cleared. Run `php artisan module:cache` before deploying to production.');

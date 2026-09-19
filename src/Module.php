@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace NgarakDev\Modularization;
 
+use NgarakDev\Modularization\Contracts\ModuleInterface;
+
 /**
  * Immutable snapshot of a discovered module and its metadata.
  */
-final class Module
+final class Module implements ModuleInterface
 {
     /**
      * @param  array<int, string>  $requires
@@ -19,10 +21,10 @@ final class Module
         public readonly string $name,
         public readonly string $path,
         public readonly string $namespace,
-        public readonly ?string $provider,
-        public readonly string $version,
-        public readonly string $description,
-        public readonly bool $enabled,
+        public readonly ?string $provider = null,
+        public readonly string $version = '1.0.0',
+        public readonly string $description = '',
+        public readonly bool $enabled = true,
         public readonly array $requires = [],
         public readonly bool $cached = false,
         public readonly bool $valid = true,
@@ -63,6 +65,38 @@ final class Module
             configFiles: array_values(array_map('strval', $data['config_files'] ?? [])),
             manifestPath: isset($data['manifest_path']) ? (string) $data['manifest_path'] : null,
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $manifest
+     */
+    public static function fromManifest(string $directory, array $manifest, string $defaultNamespace): self
+    {
+        $name = (string) ($manifest['name'] ?? basename($directory));
+
+        return self::fromArray([
+            'name' => $name,
+            'path' => $directory,
+            'namespace' => $manifest['namespace'] ?? $defaultNamespace.'\\'.$name,
+            'provider' => $manifest['provider'] ?? null,
+            'version' => $manifest['version'] ?? '1.0.0',
+            'description' => $manifest['description'] ?? '',
+            'enabled' => $manifest['enabled'] ?? true,
+            'requires' => $manifest['requires'] ?? [],
+            'manifest_path' => $directory.'/module.json',
+        ]);
+    }
+
+    public static function fromDirectory(string $directory, string $defaultNamespace, bool $enabled = true): self
+    {
+        $name = basename($directory);
+
+        return self::fromArray([
+            'name' => $name,
+            'path' => $directory,
+            'namespace' => $defaultNamespace.'\\'.$name,
+            'enabled' => $enabled,
+        ]);
     }
 
     /**
@@ -155,5 +189,56 @@ final class Module
         }
 
         return $this->enabled ? 'enabled' : 'disabled';
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getPath(): string
+    {
+        return $this->path;
+    }
+
+    public function getNamespace(): string
+    {
+        return $this->namespace;
+    }
+
+    public function isEnabled(): bool
+    {
+        return $this->enabled;
+    }
+
+    public function getProviderClass(): ?string
+    {
+        return $this->provider;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getManifest(): array
+    {
+        return $this->toArray();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getDependencies(): array
+    {
+        return $this->requires;
+    }
+
+    public function getDescription(): string
+    {
+        return $this->description;
+    }
+
+    public function getVersion(): string
+    {
+        return $this->version;
     }
 }

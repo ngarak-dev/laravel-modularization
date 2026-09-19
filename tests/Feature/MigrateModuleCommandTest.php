@@ -37,9 +37,9 @@ class MigrateModuleCommandTest extends TestCase
     {
         $app['config']->set('database.default', 'testing');
         $app['config']->set('database.connections.testing', [
-            'driver'   => 'sqlite',
+            'driver' => 'sqlite',
             'database' => ':memory:',
-            'prefix'   => '',
+            'prefix' => '',
         ]);
     }
 
@@ -84,7 +84,7 @@ class MigrateModuleCommandTest extends TestCase
             ->expectsOutputToContain("Running migrations for module [{$this->testModuleName}]")
             ->assertExitCode(0);
 
-        $this->assertTrue(Schema::hasTable('test_table'));
+        $this->assertTrue(Schema::hasTable('migrate_test_table'));
     }
 
     protected function createTestModule(): void

@@ -13,7 +13,9 @@ use Orchestra\Testbench\TestCase;
 class ModuleCacheTest extends TestCase
 {
     protected Filesystem $files;
+
     protected string $bootstrapPath;
+
     protected ModuleCache $cache;
 
     protected function getPackageProviders($app): array
@@ -25,9 +27,9 @@ class ModuleCacheTest extends TestCase
     {
         parent::setUp();
 
-        $this->files = new Filesystem();
-        $this->bootstrapPath = sys_get_temp_dir() . '/module_cache_test_' . uniqid();
-        $this->files->makeDirectory($this->bootstrapPath . '/cache', 0755, true);
+        $this->files = new Filesystem;
+        $this->bootstrapPath = sys_get_temp_dir().'/module_cache_test_'.uniqid();
+        $this->files->makeDirectory($this->bootstrapPath.'/cache', 0755, true);
 
         $this->cache = new ModuleCache($this->files, $this->bootstrapPath);
     }
@@ -45,9 +47,9 @@ class ModuleCacheTest extends TestCase
     {
         return new Module(
             name: $name,
-            path: '/modules/' . $name,
+            path: '/modules/'.$name,
             enabled: $enabled,
-            namespace: 'Modules\\' . $name,
+            namespace: 'Modules\\'.$name,
             version: '1.0.0',
             description: 'Test module',
             requires: [],
@@ -65,7 +67,7 @@ class ModuleCacheTest extends TestCase
     {
         $modules = [
             'Alpha' => $this->makeModule('Alpha'),
-            'Beta'  => $this->makeModule('Beta', false),
+            'Beta' => $this->makeModule('Beta', false),
         ];
 
         $this->cache->write($modules);
@@ -160,20 +162,20 @@ class ModuleCacheTest extends TestCase
     /** @test */
     public function it_creates_cache_directory_if_missing(): void
     {
-        $this->files->deleteDirectory($this->bootstrapPath . '/cache');
-        $this->assertFalse($this->files->isDirectory($this->bootstrapPath . '/cache'));
+        $this->files->deleteDirectory($this->bootstrapPath.'/cache');
+        $this->assertFalse($this->files->isDirectory($this->bootstrapPath.'/cache'));
 
         $this->cache->write(['Alpha' => $this->makeModule('Alpha')]);
 
-        $this->assertTrue($this->files->isDirectory($this->bootstrapPath . '/cache'));
+        $this->assertTrue($this->files->isDirectory($this->bootstrapPath.'/cache'));
         $this->assertTrue($this->cache->isCached());
     }
 
     /** @test */
     public function module_cache_command_creates_cache_file(): void
     {
-        $modulesPath = sys_get_temp_dir() . '/test_modules_cache_' . uniqid();
-        $this->files->makeDirectory($modulesPath . '/Billing', 0755, true);
+        $modulesPath = sys_get_temp_dir().'/test_modules_cache_'.uniqid();
+        $this->files->makeDirectory($modulesPath.'/Billing', 0755, true);
 
         config(['modularization.modules_path' => $modulesPath]);
 

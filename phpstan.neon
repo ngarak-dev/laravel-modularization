@@ -10,6 +10,13 @@ parameters:
         - src/Console/Commands/MakeModuleLivewireCommand.php
         - src/Console/Commands/MigrateModuleCommand.php
         - src/Console/Commands/ModuleExportCommand.php
+        - src/Services
+        - src/Support/Module.php
+        - src/Support/ModuleCache.php
+        - src/Support/ModuleDiscovery.php
+        - src/Support/ModuleStatusManager.php
+        - src/Support/ModuleDependencyResolver.php
+        - src/Support/StubRenderer.php
     tmpDir: build/phpstan
     treatPhpDocTypesAsCertain: false
     ignoreErrors:

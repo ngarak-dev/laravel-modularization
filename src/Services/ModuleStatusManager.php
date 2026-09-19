@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace NgarakDev\Modularization\Services;
 
 use Illuminate\Filesystem\Filesystem;
+use NgarakDev\Modularization\Contracts\ModuleInterface;
 use NgarakDev\Modularization\Contracts\ModuleRepositoryInterface;
 use NgarakDev\Modularization\Contracts\ModuleStatusManagerInterface;
-use NgarakDev\Modularization\Exceptions\ModuleNotFoundException;
 use NgarakDev\Modularization\Support\Module;
 use NgarakDev\Modularization\Support\ModulePathResolver;
 
@@ -20,8 +20,7 @@ final class ModuleStatusManager implements ModuleStatusManagerInterface
         private readonly ModuleRepositoryInterface $repository,
         private readonly ModulePathResolver $pathResolver,
         private readonly Filesystem $files,
-    ) {
-    }
+    ) {}
 
     public function enable(string $name): void
     {
@@ -69,40 +68,42 @@ final class ModuleStatusManager implements ModuleStatusManagerInterface
 
     public function isDisabled(string $name): bool
     {
-        return !$this->isEnabled($name);
+        return ! $this->isEnabled($name);
     }
 
     public function toggle(string $name): bool
     {
         if ($this->isEnabled($name)) {
             $this->disable($name);
+
             return false;
         }
 
         $this->enable($name);
+
         return true;
     }
 
     /**
      * Update the config.php file to reflect enabled status.
      */
-    private function updateConfigStatus(\NgarakDev\Modularization\Contracts\ModuleInterface $module, bool $enabled): void
+    private function updateConfigStatus(ModuleInterface $module, bool $enabled): void
     {
         $configPath = $module->path('Config/config.php');
 
-        if (!$this->files->exists($configPath)) {
+        if (! $this->files->exists($configPath)) {
             return;
         }
 
         $config = require $configPath;
 
-        if (!is_array($config)) {
+        if (! is_array($config)) {
             return;
         }
 
         $config['enabled'] = $enabled;
 
-        $content = "<?php\n\nreturn " . $this->varExport($config) . ";\n";
+        $content = "<?php\n\nreturn ".$this->varExport($config).";\n";
         $this->files->put($configPath, $content);
     }
 
@@ -111,7 +112,7 @@ final class ModuleStatusManager implements ModuleStatusManagerInterface
      */
     private function varExport(mixed $var, int $indent = 0): string
     {
-        if (!is_array($var)) {
+        if (! is_array($var)) {
             return var_export($var, true);
         }
 
@@ -126,14 +127,14 @@ final class ModuleStatusManager implements ModuleStatusManagerInterface
             $output .= $nextSpaces;
 
             if ($isAssoc) {
-                $output .= var_export($key, true) . ' => ';
+                $output .= var_export($key, true).' => ';
             }
 
             $output .= $this->varExport($value, $nextIndent);
             $output .= ",\n";
         }
 
-        $output .= $spaces . ']';
+        $output .= $spaces.']';
 
         return $output;
     }

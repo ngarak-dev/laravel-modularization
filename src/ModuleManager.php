@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NgarakDev\Modularization;
 
+use Illuminate\Support\Collection;
 use NgarakDev\Modularization\Exceptions\ModuleNotFoundException;
 use NgarakDev\Modularization\Support\ModuleName;
 
@@ -73,6 +74,47 @@ final class ModuleManager
         }
 
         return $modules[$studly];
+    }
+
+    public function has(string $name): bool
+    {
+        return $this->hasModule($name);
+    }
+
+    public function find(string $name): ?Module
+    {
+        if (! $this->hasModule($name)) {
+            return null;
+        }
+
+        return $this->get($name);
+    }
+
+    public function isDisabled(string $name): bool
+    {
+        return $this->hasModule($name) && ! $this->isEnabled($name);
+    }
+
+    /**
+     * @return Collection<string, Module>
+     */
+    public function getDependents(string $name): Collection
+    {
+        try {
+            $studly = ModuleName::parse($name)->studly();
+        } catch (\Throwable) {
+            return collect();
+        }
+
+        $dependents = [];
+
+        foreach ($this->all() as $module) {
+            if (in_array($studly, $module->requires, true)) {
+                $dependents[$module->name] = $module;
+            }
+        }
+
+        return collect($dependents);
     }
 
     public function hasModule(string $name): bool

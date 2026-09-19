@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace NgarakDev\Modularization\Facades;
 
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Facade;
 use NgarakDev\Modularization\ModularizationService;
 
@@ -25,6 +24,6 @@ class Modularization extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return ModuleManager::class;
+        return 'modularization';
     }
 }

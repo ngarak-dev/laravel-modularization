@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace NgarakDev\Modularization\Contracts;
 
 use Illuminate\Support\Collection;
+use NgarakDev\Modularization\Exceptions\CircularDependencyException;
+use NgarakDev\Modularization\Exceptions\ModuleNotFoundException;
 
 /**
  * Repository for managing module instances.
@@ -40,7 +42,7 @@ interface ModuleRepositoryInterface
     /**
      * Find a module by name or throw an exception.
      *
-     * @throws \NgarakDev\Modularization\Exceptions\ModuleNotFoundException
+     * @throws ModuleNotFoundException
      */
     public function findOrFail(string $name): ModuleInterface;
 
@@ -58,7 +60,8 @@ interface ModuleRepositoryInterface
      * Get modules ordered by their dependencies.
      *
      * @return Collection<string, ModuleInterface>
-     * @throws \NgarakDev\Modularization\Exceptions\CircularDependencyException
+     *
+     * @throws CircularDependencyException
      */
     public function getOrderedByDependencies(): Collection;
 

@@ -7,6 +7,7 @@ namespace NgarakDev\Modularization\Services;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Route;
+use Livewire\Component;
 use Livewire\Livewire;
 use NgarakDev\Modularization\Contracts\ModuleInterface;
 use NgarakDev\Modularization\Contracts\ModuleLoaderInterface;
@@ -20,8 +21,7 @@ final class ModuleLoader implements ModuleLoaderInterface
     public function __construct(
         private readonly Application $app,
         private readonly Filesystem $files,
-    ) {
-    }
+    ) {}
 
     public function load(ModuleInterface $module): void
     {
@@ -49,33 +49,33 @@ final class ModuleLoader implements ModuleLoaderInterface
         $moduleNameLower = strtolower($module->getName());
         $namespace = $module->getNamespace();
 
-        if (!$this->files->isDirectory($routesPath)) {
+        if (! $this->files->isDirectory($routesPath)) {
             return;
         }
 
-        $webRoutesPath = $routesPath . '/web.php';
+        $webRoutesPath = $routesPath.'/web.php';
         if ($this->files->exists($webRoutesPath)) {
             Route::middleware('web')
-                ->namespace($namespace . '\\Http\\Controllers')
+                ->namespace($namespace.'\\Http\\Controllers')
                 ->group($webRoutesPath);
         }
 
-        $apiRoutesPath = $routesPath . '/api.php';
+        $apiRoutesPath = $routesPath.'/api.php';
         if ($this->files->exists($apiRoutesPath)) {
             Route::prefix('api')
                 ->middleware('api')
                 ->name('api.')
-                ->namespace($namespace . '\\Http\\Controllers')
+                ->namespace($namespace.'\\Http\\Controllers')
                 ->group($apiRoutesPath);
         }
 
-        $livewireRoutesPath = $routesPath . '/livewire.php';
+        $livewireRoutesPath = $routesPath.'/livewire.php';
         if ($this->files->exists($livewireRoutesPath)) {
             Route::middleware('web')
                 ->group($livewireRoutesPath);
         }
 
-        $authRoutesPath = $routesPath . '/auth.php';
+        $authRoutesPath = $routesPath.'/auth.php';
         if ($this->files->exists($authRoutesPath)) {
             Route::middleware('web')
                 ->group($authRoutesPath);
@@ -118,7 +118,7 @@ final class ModuleLoader implements ModuleLoaderInterface
         $configPath = $module->path('Config');
         $moduleName = $module->getName();
 
-        if (!$this->files->isDirectory($configPath)) {
+        if (! $this->files->isDirectory($configPath)) {
             return;
         }
 
@@ -143,18 +143,18 @@ final class ModuleLoader implements ModuleLoaderInterface
 
     public function loadLivewireComponents(ModuleInterface $module): void
     {
-        if (!class_exists(Livewire::class)) {
+        if (! class_exists(Livewire::class)) {
             return;
         }
 
         $livewirePath = $module->path('Livewire');
 
-        if (!$this->files->isDirectory($livewirePath)) {
+        if (! $this->files->isDirectory($livewirePath)) {
             return;
         }
 
         $namespace = $module->getNamespace();
-        $fullNamespace = $namespace . '\\Livewire';
+        $fullNamespace = $namespace.'\\Livewire';
         $prefix = strtolower($module->getName());
 
         $this->registerLivewireComponentsInDirectory($livewirePath, $fullNamespace, $prefix);
@@ -162,8 +162,8 @@ final class ModuleLoader implements ModuleLoaderInterface
         $directories = $this->files->directories($livewirePath);
         foreach ($directories as $directory) {
             $directoryName = basename($directory);
-            $subNamespace = $fullNamespace . '\\' . $directoryName;
-            $subPrefix = $prefix . '.' . $this->kebabCase($directoryName);
+            $subNamespace = $fullNamespace.'\\'.$directoryName;
+            $subPrefix = $prefix.'.'.$this->kebabCase($directoryName);
 
             $this->registerLivewireComponentsInDirectory($directory, $subNamespace, $subPrefix);
         }
@@ -177,22 +177,22 @@ final class ModuleLoader implements ModuleLoaderInterface
         string $namespace,
         string $prefix
     ): void {
-        $files = $this->files->glob($directory . '/*.php');
+        $files = $this->files->glob($directory.'/*.php');
 
         foreach ($files as $file) {
             $fileName = pathinfo($file, PATHINFO_FILENAME);
-            $componentClass = $namespace . '\\' . $fileName;
+            $componentClass = $namespace.'\\'.$fileName;
 
-            if (!class_exists($componentClass)) {
+            if (! class_exists($componentClass)) {
                 continue;
             }
 
             $reflection = new ReflectionClass($componentClass);
-            if (!$reflection->isSubclassOf(\Livewire\Component::class)) {
+            if (! $reflection->isSubclassOf(Component::class)) {
                 continue;
             }
 
-            $alias = $prefix . '.' . $this->kebabCase($fileName);
+            $alias = $prefix.'.'.$this->kebabCase($fileName);
             Livewire::component($alias, $componentClass);
         }
     }

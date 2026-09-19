@@ -15,9 +15,9 @@ class ModuleDependencyResolverTest extends TestCase
     {
         return new Module(
             name: $name,
-            path: '/modules/' . $name,
+            path: '/modules/'.$name,
             enabled: $enabled,
-            namespace: 'Modules\\' . $name,
+            namespace: 'Modules\\'.$name,
             version: '1.0.0',
             description: '',
             requires: $requires,
@@ -29,7 +29,7 @@ class ModuleDependencyResolverTest extends TestCase
     {
         $modules = [
             'Alpha' => $this->makeModule('Alpha'),
-            'Beta'  => $this->makeModule('Beta'),
+            'Beta' => $this->makeModule('Beta'),
         ];
 
         $resolver = new ModuleDependencyResolver($modules);
@@ -44,8 +44,8 @@ class ModuleDependencyResolverTest extends TestCase
     public function it_resolves_modules_in_dependency_order(): void
     {
         $modules = [
-            'Orders'   => $this->makeModule('Orders', ['Users']),
-            'Users'    => $this->makeModule('Users'),
+            'Orders' => $this->makeModule('Orders', ['Users']),
+            'Users' => $this->makeModule('Users'),
             'Payments' => $this->makeModule('Payments', ['Users', 'Orders']),
         ];
 
@@ -53,8 +53,8 @@ class ModuleDependencyResolverTest extends TestCase
         $resolved = $resolver->resolve();
         $names = array_keys($resolved);
 
-        $usersPos    = array_search('Users', $names, true);
-        $ordersPos   = array_search('Orders', $names, true);
+        $usersPos = array_search('Users', $names, true);
+        $ordersPos = array_search('Orders', $names, true);
         $paymentsPos = array_search('Payments', $names, true);
 
         $this->assertLessThan($ordersPos, $usersPos, 'Users must load before Orders');
@@ -81,7 +81,7 @@ class ModuleDependencyResolverTest extends TestCase
     {
         $modules = [
             'Orders' => $this->makeModule('Orders', ['Users']),
-            'Users'  => $this->makeModule('Users', [], false),
+            'Users' => $this->makeModule('Users', [], false),
         ];
 
         $this->expectException(ModuleDependencyException::class);
@@ -95,7 +95,7 @@ class ModuleDependencyResolverTest extends TestCase
     {
         $modules = [
             'Alpha' => $this->makeModule('Alpha', ['Beta']),
-            'Beta'  => $this->makeModule('Beta', ['Alpha']),
+            'Beta' => $this->makeModule('Beta', ['Alpha']),
         ];
 
         $this->expectException(ModuleDependencyException::class);
@@ -148,7 +148,7 @@ class ModuleDependencyResolverTest extends TestCase
         $modules = [
             'Shipping' => $this->makeModule('Shipping', ['Orders', 'Products']),
             'Products' => $this->makeModule('Products'),
-            'Orders'   => $this->makeModule('Orders', ['Products']),
+            'Orders' => $this->makeModule('Orders', ['Products']),
         ];
 
         $resolver = new ModuleDependencyResolver($modules);
@@ -181,7 +181,7 @@ class ModuleDependencyResolverTest extends TestCase
     {
         $modules = [
             'Orders' => $this->makeModule('Orders', ['Users']),
-            'Users'  => $this->makeModule('Users'),
+            'Users' => $this->makeModule('Users'),
         ];
 
         $resolver = new ModuleDependencyResolver($modules);

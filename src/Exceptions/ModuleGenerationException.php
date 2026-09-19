@@ -17,4 +17,9 @@ class ModuleGenerationException extends ModuleException
             "File already exists at [{$path}]. Re-run with --force to overwrite."
         );
     }
+
+    public static function stubNotFound(string $stubName): self
+    {
+        return new self("Stub [{$stubName}] was not found.");
+    }
 }

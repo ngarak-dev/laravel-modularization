@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace NgarakDev\Modularization\Contracts;
 
+use NgarakDev\Modularization\Exceptions\ModuleNotFoundException;
+
 /**
  * Manages module enabled/disabled status.
  */
@@ -12,14 +14,14 @@ interface ModuleStatusManagerInterface
     /**
      * Enable a module.
      *
-     * @throws \NgarakDev\Modularization\Exceptions\ModuleNotFoundException
+     * @throws ModuleNotFoundException
      */
     public function enable(string $name): void;
 
     /**
      * Disable a module.
      *
-     * @throws \NgarakDev\Modularization\Exceptions\ModuleNotFoundException
+     * @throws ModuleNotFoundException
      */
     public function disable(string $name): void;
 
@@ -37,7 +39,8 @@ interface ModuleStatusManagerInterface
      * Toggle module status.
      *
      * @return bool Returns true if module is now enabled, false if disabled
-     * @throws \NgarakDev\Modularization\Exceptions\ModuleNotFoundException
+     *
+     * @throws ModuleNotFoundException
      */
     public function toggle(string $name): bool;
 }

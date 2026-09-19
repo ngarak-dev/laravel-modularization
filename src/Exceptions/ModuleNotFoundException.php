@@ -10,4 +10,9 @@ class ModuleNotFoundException extends ModuleException
     {
         return new self("Module [{$name}] does not exist!");
     }
+
+    public static function withName(string $name): self
+    {
+        return self::make($name);
+    }
 }

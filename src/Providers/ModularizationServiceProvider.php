@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace NgarakDev\Modularization\Providers;
 
-use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use NgarakDev\Modularization\Console\Commands\MakeMigrationCommand;
 use NgarakDev\Modularization\Console\Commands\MakeModuleAuthCommand;
@@ -37,6 +36,11 @@ use NgarakDev\Modularization\Console\Commands\ModuleExportCommand;
 use NgarakDev\Modularization\Console\Commands\ModuleListCommand;
 use NgarakDev\Modularization\Console\Commands\ModuleToggleCommand;
 use NgarakDev\Modularization\Console\Commands\PublishStubsCommand;
+use NgarakDev\Modularization\Contracts\ModuleCacheInterface;
+use NgarakDev\Modularization\Contracts\ModuleDiscoveryInterface;
+use NgarakDev\Modularization\Contracts\ModuleLoaderInterface;
+use NgarakDev\Modularization\Contracts\ModuleRepositoryInterface;
+use NgarakDev\Modularization\Contracts\ModuleStatusManagerInterface;
 use NgarakDev\Modularization\DependencyResolver;
 use NgarakDev\Modularization\Generators\ClassGenerator;
 use NgarakDev\Modularization\Generators\ModuleGenerator;
@@ -49,7 +53,16 @@ use NgarakDev\Modularization\ModuleManifest;
 use NgarakDev\Modularization\ModulePathResolver;
 use NgarakDev\Modularization\ModuleRegistrar;
 use NgarakDev\Modularization\ModuleStatusManager;
+use NgarakDev\Modularization\Services\DependencyResolver as ContractDependencyResolver;
+use NgarakDev\Modularization\Services\ModuleCache as ContractModuleCache;
+use NgarakDev\Modularization\Services\ModuleDiscovery as ContractModuleDiscovery;
+use NgarakDev\Modularization\Services\ModuleLoader;
+use NgarakDev\Modularization\Services\ModuleRepository as ContractModuleRepository;
+use NgarakDev\Modularization\Services\ModuleStatusManager as ContractModuleStatusManager;
 use NgarakDev\Modularization\StubLocator;
+use NgarakDev\Modularization\Support\ModuleNameValidator;
+use NgarakDev\Modularization\Support\ModulePathResolver as SupportModulePathResolver;
+use NgarakDev\Modularization\Support\StubRenderer;
 
 class ModularizationServiceProvider extends ServiceProvider
 {
@@ -112,6 +125,72 @@ class ModularizationServiceProvider extends ServiceProvider
         });
 
         $this->app->alias('modularization', ModularizationService::class);
+        $this->app->alias(ModuleManager::class, 'modules');
+
+        $this->registerContractServices();
+    }
+
+    /**
+     * Register the contracts/services architecture alongside the concrete manager.
+     */
+    private function registerContractServices(): void
+    {
+        $this->app->singleton(SupportModulePathResolver::class, function ($app) {
+            return new SupportModulePathResolver($app);
+        });
+
+        $this->app->singleton(ModuleNameValidator::class);
+        $this->app->singleton(StubRenderer::class);
+
+        $this->app->singleton(ModuleDiscoveryInterface::class, function ($app) {
+            return new ContractModuleDiscovery(
+                $app,
+                $app['files'],
+                $app->make(SupportModulePathResolver::class),
+            );
+        });
+
+        $this->app->singleton(ModuleRepositoryInterface::class, function ($app) {
+            return new ContractModuleRepository(
+                $app->make(ModuleDiscoveryInterface::class),
+            );
+        });
+
+        $this->app->singleton(ModuleLoaderInterface::class, function ($app) {
+            return new ModuleLoader(
+                $app,
+                $app['files'],
+            );
+        });
+
+        $this->app->singleton(ModuleCacheInterface::class, function ($app) {
+            return new ContractModuleCache(
+                $app,
+                $app['files'],
+            );
+        });
+
+        $this->app->singleton(ModuleStatusManagerInterface::class, function ($app) {
+            return new ContractModuleStatusManager(
+                $app->make(ModuleRepositoryInterface::class),
+                $app->make(SupportModulePathResolver::class),
+                $app['files'],
+            );
+        });
+
+        $this->app->singleton(ContractDependencyResolver::class, function ($app) {
+            return new ContractDependencyResolver(
+                $app->make(ModuleRepositoryInterface::class),
+            );
+        });
+
+        $this->app->singleton(\NgarakDev\Modularization\Services\ModuleGenerator::class);
+
+        $this->app->alias(ModuleDiscoveryInterface::class, ContractModuleDiscovery::class);
+        $this->app->alias(ModuleRepositoryInterface::class, ContractModuleRepository::class);
+        $this->app->alias(ModuleCacheInterface::class, ContractModuleCache::class);
+        $this->app->alias(ModuleStatusManagerInterface::class, ContractModuleStatusManager::class);
+        $this->app->alias(ModuleLoaderInterface::class, ModuleLoader::class);
     }
 
     public function boot(): void

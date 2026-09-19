@@ -21,8 +21,7 @@ final class ModuleCache implements ModuleCacheInterface
     public function __construct(
         private readonly Application $app,
         private readonly Filesystem $files,
-    ) {
-    }
+    ) {}
 
     public function exists(): bool
     {
@@ -34,20 +33,20 @@ final class ModuleCache implements ModuleCacheInterface
      */
     public function get(): ?Collection
     {
-        if (!$this->exists()) {
+        if (! $this->exists()) {
             return null;
         }
 
         $cached = require $this->getCachePath();
 
-        if (!is_array($cached)) {
+        if (! is_array($cached)) {
             return null;
         }
 
         $modules = collect();
 
         foreach ($cached as $name => $data) {
-            if (!is_array($data)) {
+            if (! is_array($data)) {
                 continue;
             }
 
@@ -58,14 +57,14 @@ final class ModuleCache implements ModuleCacheInterface
     }
 
     /**
-     * @param Collection<string, ModuleInterface> $modules
+     * @param  Collection<string, ModuleInterface>  $modules
      */
     public function put(Collection $modules): void
     {
         $cachePath = $this->getCachePath();
         $cacheDir = dirname($cachePath);
 
-        if (!$this->files->isDirectory($cacheDir)) {
+        if (! $this->files->isDirectory($cacheDir)) {
             $this->files->makeDirectory($cacheDir, 0755, true);
         }
 
@@ -73,7 +72,7 @@ final class ModuleCache implements ModuleCacheInterface
             return [$module->getName() => $module->toArray()];
         })->all();
 
-        $content = "<?php\n\nreturn " . var_export($data, true) . ";\n";
+        $content = "<?php\n\nreturn ".var_export($data, true).";\n";
         $this->files->put($cachePath, $content);
     }
 
@@ -86,6 +85,6 @@ final class ModuleCache implements ModuleCacheInterface
 
     public function getCachePath(): string
     {
-        return $this->app->bootstrapPath('cache/' . self::CACHE_FILE);
+        return $this->app->bootstrapPath('cache/'.self::CACHE_FILE);
     }
 }

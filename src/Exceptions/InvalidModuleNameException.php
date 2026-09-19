@@ -6,6 +6,4 @@ namespace NgarakDev\Modularization\Exceptions;
 
 use InvalidArgumentException;
 
-final class InvalidModuleNameException extends InvalidArgumentException
-{
-}
+final class InvalidModuleNameException extends InvalidArgumentException {}

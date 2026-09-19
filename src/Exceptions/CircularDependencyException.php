@@ -15,7 +15,7 @@ class CircularDependencyException extends ModuleException
     protected array $dependencyChain = [];
 
     /**
-     * @param array<string> $chain The dependency chain that forms the cycle
+     * @param  array<string>  $chain  The dependency chain that forms the cycle
      */
     public static function detected(array $chain): self
     {
@@ -23,10 +23,10 @@ class CircularDependencyException extends ModuleException
         $moduleName = $chain[0] ?? 'Unknown';
 
         $exception = new self(
-            "Circular dependency detected: {$chainStr}. Review your module dependencies and remove the circular reference.",
-            $moduleName
+            "Circular dependency detected: {$chainStr}. Review your module dependencies and remove the circular reference."
         );
         $exception->dependencyChain = $chain;
+
         return $exception;
     }
 

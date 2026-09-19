@@ -13,7 +13,9 @@ use Orchestra\Testbench\TestCase;
 class ModuleStatusManagerTest extends TestCase
 {
     protected Filesystem $files;
+
     protected string $modulesPath;
+
     protected ModuleStatusManager $manager;
 
     protected function getPackageProviders($app): array
@@ -25,9 +27,9 @@ class ModuleStatusManagerTest extends TestCase
     {
         parent::setUp();
 
-        $this->files = new Filesystem();
-        $this->modulesPath = sys_get_temp_dir() . '/status_manager_test_' . uniqid();
-        $this->files->makeDirectory($this->modulesPath . '/MyModule', 0755, true);
+        $this->files = new Filesystem;
+        $this->modulesPath = sys_get_temp_dir().'/status_manager_test_'.uniqid();
+        $this->files->makeDirectory($this->modulesPath.'/MyModule', 0755, true);
 
         $this->manager = new ModuleStatusManager($this->files);
     }
@@ -45,9 +47,9 @@ class ModuleStatusManagerTest extends TestCase
     {
         return new Module(
             name: $name,
-            path: $this->modulesPath . '/' . $name,
+            path: $this->modulesPath.'/'.$name,
             enabled: $enabled,
-            namespace: 'Modules\\' . $name,
+            namespace: 'Modules\\'.$name,
             version: '1.0.0',
             description: '',
             requires: [],
@@ -66,7 +68,7 @@ class ModuleStatusManagerTest extends TestCase
     public function it_reports_disabled_when_sentinel_file_exists(): void
     {
         $module = $this->makeModule('MyModule');
-        $this->files->put($this->modulesPath . '/MyModule/.disabled', '');
+        $this->files->put($this->modulesPath.'/MyModule/.disabled', '');
 
         $this->assertFalse($this->manager->isEnabled($module));
     }
@@ -75,7 +77,7 @@ class ModuleStatusManagerTest extends TestCase
     public function disable_creates_sentinel_file(): void
     {
         $module = $this->makeModule('MyModule');
-        $sentinelPath = $this->modulesPath . '/MyModule/.disabled';
+        $sentinelPath = $this->modulesPath.'/MyModule/.disabled';
 
         $this->assertFalse($this->files->exists($sentinelPath));
 
@@ -88,7 +90,7 @@ class ModuleStatusManagerTest extends TestCase
     public function disable_writes_json_metadata_to_sentinel_file(): void
     {
         $module = $this->makeModule('MyModule');
-        $sentinelPath = $this->modulesPath . '/MyModule/.disabled';
+        $sentinelPath = $this->modulesPath.'/MyModule/.disabled';
 
         $this->manager->disable($module);
 
@@ -103,7 +105,7 @@ class ModuleStatusManagerTest extends TestCase
     public function enable_removes_sentinel_file(): void
     {
         $module = $this->makeModule('MyModule');
-        $sentinelPath = $this->modulesPath . '/MyModule/.disabled';
+        $sentinelPath = $this->modulesPath.'/MyModule/.disabled';
 
         $this->files->put($sentinelPath, '');
         $this->assertTrue($this->files->exists($sentinelPath));
@@ -139,7 +141,7 @@ class ModuleStatusManagerTest extends TestCase
     /** @test */
     public function it_updates_module_json_when_disabling(): void
     {
-        $manifestPath = $this->modulesPath . '/MyModule/module.json';
+        $manifestPath = $this->modulesPath.'/MyModule/module.json';
         $this->files->put($manifestPath, json_encode([
             'name' => 'MyModule',
             'enabled' => true,
@@ -155,12 +157,12 @@ class ModuleStatusManagerTest extends TestCase
     /** @test */
     public function it_updates_module_json_when_enabling(): void
     {
-        $manifestPath = $this->modulesPath . '/MyModule/module.json';
+        $manifestPath = $this->modulesPath.'/MyModule/module.json';
         $this->files->put($manifestPath, json_encode([
             'name' => 'MyModule',
             'enabled' => false,
         ]));
-        $this->files->put($this->modulesPath . '/MyModule/.disabled', '');
+        $this->files->put($this->modulesPath.'/MyModule/.disabled', '');
 
         $module = $this->makeModule('MyModule', false);
         $this->manager->enable($module);

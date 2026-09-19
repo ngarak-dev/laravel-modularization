@@ -17,8 +17,12 @@ class InvalidModuleException extends ModuleException
         return new self($message);
     }
 
-    public static function invalidName(string $name): self
+    public static function invalidName(string $name, ?string $reason = null): self
     {
+        if ($reason !== null) {
+            return new self("[{$name}] is not a valid module name. {$reason}");
+        }
+
         return new self(
             "[{$name}] is not a valid module name. Use a PHP class name such as Billing or UserProfile. ".
             'Path separators, dots, and special characters are not allowed.'

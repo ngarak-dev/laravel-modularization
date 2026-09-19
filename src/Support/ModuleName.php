@@ -13,6 +13,14 @@ use NgarakDev\Modularization\Exceptions\InvalidModuleException;
  */
 final class ModuleName
 {
+    /**
+     * @var array<int, string>
+     */
+    private const RESERVED_NAMES = [
+        'App', 'Config', 'Database', 'Routes', 'Storage', 'Tests', 'Vendor',
+        'Bootstrap', 'Public', 'Resources', 'Lang', 'Core', 'Base', 'Module', 'Modules',
+    ];
+
     private function __construct(
         private readonly string $original,
         private readonly string $studly,
@@ -24,6 +32,10 @@ final class ModuleName
 
         if ($trimmed === '') {
             throw InvalidModuleException::invalidName($name);
+        }
+
+        if (strlen($trimmed) > 64) {
+            throw InvalidModuleException::invalidName($name, 'Module name cannot exceed 64 characters.');
         }
 
         if (preg_match('/[\\/\\\\.\\0\\:]/', $trimmed) === 1) {
@@ -38,6 +50,13 @@ final class ModuleName
 
         if ($studly === '' || preg_match('/^[A-Z][A-Za-z0-9]*$/', $studly) !== 1) {
             throw InvalidModuleException::invalidName($name);
+        }
+
+        if (in_array($studly, self::RESERVED_NAMES, true)) {
+            throw InvalidModuleException::invalidName(
+                $name,
+                "'{$studly}' is a reserved name and cannot be used as a module name."
+            );
         }
 
         return new self($trimmed, $studly);

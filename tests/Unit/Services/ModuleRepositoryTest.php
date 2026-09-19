@@ -16,6 +16,7 @@ use PHPUnit\Framework\TestCase;
 class ModuleRepositoryTest extends TestCase
 {
     private ModuleRepository $repository;
+
     private ModuleDiscoveryInterface $discovery;
 
     protected function setUp(): void
@@ -200,7 +201,7 @@ class ModuleRepositoryTest extends TestCase
     }
 
     /**
-     * @param array<string> $names
+     * @param  array<string>  $names
      * @return Collection<string, ModuleInterface>
      */
     private function createModuleCollection(array $names): Collection

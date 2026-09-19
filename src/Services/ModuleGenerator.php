@@ -20,13 +20,12 @@ final class ModuleGenerator
         private readonly ModulePathResolver $pathResolver,
         private readonly ModuleNameValidator $nameValidator,
         private readonly StubRenderer $stubRenderer,
-    ) {
-    }
+    ) {}
 
     /**
      * Generate a new module.
      *
-     * @param array<string, mixed> $options
+     * @param  array<string, mixed>  $options
      */
     public function generate(string $name, array $options = []): string
     {
@@ -35,7 +34,7 @@ final class ModuleGenerator
         $modulePath = $this->pathResolver->getModulePath($name);
         $namespace = $this->pathResolver->getNamespace();
 
-        if ($this->files->isDirectory($modulePath) && !($options['force'] ?? false)) {
+        if ($this->files->isDirectory($modulePath) && ! ($options['force'] ?? false)) {
             throw ModuleGenerationException::alreadyExists($name);
         }
 
@@ -57,8 +56,8 @@ final class ModuleGenerator
         $directories = config('modularization.directories', []);
 
         foreach ($directories as $directory) {
-            $path = $modulePath . '/' . $directory;
-            if (!$this->files->isDirectory($path)) {
+            $path = $modulePath.'/'.$directory;
+            if (! $this->files->isDirectory($path)) {
                 $this->files->makeDirectory($path, 0755, true);
             }
         }
@@ -67,7 +66,7 @@ final class ModuleGenerator
     /**
      * Create the base module files.
      *
-     * @param array<string, mixed> $options
+     * @param  array<string, mixed>  $options
      */
     public function createBaseFiles(string $name, string $path, string $namespace, array $options): void
     {
@@ -108,7 +107,7 @@ final class ModuleGenerator
     /**
      * Create the module.json manifest file.
      *
-     * @param array<string, string> $replacements
+     * @param  array<string, string>  $replacements
      */
     private function createModuleJson(string $name, string $path, string $namespace, array $replacements): void
     {
@@ -130,76 +129,76 @@ final class ModuleGenerator
         ];
 
         $this->files->put(
-            $path . '/module.json',
-            json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n"
+            $path.'/module.json',
+            json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n"
         );
     }
 
     /**
-     * @param array<string, string> $replacements
+     * @param  array<string, string>  $replacements
      */
     private function createServiceProvider(string $name, string $path, array $replacements): void
     {
         $content = $this->stubRenderer->render('provider', $replacements);
-        $this->files->put($path . '/Providers/' . $name . 'ServiceProvider.php', $content);
+        $this->files->put($path.'/Providers/'.$name.'ServiceProvider.php', $content);
     }
 
     /**
-     * @param array<string, string> $replacements
+     * @param  array<string, string>  $replacements
      */
     private function createModel(string $name, string $path, array $replacements): void
     {
         $content = $this->stubRenderer->render('model', $replacements);
-        $this->files->put($path . '/Models/' . $name . '.php', $content);
+        $this->files->put($path.'/Models/'.$name.'.php', $content);
     }
 
     /**
-     * @param array<string, string> $replacements
+     * @param  array<string, string>  $replacements
      */
     private function createRepositoryInterface(string $name, string $path, array $replacements): void
     {
         $content = $this->stubRenderer->render('repository-interface', $replacements);
-        $this->files->put($path . '/Repositories/Interfaces/' . $name . 'RepositoryInterface.php', $content);
+        $this->files->put($path.'/Repositories/Interfaces/'.$name.'RepositoryInterface.php', $content);
     }
 
     /**
-     * @param array<string, string> $replacements
+     * @param  array<string, string>  $replacements
      */
     private function createRepository(string $name, string $path, array $replacements): void
     {
         $content = $this->stubRenderer->render('repository', $replacements);
-        $this->files->put($path . '/Repositories/' . $name . 'Repository.php', $content);
+        $this->files->put($path.'/Repositories/'.$name.'Repository.php', $content);
     }
 
     /**
-     * @param array<string, string> $replacements
+     * @param  array<string, string>  $replacements
      */
     private function createServiceInterface(string $name, string $path, array $replacements): void
     {
         $content = $this->stubRenderer->render('service-interface', $replacements);
-        $this->files->put($path . '/Services/Interfaces/' . $name . 'ServiceInterface.php', $content);
+        $this->files->put($path.'/Services/Interfaces/'.$name.'ServiceInterface.php', $content);
     }
 
     /**
-     * @param array<string, string> $replacements
+     * @param  array<string, string>  $replacements
      */
     private function createService(string $name, string $path, array $replacements): void
     {
         $content = $this->stubRenderer->render('service', $replacements);
-        $this->files->put($path . '/Services/' . $name . 'Service.php', $content);
+        $this->files->put($path.'/Services/'.$name.'Service.php', $content);
     }
 
     /**
-     * @param array<string, string> $replacements
+     * @param  array<string, string>  $replacements
      */
     private function createRequest(string $name, string $path, array $replacements): void
     {
         $content = $this->stubRenderer->render('request', $replacements);
-        $this->files->put($path . '/Http/Requests/' . $name . 'Request.php', $content);
+        $this->files->put($path.'/Http/Requests/'.$name.'Request.php', $content);
     }
 
     /**
-     * @param array<string, string> $replacements
+     * @param  array<string, string>  $replacements
      */
     private function createMigration(string $name, string $path, array $replacements): void
     {
@@ -207,68 +206,68 @@ final class ModuleGenerator
         $timestamp = date('Y_m_d_His');
         $tableName = $replacements['{{table}}'];
         $filename = "{$timestamp}_create_{$tableName}_table.php";
-        $this->files->put($path . '/Database/Migrations/' . $filename, $content);
+        $this->files->put($path.'/Database/Migrations/'.$filename, $content);
     }
 
     /**
-     * @param array<string, string> $replacements
+     * @param  array<string, string>  $replacements
      */
     private function createConfigFile(string $name, string $path, array $replacements): void
     {
         $content = "<?php\n\nreturn [\n    'name' => '{$name}',\n    'description' => '{$name} Module',\n    'enabled' => true,\n];\n";
-        $this->files->put($path . '/Config/config.php', $content);
+        $this->files->put($path.'/Config/config.php', $content);
     }
 
     /**
-     * @param array<string, string> $replacements
+     * @param  array<string, string>  $replacements
      */
     private function createWebRoutes(string $name, string $path, array $replacements): void
     {
         $content = $this->stubRenderer->render('web-routes', $replacements);
-        $this->files->put($path . '/Routes/web.php', $content);
+        $this->files->put($path.'/Routes/web.php', $content);
     }
 
     /**
-     * @param array<string, string> $replacements
+     * @param  array<string, string>  $replacements
      */
     private function createWebController(string $name, string $path, array $replacements): void
     {
         $content = $this->stubRenderer->render('web-controller', $replacements);
-        $this->files->put($path . '/Http/Controllers/' . $name . 'Controller.php', $content);
+        $this->files->put($path.'/Http/Controllers/'.$name.'Controller.php', $content);
     }
 
     /**
-     * @param array<string, string> $replacements
+     * @param  array<string, string>  $replacements
      */
     private function createApiController(string $name, string $path, array $replacements): void
     {
         $content = $this->stubRenderer->render('api-controller', $replacements);
-        $this->files->put($path . '/Http/Controllers/API/' . $name . 'Controller.php', $content);
+        $this->files->put($path.'/Http/Controllers/API/'.$name.'Controller.php', $content);
     }
 
     /**
-     * @param array<string, string> $replacements
+     * @param  array<string, string>  $replacements
      */
     private function createApiRoutes(string $name, string $path, array $replacements): void
     {
         $content = $this->stubRenderer->render('api-routes', $replacements);
-        $this->files->put($path . '/Routes/api.php', $content);
+        $this->files->put($path.'/Routes/api.php', $content);
     }
 
     /**
-     * @param array<string, string> $replacements
+     * @param  array<string, string>  $replacements
      */
     private function createViews(string $name, string $path, array $replacements): void
     {
         $moduleNameLower = strtolower($name);
-        $viewsPath = $path . '/Resources/views/' . $moduleNameLower;
-        $layoutsPath = $path . '/Resources/views/layouts';
+        $viewsPath = $path.'/Resources/views/'.$moduleNameLower;
+        $layoutsPath = $path.'/Resources/views/layouts';
 
-        if (!$this->files->isDirectory($viewsPath)) {
+        if (! $this->files->isDirectory($viewsPath)) {
             $this->files->makeDirectory($viewsPath, 0755, true);
         }
 
-        if (!$this->files->isDirectory($layoutsPath)) {
+        if (! $this->files->isDirectory($layoutsPath)) {
             $this->files->makeDirectory($layoutsPath, 0755, true);
         }
 
@@ -277,76 +276,76 @@ final class ModuleGenerator
         foreach ($views as $view) {
             $viewName = str_replace('view-', '', $view);
             $content = $this->stubRenderer->render($view, $replacements);
-            $this->files->put($viewsPath . '/' . $viewName . '.blade.php', $content);
+            $this->files->put($viewsPath.'/'.$viewName.'.blade.php', $content);
         }
 
         $layoutContent = $this->stubRenderer->render('module-layout', $replacements);
-        $this->files->put($layoutsPath . '/module-layout.blade.php', $layoutContent);
+        $this->files->put($layoutsPath.'/module-layout.blade.php', $layoutContent);
 
         if ($this->stubRenderer->hasStub('navigation')) {
             $navContent = $this->stubRenderer->render('navigation', $replacements);
-            $this->files->put($layoutsPath . '/navigation.blade.php', $navContent);
+            $this->files->put($layoutsPath.'/navigation.blade.php', $navContent);
         }
     }
 
     /**
-     * @param array<string, string> $replacements
+     * @param  array<string, string>  $replacements
      */
     private function createLivewireComponents(string $name, string $path, array $replacements): void
     {
-        $livewirePath = $path . '/Livewire';
-        $viewsPath = $path . '/Resources/views/livewire';
+        $livewirePath = $path.'/Livewire';
+        $viewsPath = $path.'/Resources/views/livewire';
 
-        if (!$this->files->isDirectory($livewirePath)) {
+        if (! $this->files->isDirectory($livewirePath)) {
             $this->files->makeDirectory($livewirePath, 0755, true);
         }
 
-        if (!$this->files->isDirectory($viewsPath)) {
+        if (! $this->files->isDirectory($viewsPath)) {
             $this->files->makeDirectory($viewsPath, 0755, true);
         }
 
         $tableContent = $this->stubRenderer->render('livewire-table', $replacements);
-        $this->files->put($livewirePath . '/' . $name . 'Table.php', $tableContent);
+        $this->files->put($livewirePath.'/'.$name.'Table.php', $tableContent);
 
         $formContent = $this->stubRenderer->render('livewire-form', $replacements);
-        $this->files->put($livewirePath . '/' . $name . 'Form.php', $formContent);
+        $this->files->put($livewirePath.'/'.$name.'Form.php', $formContent);
 
         $kebabName = strtolower((string) preg_replace('/([a-z])([A-Z])/', '$1-$2', $name));
 
         $tableViewContent = $this->stubRenderer->render('livewire-table-view', $replacements);
-        $this->files->put($viewsPath . '/' . $kebabName . '-table.blade.php', $tableViewContent);
+        $this->files->put($viewsPath.'/'.$kebabName.'-table.blade.php', $tableViewContent);
 
         $formViewContent = $this->stubRenderer->render('livewire-form-view', $replacements);
-        $this->files->put($viewsPath . '/' . $kebabName . '-form.blade.php', $formViewContent);
+        $this->files->put($viewsPath.'/'.$kebabName.'-form.blade.php', $formViewContent);
     }
 
     /**
-     * @param array<string, string> $replacements
+     * @param  array<string, string>  $replacements
      */
     private function createLivewireRoutes(string $name, string $path, array $replacements): void
     {
         $content = $this->stubRenderer->render('livewire-routes', $replacements);
-        $this->files->put($path . '/Routes/livewire.php', $content);
+        $this->files->put($path.'/Routes/livewire.php', $content);
     }
 
     /**
      * Create translation files for the module.
      *
-     * @param array<string> $languages
+     * @param  array<string>  $languages
      */
     private function createTranslations(string $name, string $path, array $languages): void
     {
-        $langPath = $path . '/Resources/lang';
+        $langPath = $path.'/Resources/lang';
 
         foreach ($languages as $lang) {
-            $langDir = $langPath . '/' . $lang;
+            $langDir = $langPath.'/'.$lang;
 
-            if (!$this->files->isDirectory($langDir)) {
+            if (! $this->files->isDirectory($langDir)) {
                 $this->files->makeDirectory($langDir, 0755, true);
             }
 
             $content = "<?php\n\nreturn [\n    'welcome' => 'Welcome to {$name}',\n];\n";
-            $this->files->put($langDir . '/messages.php', $content);
+            $this->files->put($langDir.'/messages.php', $content);
         }
     }
 }

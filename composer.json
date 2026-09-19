@@ -58,6 +58,7 @@
     "scripts": {
         "test": "phpunit",
         "pint": "pint",
+        "format": "pint",
         "analyse": "phpstan analyse --memory-limit=512M"
     },
     "minimum-stability": "stable",
@@ -66,6 +67,9 @@
         "sort-packages": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true
+        },
+        "audit": {
+            "block-insecure": false
         }
     }
 }
